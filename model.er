@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CAUTION: Do not modify this file unless you know what you are doing.
+ Unexpected results may occur if the code is changed deliberately.
+-->
+<dbmodel pgmodeler-ver="1.2.3" use-changelog="false" max-obj-count="12"
+	 gen-disabled-objs-code="false" show-sys-schemas-rects="true"
+	 last-position="76,-42" last-zoom="0.85" scene-rect="0,-50,2175.61,1126.8"
+	 default-schema="public" default-owner="postgres"
+	 layers="Default layer"
+	 active-layers="0"
+	 layer-name-colors="#000000"
+	 layer-rect-colors="#b4b4b4"
+	 show-layer-names="false" show-layer-rects="false">
+<database name="ava" encoding="UTF8" lc-collate="pt_BR.UTF-8" lc-ctype="pt_BR.UTF-8" is-template="false" allow-conns="true">
+	<role name="postgres"/>
+	<tablespace name="pg_default"/>
+</database>
+
+<schema name="public" layers="0" rect-visible="true" fill-color="#e1e1e1" name-color="#000000" sql-disabled="true">
+</schema>
+
+<sequence name="tipo_renderizacao_id_tipo_renderizacao_seq" cycle="false" start="1" increment="1" min-value="1" max-value="2147483647" cache="1">
+	<schema name="public"/>
+	<role name="postgres"/>
+</sequence>
+
+<table name="tipo_renderizacao" layers="0" collapse-mode="2" max-obj-count="2" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="1700" y="20"/>
+	<column name="id_tipo_renderizacao" not-null="true" sequence="public.tipo_renderizacao_id_tipo_renderizacao_seq">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="nome" not-null="true">
+		<type name="character varying" length="0"/>
+	</column>
+	<constraint name="tipo_renderizacao_pk" type="pk-constr" table="public.tipo_renderizacao">
+		<columns names="id_tipo_renderizacao" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="alternativa" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="1100" y="680"/>
+	<column name="id_alternativa" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="descricao">
+		<type name="character varying" length="200"/>
+	</column>
+	<column name="id_questao">
+		<type name="uuid" length="0"/>
+	</column>
+	<constraint name="alternativa_pkey" type="pk-constr" table="public.alternativa">
+		<columns names="id_alternativa" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="questao" layers="0" collapse-mode="2" max-obj-count="4" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="880" y="320"/>
+	<column name="id_questao" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="descricao">
+		<type name="character varying" length="200"/>
+	</column>
+	<column name="id_tipo_questao">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="id_pagina">
+		<type name="uuid" length="0"/>
+	</column>
+	<constraint name="questao_pkey" type="pk-constr" table="public.questao">
+		<columns names="id_questao" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="questionario" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="240" y="0"/>
+	<column name="id_questionario" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="descricao">
+		<type name="text" length="0"/>
+	</column>
+	<column name="nome" not-null="true">
+		<type name="character varying" length="255"/>
+	</column>
+	<constraint name="questionario_pkey" type="pk-constr" table="public.questionario">
+		<columns names="id_questionario" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="resposta_alternativa" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="540" y="720"/>
+	<column name="id_resposta_alternativa" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="id_alternativa" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="id_resposta_questao" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<constraint name="resposta_alternativa_pkey" type="pk-constr" table="public.resposta_alternativa">
+		<columns names="id_resposta_alternativa" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="resposta_questao" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="40" y="560"/>
+	<column name="id_resposta_questao" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="id_questao">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="id_resposta_questionario">
+		<type name="uuid" length="0"/>
+	</column>
+	<constraint name="resposta_questao_pkey" type="pk-constr" table="public.resposta_questao">
+		<columns names="id_resposta_questao" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="resposta_questionario" layers="0" collapse-mode="2" max-obj-count="2" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="40" y="280"/>
+	<column name="id_resposta_questionario" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="id_questionario">
+		<type name="uuid" length="0"/>
+	</column>
+	<constraint name="resposta_questionario_pkey" type="pk-constr" table="public.resposta_questionario">
+		<columns names="id_resposta_questionario" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="tipo_questao" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="1720" y="500"/>
+	<column name="id_tipo_questao" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="cod">
+		<type name="character varying" length="4"/>
+	</column>
+	<column name="nome">
+		<type name="character varying" length="200"/>
+	</column>
+	<constraint name="tipo_questao_pkey" type="pk-constr" table="public.tipo_questao">
+		<columns names="id_tipo_questao" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<extension name="uuid-ossp" cur-version="1.1">
+	<schema name="public"/>
+	<comment> <![CDATA[generate universally unique identifiers (UUIDs)]]> </comment>
+</extension>
+
+<table name="pagina" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<position x="700" y="40"/>
+	<column name="id_pagina" not-null="true" default-value="uuid_generate_v4()">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="titulo">
+		<type name="character varying" length="255"/>
+	</column>
+	<column name="id_questionario">
+		<type name="uuid" length="0"/>
+	</column>
+	<constraint name="pagina_pkey" type="pk-constr" table="public.pagina">
+		<columns names="id_pagina" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<table name="grupo" layers="0" collapse-mode="2" pagination="true" attribs-page="0" ext-attribs-page="0" max-obj-count="2" z-value="0">
+	<schema name="public"/>
+	<role name="postgres"/>
+	<comment> <![CDATA[serve para agrupar questois em uma pagina]]> </comment>
+	<position x="1240" y="80"/>
+	<column name="id_grupo" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<column name="id_pagina" not-null="true">
+		<type name="uuid" length="0"/>
+	</column>
+	<constraint name="pk_id_grupo" type="pk-constr" table="public.grupo">
+		<columns names="id_grupo" ref-type="src-columns"/>
+	</constraint>
+</table>
+
+<constraint name="fk8ocur5fcgko5qgj3vgpa53aan" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.questao" table="public.alternativa">
+	<columns names="id_questao" ref-type="src-columns"/>
+	<columns names="id_questao" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk33puj1mmapvclfxvydv4qbrl" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.tipo_questao" table="public.questao">
+	<columns names="id_tipo_questao" ref-type="src-columns"/>
+	<columns names="id_tipo_questao" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fkv34xxsvcrgrgrbqmr9no1crp" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.pagina" table="public.questao">
+	<columns names="id_pagina" ref-type="src-columns"/>
+	<columns names="id_pagina" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fkgkwfu828d91po43u33l5xptj9" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.alternativa" table="public.resposta_alternativa">
+	<columns names="id_alternativa" ref-type="src-columns"/>
+	<columns names="id_alternativa" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fkgjd74awwpkdfdf3n2rdslhmbg" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.resposta_questao" table="public.resposta_alternativa">
+	<columns names="id_resposta_questao" ref-type="src-columns"/>
+	<columns names="id_resposta_questao" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fkndifatlyehi22e52mdj5u4p2w" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.questao" table="public.resposta_questao">
+	<columns names="id_questao" ref-type="src-columns"/>
+	<columns names="id_questao" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fka2pp4lqqvefj89u18srl02bme" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.resposta_questionario" table="public.resposta_questao">
+	<columns names="id_resposta_questionario" ref-type="src-columns"/>
+	<columns names="id_resposta_questionario" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fkqnldb1skyixnefxwmvpbbhpwl" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.questionario" table="public.resposta_questionario">
+	<columns names="id_questionario" ref-type="src-columns"/>
+	<columns names="id_questionario" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fkf0rikjr6ebr0n59vfatt670vt" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.questionario" table="public.pagina">
+	<columns names="id_questionario" ref-type="src-columns"/>
+	<columns names="id_questionario" ref-type="dst-columns"/>
+</constraint>
+
+<constraint name="fk_pagina_id_pagina" type="fk-constr" comparison-type="MATCH SIMPLE"
+	 upd-action="NO ACTION" del-action="NO ACTION" ref-table="public.pagina" table="public.grupo">
+	<columns names="id_pagina" ref-type="src-columns"/>
+	<columns names="id_pagina" ref-type="dst-columns"/>
+</constraint>
+
+<relationship name="rel_alternativa_questao" type="relfk" layers="0"
+	 custom-color="#bb4065"
+	 src-table="public.alternativa"
+	 dst-table="public.questao" reference-fk="fk8ocur5fcgko5qgj3vgpa53aan"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_questao_tipo_questao" type="relfk" layers="0"
+	 custom-color="#b6fd6b"
+	 src-table="public.questao"
+	 dst-table="public.tipo_questao" reference-fk="fk33puj1mmapvclfxvydv4qbrl"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_questao_pagina" type="relfk" layers="0"
+	 custom-color="#403e64"
+	 src-table="public.questao"
+	 dst-table="public.pagina" reference-fk="fkv34xxsvcrgrgrbqmr9no1crp"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_resposta_alternativa_alternativa" type="relfk" layers="0"
+	 custom-color="#97a7c5"
+	 src-table="public.resposta_alternativa"
+	 dst-table="public.alternativa" reference-fk="fkgkwfu828d91po43u33l5xptj9"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_resposta_alternativa_resposta_questao" type="relfk" layers="0"
+	 custom-color="#fdde95"
+	 src-table="public.resposta_alternativa"
+	 dst-table="public.resposta_questao" reference-fk="fkgjd74awwpkdfdf3n2rdslhmbg"
+	 src-required="false" dst-required="true"/>
+
+<relationship name="rel_resposta_questao_questao" type="relfk" layers="0"
+	 custom-color="#d9217a"
+	 src-table="public.resposta_questao"
+	 dst-table="public.questao" reference-fk="fkndifatlyehi22e52mdj5u4p2w"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_resposta_questao_resposta_questionario" type="relfk" layers="0"
+	 custom-color="#29fab0"
+	 src-table="public.resposta_questao"
+	 dst-table="public.resposta_questionario" reference-fk="fka2pp4lqqvefj89u18srl02bme"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_resposta_questionario_questionario" type="relfk" layers="0"
+	 custom-color="#0a115c"
+	 src-table="public.resposta_questionario"
+	 dst-table="public.questionario" reference-fk="fkqnldb1skyixnefxwmvpbbhpwl"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_pagina_questionario" type="relfk" layers="0"
+	 custom-color="#638f9a"
+	 src-table="public.pagina"
+	 dst-table="public.questionario" reference-fk="fkf0rikjr6ebr0n59vfatt670vt"
+	 src-required="false" dst-required="false"/>
+
+<relationship name="rel_grupo_pagina" type="relfk" layers="0"
+	 src-table="public.grupo"
+	 dst-table="public.pagina" reference-fk="fk_pagina_id_pagina"
+	 src-required="false" dst-required="true"/>
+
+</dbmodel>
