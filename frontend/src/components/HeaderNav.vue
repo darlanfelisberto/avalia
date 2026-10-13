@@ -84,20 +84,6 @@ const percentual = computed(() => {
 
 <template>
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-    <!-- Barra superior institucional IFFar -->
-    <div class="bg-emerald-800 text-white text-xs px-4 py-1.5 flex flex-wrap items-center justify-between gap-2">
-      <div class="flex items-center gap-2 font-medium">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span>Instituto Federal Farroupilha</span>
-        <span class="text-emerald-300">|</span>
-        <span>Sistema Informatizado para o Fechamento do Ciclo Avaliativo</span>
-      </div>
-      <div class="flex items-center gap-3 text-emerald-100">
-        <span class="bg-emerald-900/80 px-2 py-0.5 rounded text-[11px] font-mono">Ciclo 2026/1</span>
-        <span class="hidden sm:inline">PPGTER / UFSM</span>
-      </div>
-    </div>
-
     <!-- Barra de contexto da página ativa -->
     <div class="px-4 py-3 flex items-center justify-between gap-3">
       <div class="flex items-center gap-3">

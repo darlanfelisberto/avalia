@@ -207,19 +207,12 @@ const emit = defineEmits<{
       </div>
     </nav>
 
-    <!-- Rodapé da Sidebar: Status da Conexão Backend -->
-    <div class="p-4 border-t border-slate-800 bg-slate-950/60 text-xs space-y-2">
-      <div class="flex items-center justify-between text-[11px]">
-        <span class="text-slate-400">Backend Open Liberty:</span>
-        <span class="flex items-center gap-1.5 text-emerald-400 font-semibold">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Conectado
-        </span>
-      </div>
-      <div class="text-[10px] text-slate-500 font-mono flex justify-between">
-        <span>PostgreSQL 17</span>
-        <span>JPA / Jakarta EE 11</span>
-      </div>
+    <!-- Rodapé da Sidebar: Identificação da Dissertação -->
+    <div class="p-4 border-t border-slate-800 bg-slate-950/60 text-center">
+      <p class="text-[11px] text-slate-300 font-medium leading-relaxed">
+        Sistema Informatizado para o Fechamento do Ciclo Avaliativo<br>
+        <span class="text-emerald-400 font-semibold text-[10px]">PPGTER / UFSM</span>
+      </p>
     </div>
   </aside>
 </template>
