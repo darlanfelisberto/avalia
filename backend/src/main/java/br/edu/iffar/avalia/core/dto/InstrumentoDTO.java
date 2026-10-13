@@ -14,7 +14,6 @@ public class InstrumentoDTO {
     private String periodoLetivo;
     private String dataInicio;
     private String dataTermino;
-    private String publicoAlvo;
     private String tipoAlvo = "DOCENTE";
     private String tipoPublico = "DISCENTES";
     private List<String> publicosPermitidos = new ArrayList<>();
@@ -57,9 +56,6 @@ public class InstrumentoDTO {
 
     public String getDataTermino() { return dataTermino; }
     public void setDataTermino(String dataTermino) { this.dataTermino = dataTermino; }
-
-    public String getPublicoAlvo() { return publicoAlvo; }
-    public void setPublicoAlvo(String publicoAlvo) { this.publicoAlvo = publicoAlvo; }
 
     public String getTipoAlvo() { return tipoAlvo; }
     public void setTipoAlvo(String tipoAlvo) { this.tipoAlvo = tipoAlvo; }

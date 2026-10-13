@@ -112,69 +112,6 @@ export function resetarInstrumentoParaPadrao(): InstrumentoAvaliativo {
 const STORAGE_KEY_USUARIO = 'iffar_avalia_usuario_ativo';
 const STORAGE_KEY_TOKEN = 'iffar_avalia_token';
 
-export const USUARIO_PADRAO_CPA: import('../types/avaliacao').UsuarioContexto = {
-  id: '00000000-0000-0000-0008-000000000001',
-  cpf: '00000000000',
-  cpfFormatado: '000.000.000-00',
-  nome: 'Comissão Própria de Avaliação (CPA / CAIN)',
-  email: 'cpa@iffar.edu.br',
-  papel: 'CPA',
-  papelAtivo: 'CPA',
-  campus: 'Reitoria',
-  papeis: ['CPA', 'DOCENTE', 'GESTAO'],
-  permissoes: [
-    'INSTRUMENTO_CRIAR',
-    'INSTRUMENTO_EDITAR',
-    'INSTRUMENTO_EXCLUIR',
-    'INSTRUMENTO_VISUALIZAR',
-    'CATALOGO_GERENCIAR',
-    'AVALIACAO_RESPONDER',
-    'DOCENTE_MANIFESTAR',
-    'GESTAO_ENCAMINHAR',
-    'SIGAA_SINCRONIZAR',
-    'AUDITORIA_ACESSAR'
-  ]
-};
-
-export const USUARIOS_SIMULADOS: import('../types/avaliacao').UsuarioContexto[] = [
-  USUARIO_PADRAO_CPA,
-  {
-    id: '00000000-0000-0000-0008-000000000003',
-    cpf: '92782396072',
-    cpfFormatado: '927.823.960-72',
-    nome: 'Rafaelle Ribeiro Gonçalves',
-    email: 'rafaelle.goncalves@iffar.edu.br',
-    papel: 'DOCENTE',
-    papelAtivo: 'DOCENTE',
-    campus: 'Campus Panambi',
-    papeis: ['DOCENTE'],
-    permissoes: ['DOCENTE_MANIFESTAR', 'AVALIACAO_RESPONDER', 'INSTRUMENTO_VISUALIZAR']
-  },
-  {
-    id: '00000000-0000-0000-0008-000000000004',
-    cpf: '14537997702',
-    cpfFormatado: '145.379.977-02',
-    nome: 'Rafael Henrique Bispo dos Santos',
-    email: 'rafael.santos@aluno.iffar.edu.br',
-    papel: 'DISCENTE',
-    papelAtivo: 'DISCENTE',
-    campus: 'Campus Frederico Westphalen',
-    papeis: ['DISCENTE'],
-    permissoes: ['AVALIACAO_RESPONDER']
-  },
-  {
-    id: '00000000-0000-0000-0008-000000000005',
-    cpf: '53549406053',
-    cpfFormatado: '535.494.060-53',
-    nome: 'Helena Sebastiany Coelho',
-    email: 'helena.coelho@iffar.edu.br',
-    papel: 'GESTAO',
-    papelAtivo: 'GESTAO',
-    campus: 'Reitoria',
-    papeis: ['GESTAO'],
-    permissoes: ['GESTAO_ENCAMINHAR', 'INSTRUMENTO_VISUALIZAR', 'AVALIACAO_RESPONDER']
-  }
-];
 
 export function carregarUsuarioAtivo(): import('../types/avaliacao').UsuarioContexto | null {
   try {

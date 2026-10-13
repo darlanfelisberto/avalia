@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import type { UsuarioContexto } from '../types/avaliacao';
 import { loginPorCpfApi, listarUsuariosDemonstracaoApi } from '../services/api';
-import { salvarUsuarioAtivo, USUARIOS_SIMULADOS } from '../services/storage';
+import { salvarUsuarioAtivo } from '../services/storage';
 
 const emit = defineEmits<{
   (e: 'loginSucesso', usuario: UsuarioContexto): void;
@@ -11,7 +11,7 @@ const emit = defineEmits<{
 const cpfInput = ref('');
 const carregando = ref(false);
 const mensagemErro = ref('');
-const contasDemo = ref<UsuarioContexto[]>(USUARIOS_SIMULADOS);
+const contasDemo = ref<UsuarioContexto[]>([]);
 
 onMounted(async () => {
   const demos = await listarUsuariosDemonstracaoApi();

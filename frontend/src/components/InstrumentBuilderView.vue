@@ -223,32 +223,26 @@ function aoMudarTipoAlvo() {
     form.publicosPermitidos = ['DISCENTES', 'DOCENTES', 'TAES'];
     form.tipoPublico = 'TODOS';
     form.restringirVinculoCampus = true;
-    form.publicoAlvo = 'Discentes, Docentes e TAEs vinculados ao Campus';
   } else if (form.tipoAlvo === 'DOCENTE') {
     form.publicosPermitidos = ['DISCENTES'];
     form.tipoPublico = 'DISCENTES';
     form.restringirVinculoCampus = false;
-    form.publicoAlvo = 'Discentes matriculados nos componentes do docente';
   } else if (form.tipoAlvo === 'TURMA') {
     form.publicosPermitidos = ['DISCENTES'];
     form.tipoPublico = 'DISCENTES';
     form.restringirVinculoCampus = false;
-    form.publicoAlvo = 'Discentes com matrícula ativa na turma';
   } else if (form.tipoAlvo === 'CURSO') {
     form.publicosPermitidos = ['DISCENTES', 'DOCENTES'];
     form.tipoPublico = 'TODOS';
     form.restringirVinculoCampus = true;
-    form.publicoAlvo = 'Discentes e Docentes vinculados ao Curso';
   } else if (form.tipoAlvo === 'SETOR') {
     form.publicosPermitidos = ['DISCENTES', 'DOCENTES', 'TAES'];
     form.tipoPublico = 'TODOS';
     form.restringirVinculoCampus = true;
-    form.publicoAlvo = 'Comunidade acadêmica atendida pelo setor';
   } else {
     form.publicosPermitidos = ['TODOS'];
     form.tipoPublico = 'TODOS';
     form.restringirVinculoCampus = false;
-    form.publicoAlvo = 'Toda a Comunidade Acadêmica Institucional';
   }
 }
 
@@ -368,7 +362,6 @@ function iniciarNovoQuestionario() {
     periodoLetivo: '',
     dataInicio: `${new Date().toISOString().substring(0, 10)}T08:00`,
     dataTermino: `${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10)}T23:59`,
-    publicoAlvo: '',
     anonimo: true,
     gruposAutoavaliacaoDiscente: [],
     gruposAvaliacaoDocente: [],
@@ -1186,24 +1179,15 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
           <p class="text-[11px] text-slate-400">Define permissão e credencial necessária para acessar.</p>
         </div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700">Texto Informativo de Público-Alvo:</label>
-          <input
-            v-model="form.publicoAlvo"
-            type="text"
-            placeholder="Ex: Discentes com matrícula ativa nos Cursos Superiores do IFFar"
-            class="w-full text-xs p-3 border border-slate-200 rounded-xl"
-          />
-        </div>
-
-        <div class="space-y-1.5 flex flex-col justify-center">
-          <label class="text-xs font-bold text-slate-700 mb-1">Respostas Anonimas:</label>
-          <label class="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-800">
+        <div class="space-y-1.5 flex flex-col justify-center md:col-span-2">
+          <label class="text-xs font-bold text-slate-700 mb-1">Respostas Anônimas:</label>
+          <label class="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-slate-800">
             <input
               v-model="form.anonimo"
               type="checkbox"
               class="w-4 h-4 text-emerald-600 rounded-sm border-slate-300 focus:ring-emerald-500"
             />
+            <span class="text-xs text-slate-600">Não registrar a identificação nominal do respondente no instrumento</span>
           </label>
         </div>
       </div>

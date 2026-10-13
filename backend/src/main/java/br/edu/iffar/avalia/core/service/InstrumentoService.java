@@ -76,7 +76,6 @@ public class InstrumentoService {
         inst.setAnoCiclo(dto.getAnoCiclo() != null && !dto.getAnoCiclo().trim().isEmpty()
                 ? dto.getAnoCiclo()
                 : String.valueOf(java.time.Year.now().getValue()));
-        inst.setPublicoAlvo(dto.getPublicoAlvo());
         if (dto.getTipoAlvo() != null) {
             try {
                 inst.setTipoAlvo(TipoAlvoAvaliado.valueOf(dto.getTipoAlvo()));
@@ -349,7 +348,6 @@ public class InstrumentoService {
         dto.setSubtitulo(inst.getSubtitulo());
         dto.setModulo(inst.getModulo());
         dto.setAnoCiclo(inst.getAnoCiclo());
-        dto.setPublicoAlvo(inst.getPublicoAlvo());
         dto.setTipoAlvo(inst.getTipoAlvo() != null ? inst.getTipoAlvo().name() : "DOCENTE");
         dto.setTipoPublico(inst.getTipoPublico() != null ? inst.getTipoPublico().name() : "DISCENTES");
         dto.setRestringirVinculoCampus(inst.isRestringirVinculoCampus());

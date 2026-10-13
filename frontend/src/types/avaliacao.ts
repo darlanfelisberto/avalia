@@ -121,7 +121,6 @@ export interface InstrumentoAvaliativo {
   periodoLetivo: string;
   dataInicio?: string;
   dataTermino: string;
-  publicoAlvo?: string;
   anonimo: boolean;
   status?: string;
   gruposAutoavaliacaoDiscente: GrupoQuestoes[];

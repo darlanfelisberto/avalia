@@ -37,9 +37,6 @@ public class Instrumento {
     @Column(name = "data_termino", nullable = false)
     private OffsetDateTime dataTermino;
 
-    @Column(name = "publico_alvo")
-    private String publicoAlvo;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_alvo", nullable = false, length = 32)
     private TipoAlvoAvaliado tipoAlvo = TipoAlvoAvaliado.DOCENTE;
@@ -114,9 +111,6 @@ public class Instrumento {
 
     public OffsetDateTime getDataTermino() { return dataTermino; }
     public void setDataTermino(OffsetDateTime dataTermino) { this.dataTermino = dataTermino; }
-
-    public String getPublicoAlvo() { return publicoAlvo; }
-    public void setPublicoAlvo(String publicoAlvo) { this.publicoAlvo = publicoAlvo; }
 
     public TipoAlvoAvaliado getTipoAlvo() { return tipoAlvo; }
     public void setTipoAlvo(TipoAlvoAvaliado tipoAlvo) { this.tipoAlvo = tipoAlvo; }
