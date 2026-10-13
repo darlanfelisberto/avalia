@@ -3,12 +3,13 @@ import { salvarInstrumento, carregarInstrumentoAtivo } from './storage';
 
 const API_BASE = '/api/instrumentos';
 
-export async function listarInstrumentosApi(): Promise<InstrumentoAvaliativo[]> {
+export async function listarInstrumentosApi(criadorId?: string): Promise<InstrumentoAvaliativo[]> {
   try {
-    const res = await fetch(API_BASE);
+    const url = criadorId ? `${API_BASE}?criadorId=${encodeURIComponent(criadorId)}` : API_BASE;
+    const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         return data;
       }
     }

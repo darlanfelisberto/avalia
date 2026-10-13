@@ -141,6 +141,11 @@ function testarNoRespondente() {
   estado.etapaAtual = 'autoavaliacao';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+function onUsuarioAlterado() {
+  // Sincroniza estado geral se o perfil de usuario mudar
+  statusSalvamento.value = 'salvo';
+}
 </script>
 
 <template>
@@ -162,6 +167,7 @@ function testarNoRespondente() {
         :respostasConcluidas="respostasConcluidas"
         :totalQuestoesObrigatorias="totalQuestoesObrigatorias"
         @abrirMenuMobile="menuAbertoMobile = true"
+        @usuarioAlterado="onUsuarioAlterado"
       />
 
       <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8">

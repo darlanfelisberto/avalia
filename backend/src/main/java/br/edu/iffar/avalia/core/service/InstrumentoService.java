@@ -23,12 +23,19 @@ public class InstrumentoService {
 
     private final Jsonb jsonb = JsonbBuilder.create();
 
-    public List<InstrumentoDTO> listarTodos() {
-        List<Instrumento> instrumentos = em.createQuery(
-                "SELECT DISTINCT i FROM Instrumento i LEFT JOIN FETCH i.grupos ORDER BY i.createdAt DESC",
-                Instrumento.class
-        ).getResultList();
+    public List<InstrumentoDTO> listarTodos(String criadorId) {
+        String jpql = "SELECT DISTINCT i FROM Instrumento i LEFT JOIN FETCH i.grupos ";
+        if (criadorId != null && !criadorId.trim().isEmpty()) {
+            jpql += "WHERE i.criadorId = :criadorId ";
+        }
+        jpql += "ORDER BY i.createdAt DESC";
 
+        var query = em.createQuery(jpql, Instrumento.class);
+        if (criadorId != null && !criadorId.trim().isEmpty()) {
+            query.setParameter("criadorId", criadorId);
+        }
+
+        List<Instrumento> instrumentos = query.getResultList();
         List<InstrumentoDTO> resultado = new ArrayList<>();
         for (Instrumento inst : instrumentos) {
             resultado.add(converterParaDTO(inst));
@@ -78,6 +85,12 @@ public class InstrumentoService {
             }
         }
         inst.setAlvoEspecificoId(dto.getAlvoEspecificoId());
+        if (dto.getCriadorId() != null && !dto.getCriadorId().trim().isEmpty()) {
+            inst.setCriadorId(dto.getCriadorId());
+        }
+        if (dto.getCriadorNome() != null && !dto.getCriadorNome().trim().isEmpty()) {
+            inst.setCriadorNome(dto.getCriadorNome());
+        }
         inst.setAnonimo(dto.isAnonimo());
         inst.setStatus(dto.getStatus() != null ? dto.getStatus() : "ABERTO");
         inst.setUpdatedAt(OffsetDateTime.now());
@@ -192,6 +205,8 @@ public class InstrumentoService {
         dto.setTipoAlvo(inst.getTipoAlvo() != null ? inst.getTipoAlvo().name() : "DOCENTE");
         dto.setTipoPublico(inst.getTipoPublico() != null ? inst.getTipoPublico().name() : "DISCENTES");
         dto.setAlvoEspecificoId(inst.getAlvoEspecificoId());
+        dto.setCriadorId(inst.getCriadorId());
+        dto.setCriadorNome(inst.getCriadorNome());
         dto.setAnonimo(inst.isAnonimo());
         dto.setStatus(inst.getStatus());
 

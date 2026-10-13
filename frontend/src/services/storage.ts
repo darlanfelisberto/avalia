@@ -105,3 +105,53 @@ export function resetarInstrumentoParaPadrao(): InstrumentoAvaliativo {
   return JSON.parse(JSON.stringify(instrumentoADPDMock));
 }
 
+// --- Usuário Ativo Simulado (para vincular aos questionários) ---
+
+const STORAGE_KEY_USUARIO = 'iffar_avalia_usuario_ativo';
+
+export const USUARIOS_SIMULADOS = [
+  {
+    id: 'usr-cpa-cain',
+    nome: 'Comissão Própria de Avaliação (CPA / CAIN)',
+    papel: 'CPA' as const,
+    campus: 'Reitoria'
+  },
+  {
+    id: 'usr-doc-roberto',
+    nome: 'Prof. Dr. Roberto Alencar',
+    papel: 'DOCENTE' as const,
+    campus: 'Alegrete'
+  },
+  {
+    id: 'usr-doc-mariana',
+    nome: 'Profa. Dra. Mariana Silveira',
+    papel: 'DOCENTE' as const,
+    campus: 'Alegrete'
+  },
+  {
+    id: 'usr-coord-ads',
+    nome: 'Coordenação TADS',
+    papel: 'GESTAO' as const,
+    campus: 'Alegrete'
+  }
+];
+
+export function carregarUsuarioAtivo() {
+  try {
+    const salvo = localStorage.getItem(STORAGE_KEY_USUARIO);
+    if (salvo) return JSON.parse(salvo);
+  } catch (e) {
+    console.warn('Erro ao carregar usuário ativo', e);
+  }
+  return USUARIOS_SIMULADOS[0];
+}
+
+export function salvarUsuarioAtivo(usuario: any) {
+  try {
+    localStorage.setItem(STORAGE_KEY_USUARIO, JSON.stringify(usuario));
+  } catch (e) {
+    console.error('Erro ao salvar usuário ativo', e);
+  }
+}
+
+

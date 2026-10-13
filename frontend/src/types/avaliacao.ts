@@ -62,6 +62,13 @@ export interface PublicoAvaliador {
   createdAt?: string;
 }
 
+export interface UsuarioContexto {
+  id: string;
+  nome: string;
+  papel: 'CPA' | 'DOCENTE' | 'DISCENTE' | 'GESTAO';
+  campus: string;
+}
+
 export interface InstrumentoAvaliativo {
   id: string;
   titulo: string;
@@ -70,12 +77,15 @@ export interface InstrumentoAvaliativo {
   tipoAlvo: TipoAlvoAvaliado;
   tipoPublico: TipoPublicoAvaliador;
   alvoEspecificoId?: string;
+  criadorId?: string;
+  criadorNome?: string;
   anoCiclo: string;
   periodoLetivo: string;
   dataInicio?: string;
   dataTermino: string;
   publicoAlvo?: string;
   anonimo: boolean;
+  status?: string;
   gruposAutoavaliacaoDiscente: GrupoQuestoes[];
   gruposAvaliacaoDocente: GrupoQuestoes[];
   componentesMatriculados: ComponenteCurricular[];

@@ -17,6 +17,8 @@ public class InstrumentoDTO {
     private String tipoAlvo = "DOCENTE";
     private String tipoPublico = "DISCENTES";
     private String alvoEspecificoId;
+    private String criadorId = "usr-cpa-cain";
+    private String criadorNome = "Comissão Própria de Avaliação (CPA)";
     private boolean anonimo;
     private String status;
     private List<GrupoDTO> gruposAutoavaliacaoDiscente = new ArrayList<>();
@@ -60,6 +62,12 @@ public class InstrumentoDTO {
 
     public String getAlvoEspecificoId() { return alvoEspecificoId; }
     public void setAlvoEspecificoId(String alvoEspecificoId) { this.alvoEspecificoId = alvoEspecificoId; }
+
+    public String getCriadorId() { return criadorId; }
+    public void setCriadorId(String criadorId) { this.criadorId = criadorId; }
+
+    public String getCriadorNome() { return criadorNome; }
+    public void setCriadorNome(String criadorNome) { this.criadorNome = criadorNome; }
 
     public boolean isAnonimo() { return anonimo; }
     public void setAnonimo(boolean anonimo) { this.anonimo = anonimo; }

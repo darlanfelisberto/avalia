@@ -49,6 +49,12 @@ public class Instrumento {
     @Column(name = "alvo_especifico_id", length = 64)
     private String alvoEspecificoId;
 
+    @Column(name = "criador_id", nullable = false, length = 64)
+    private String criadorId = "usr-cpa-cain";
+
+    @Column(name = "criador_nome", nullable = false)
+    private String criadorNome = "Comissão Própria de Avaliação (CPA)";
+
     @Column(name = "anonimo", nullable = false)
     private boolean anonimo = true;
 
@@ -106,6 +112,12 @@ public class Instrumento {
 
     public String getAlvoEspecificoId() { return alvoEspecificoId; }
     public void setAlvoEspecificoId(String alvoEspecificoId) { this.alvoEspecificoId = alvoEspecificoId; }
+
+    public String getCriadorId() { return criadorId; }
+    public void setCriadorId(String criadorId) { this.criadorId = criadorId; }
+
+    public String getCriadorNome() { return criadorNome; }
+    public void setCriadorNome(String criadorNome) { this.criadorNome = criadorNome; }
 
     public boolean isAnonimo() { return anonimo; }
     public void setAnonimo(boolean anonimo) { this.anonimo = anonimo; }

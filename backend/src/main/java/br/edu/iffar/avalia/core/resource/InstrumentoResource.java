@@ -18,8 +18,8 @@ public class InstrumentoResource {
     private InstrumentoService instrumentoService;
 
     @GET
-    public Response listarTodos() {
-        List<InstrumentoDTO> lista = instrumentoService.listarTodos();
+    public Response listarTodos(@QueryParam("criadorId") String criadorId) {
+        List<InstrumentoDTO> lista = instrumentoService.listarTodos(criadorId);
         return Response.ok(lista).build();
     }
 

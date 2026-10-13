@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import type { UsuarioContexto } from '../types/avaliacao';
+import { carregarUsuarioAtivo, salvarUsuarioAtivo, USUARIOS_SIMULADOS } from '../services/storage';
 
 const props = defineProps<{
   visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica';
@@ -11,7 +13,25 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'abrirMenuMobile'): void;
+  (e: 'usuarioAlterado', usuario: UsuarioContexto): void;
 }>();
+
+const usuarioAtivo = ref<UsuarioContexto>(carregarUsuarioAtivo());
+const listaUsuarios = USUARIOS_SIMULADOS as UsuarioContexto[];
+
+function trocarUsuario(novo: UsuarioContexto) {
+  usuarioAtivo.value = novo;
+  salvarUsuarioAtivo(novo);
+  emit('usuarioAlterado', novo);
+}
+
+function aoMudarUsuario(e: Event) {
+  const target = e.target as HTMLSelectElement;
+  const encontrado = listaUsuarios.find(u => u.id === target.value);
+  if (encontrado) {
+    trocarUsuario(encontrado);
+  }
+}
 
 const tituloVisao = computed(() => {
   switch (props.visaoAtual) {
@@ -108,8 +128,26 @@ const percentual = computed(() => {
         </div>
       </div>
 
-      <!-- Indicador de Auto-Save e Progresso -->
-      <div class="flex items-center gap-4 shrink-0">
+      <!-- Usuário Ativo e Indicadores -->
+      <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+        <!-- Seletor Rápido de Usuário (Simulação de Autenticação) -->
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1.5">
+          <span class="text-base">👤</span>
+          <div class="flex flex-col text-left">
+            <span class="text-[9px] uppercase tracking-wider font-bold text-slate-400">Usuário Ativo:</span>
+            <select
+              :value="usuarioAtivo.id"
+              @change="aoMudarUsuario"
+              class="bg-transparent font-bold text-xs text-slate-800 outline-hidden cursor-pointer"
+            >
+              <option v-for="u in listaUsuarios" :key="u.id" :value="u.id">
+                {{ u.nome }} ({{ u.papel }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Indicador de Auto-Save e Progresso -->
         <div class="flex flex-col items-end">
           <div class="flex items-center gap-1.5 text-xs">
             <span v-if="statusSalvamento === 'salvando'" class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
@@ -117,7 +155,7 @@ const percentual = computed(() => {
             <span v-else class="inline-block w-2 h-2 rounded-full bg-rose-500"></span>
 
             <span class="font-medium text-slate-700 text-[11px] md:text-xs">
-              {{ statusSalvamento === 'salvando' ? 'Salvando...' : 'Salvo automaticamente' }}
+              {{ statusSalvamento === 'salvando' ? 'Salvando...' : 'Salvo' }}
             </span>
           </div>
           <span class="text-[10px] text-slate-400" v-if="ultimaSalvaHora">
