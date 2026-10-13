@@ -1,0 +1,36 @@
+<server description="IFFar AVALIA Core Engine">
+
+    <featureManager>
+        <feature>restfulWS-4.0</feature>
+        <feature>cdi-4.1</feature>
+        <feature>jsonb-3.0</feature>
+        <feature>jsonp-2.1</feature>
+        <feature>validation-3.1</feature>
+        <feature>jdbc-4.3</feature>
+        <feature>persistence-3.2</feature>
+    </featureManager>
+
+    <variable name="APP_DB_USER" defaultValue="postgres"/>
+    <variable name="APP_DB_PASSWORD" defaultValue="postgres"/>
+
+    <httpEndpoint id="defaultHttpEndpoint"
+                  httpPort="${default.http.port}"
+                  httpsPort="${default.https.port}"/>
+
+    <webApplication location="avalia.war" contextRoot="/">
+    </webApplication>
+
+    <!-- Driver JDBC PostgreSQL -->
+    <library id="postgresqlLib">
+        <fileset dir="${server.config.dir}/lib/global" includes="postgresql-*.jar"/>
+    </library>
+
+    <!-- DataSource oficial do AVALIA -->
+    <dataSource id="AvaliaDataSource" jndiName="jdbc/avaliaDS">
+        <jdbcDriver libraryRef="postgresqlLib"/>
+        <properties.postgresql serverName="localhost" portNumber="5432"
+                                databaseName="avalia"
+                                user="${APP_DB_USER}" password="${APP_DB_PASSWORD}"/>
+    </dataSource>
+
+</server>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>br.edu.iffar.avalia</groupId>
+    <artifactId>avalia-backend</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>war</packaging>
+
+    <name>IFFar AVALIA (Core Backend)</name>
+    <description>Núcleo Genérico de Avaliação Institucional - Open Liberty / Jakarta EE</description>
+
+    <properties>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <failOnMissingWebXml>false</failOnMissingWebXml>
+
+        <version.jakartaee-api>11.0.0</version.jakartaee-api>
+        <version.liberty-maven-plugin>3.12.3</version.liberty-maven-plugin>
+        <version.flyway>10.20.1</version.flyway>
+        <version.postgresql>42.7.4</version.postgresql>
+
+        <liberty.var.default.http.port>9080</liberty.var.default.http.port>
+        <liberty.var.default.https.port>9443</liberty.var.default.https.port>
+    </properties>
+
+    <dependencies>
+        <!-- Jakarta EE 11 Web Profile: JAX-RS, CDI, JSON-B, JPA, Bean Validation -->
+        <dependency>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-web-api</artifactId>
+            <version>${version.jakartaee-api}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+            <version>2.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Driver JDBC PostgreSQL copiado para lib/global no servidor Liberty -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${version.postgresql}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Flyway para migrações automáticas de schema -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${version.flyway}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>${version.flyway}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>avalia</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+            </plugin>
+
+            <!-- Liberty Maven Plugin (mvn liberty:dev / liberty:run) -->
+            <plugin>
+                <groupId>io.openliberty.tools</groupId>
+                <artifactId>liberty-maven-plugin</artifactId>
+                <version>${version.liberty-maven-plugin}</version>
+                <configuration>
+                    <copyDependencies>
+                        <dependencyGroup>
+                            <location>lib/global</location>
+                            <dependency>
+                                <groupId>org.postgresql</groupId>
+                                <artifactId>postgresql</artifactId>
+                            </dependency>
+                        </dependencyGroup>
+                    </copyDependencies>
+                </configuration>
+            </plugin>
+
+            <!-- Plugin Flyway para migrações diretas via Maven -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>${version.flyway}</version>
+                <configuration>
+                    <url>jdbc:postgresql://localhost:5432/avalia</url>
+                    <user>postgres</user>
+                    <password>postgres</password>
+                    <locations>
+                        <location>classpath:db/migration</location>
+                    </locations>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>${version.postgresql}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-database-postgresql</artifactId>
+                        <version>${version.flyway}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+</project>
