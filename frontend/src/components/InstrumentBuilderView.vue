@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, watch } from 'vue';
 import type {
   InstrumentoAvaliativo,
   GrupoQuestoes,
@@ -19,8 +19,27 @@ const emit = defineEmits<{
   (e: 'testarNoRespondente'): void;
 }>();
 
+function normalizarInstrumento(inst: InstrumentoAvaliativo): InstrumentoAvaliativo {
+  const copia = JSON.parse(JSON.stringify(inst || {}));
+  if (!copia.gruposAutoavaliacaoDiscente) copia.gruposAutoavaliacaoDiscente = [];
+  if (!copia.gruposAvaliacaoDocente) copia.gruposAvaliacaoDocente = [];
+  if (!copia.componentesMatriculados) copia.componentesMatriculados = [];
+  return copia;
+}
+
 // Cópia reativa para edição do instrumento
-const form = reactive<InstrumentoAvaliativo>(JSON.parse(JSON.stringify(props.instrumento)));
+const form = reactive<InstrumentoAvaliativo>(normalizarInstrumento(props.instrumento));
+
+// Sincronizar form sempre que o instrumento recebido nas props mudar
+watch(
+  () => props.instrumento,
+  (novo) => {
+    if (novo) {
+      Object.assign(form, normalizarInstrumento(novo));
+    }
+  },
+  { deep: true }
+);
 
 // Aba de edição ativa: grupos de autoavaliação ou grupos de avaliação docente
 const abaAtiva = ref<'autoavaliacao' | 'docentes' | 'disciplinas'>('docentes');
@@ -349,7 +368,7 @@ function removerDisciplina(index: number) {
               abaAtiva === 'docentes' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             ]"
           >
-            Avaliação Docente ({{ form.gruposAvaliacaoDocente.length }} grupos)
+            Avaliação Docente ({{ form.gruposAvaliacaoDocente?.length || 0 }} grupos)
           </button>
 
           <button
@@ -360,7 +379,7 @@ function removerDisciplina(index: number) {
               abaAtiva === 'autoavaliacao' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             ]"
           >
-            Autoavaliação Discente ({{ form.gruposAutoavaliacaoDiscente.length }} grupos)
+            Autoavaliação Discente ({{ form.gruposAutoavaliacaoDiscente?.length || 0 }} grupos)
           </button>
 
           <button
@@ -371,7 +390,7 @@ function removerDisciplina(index: number) {
               abaAtiva === 'disciplinas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             ]"
           >
-            Disciplinas / Turmas ({{ form.componentesMatriculados.length }})
+            Disciplinas / Turmas ({{ form.componentesMatriculados?.length || 0 }})
           </button>
         </div>
       </div>

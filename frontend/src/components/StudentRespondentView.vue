@@ -14,11 +14,21 @@ const emit = defineEmits<{
   (e: 'concluirEnvio'): void;
 }>();
 
-// Disciplina ativa na etapa de avaliação dos docentes
-const componenteAtivo = computed(() => {
-  return props.instrumento.componentesMatriculados.find(c => c.id === props.estado.componenteAtivoId)
-    || props.instrumento.componentesMatriculados[0];
+// Coleções protegidas
+const componentes = computed(() => props.instrumento?.componentesMatriculados || []);
+const temComponentes = computed(() => componentes.value.length > 0);
+
+const componenteAtivo = computed<ComponenteCurricular | null>(() => {
+  if (!temComponentes.value) return null;
+  return componentes.value.find(c => c.id === props.estado?.componenteAtivoId)
+    || componentes.value[0] || null;
 });
+
+const gruposAuto = computed(() => props.instrumento?.gruposAutoavaliacaoDiscente || []);
+const gruposDocente = computed(() => props.instrumento?.gruposAvaliacaoDocente || []);
+
+const temAutoavaliacao = computed(() => gruposAuto.value.length > 0);
+const temAvaliacaoDocente = computed(() => gruposDocente.value.length > 0);
 
 // Chave auxiliar para buscar resposta no mapa
 function getChaveResposta(questaoId: string, compId?: string): string {
@@ -27,6 +37,7 @@ function getChaveResposta(questaoId: string, compId?: string): string {
 
 // Obter valor atual de uma resposta
 function getRespostaAtual(questaoId: string, compId?: string): RespostaItem | undefined {
+  if (!props.estado?.respostas) return undefined;
   return props.estado.respostas[getChaveResposta(questaoId, compId)];
 }
 
@@ -60,8 +71,8 @@ function setTextoLivre(questaoId: string, texto: string, compId?: string) {
 
 // Verifica se um componente curricular específico já teve todas as questões obrigatórias preenchidas
 function componenteCompleto(comp: ComponenteCurricular): boolean {
-  for (const grupo of props.instrumento.gruposAvaliacaoDocente) {
-    for (const q of grupo.questoes) {
+  for (const grupo of gruposDocente.value) {
+    for (const q of (grupo.questoes || [])) {
       if (q.obrigatoria) {
         const resp = getRespostaAtual(q.id, comp.id);
         if (!resp || (resp.valorEscala === undefined && !resp.opcaoId)) {
@@ -75,8 +86,9 @@ function componenteCompleto(comp: ComponenteCurricular): boolean {
 
 // Verifica se a etapa de autoavaliação discente está completa
 const autoavaliacaoCompleta = computed(() => {
-  for (const grupo of props.instrumento.gruposAutoavaliacaoDiscente) {
-    for (const q of grupo.questoes) {
+  if (!temAutoavaliacao.value) return true;
+  for (const grupo of gruposAuto.value) {
+    for (const q of (grupo.questoes || [])) {
       if (q.obrigatoria) {
         const resp = getRespostaAtual(q.id);
         if (!resp || (resp.valorEscala === undefined && !resp.opcaoId)) {
@@ -90,11 +102,26 @@ const autoavaliacaoCompleta = computed(() => {
 
 // Total de disciplinas avaliadas
 const totalComponentesConcluidos = computed(() => {
-  return props.instrumento.componentesMatriculados.filter(c => componenteCompleto(c)).length;
+  if (!temComponentes.value) return 0;
+  return componentes.value.filter(c => componenteCompleto(c)).length;
 });
 
 const todasDisciplinasConcluidas = computed(() => {
-  return totalComponentesConcluidos.value === props.instrumento.componentesMatriculados.length;
+  if (!temComponentes.value) {
+    // Se não há componentes, verificar questões da etapa docente/geral
+    for (const grupo of gruposDocente.value) {
+      for (const q of (grupo.questoes || [])) {
+        if (q.obrigatoria) {
+          const resp = getRespostaAtual(q.id);
+          if (!resp || (resp.valorEscala === undefined && !resp.opcaoId)) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+  return totalComponentesConcluidos.value === componentes.value.length;
 });
 </script>
 
@@ -117,7 +144,7 @@ const todasDisciplinasConcluidas = computed(() => {
 
     <!-- Navegador de Etapas do Instrumento -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <!-- Card Etapa 1 -->
+      <!-- Card Etapa 1: Autoavaliação -->
       <button
         type="button"
         @click="emit('mudarEtapa', 'autoavaliacao')"
@@ -139,7 +166,9 @@ const todasDisciplinasConcluidas = computed(() => {
           </div>
           <div>
             <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Etapa 1</div>
-            <div class="text-sm font-bold text-slate-900">Autoavaliação do Estudante</div>
+            <div class="text-sm font-bold text-slate-900">
+              {{ temAutoavaliacao ? 'Autoavaliação do Estudante' : 'Informações Gerais' }}
+            </div>
           </div>
         </div>
         <span
@@ -152,7 +181,7 @@ const todasDisciplinasConcluidas = computed(() => {
         </span>
       </button>
 
-      <!-- Card Etapa 2 -->
+      <!-- Card Etapa 2: Avaliação Docente / Geral -->
       <button
         type="button"
         @click="emit('mudarEtapa', 'docentes')"
@@ -174,7 +203,9 @@ const todasDisciplinasConcluidas = computed(() => {
           </div>
           <div>
             <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Etapa 2</div>
-            <div class="text-sm font-bold text-slate-900">Avaliação Docente por Disciplina</div>
+            <div class="text-sm font-bold text-slate-900">
+              {{ temComponentes ? 'Avaliação Docente por Disciplina' : (temAvaliacaoDocente ? 'Avaliação dos Docentes' : 'Dimensões Avaliativas') }}
+            </div>
           </div>
         </div>
         <span
@@ -183,15 +214,31 @@ const todasDisciplinasConcluidas = computed(() => {
             todasDisciplinasConcluidas ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
           ]"
         >
-          {{ totalComponentesConcluidos }}/{{ instrumento.componentesMatriculados.length }} avaliados
+          <span v-if="temComponentes">
+            {{ totalComponentesConcluidos }}/{{ componentes.length }} avaliados
+          </span>
+          <span v-else>
+            {{ todasDisciplinasConcluidas ? 'Concluída' : 'Pendente' }}
+          </span>
         </span>
       </button>
     </div>
 
     <!-- CONTEÚDO DA ETAPA 1: Autoavaliação do Estudante -->
     <section v-if="estado.etapaAtual === 'autoavaliacao'" class="space-y-6">
+      <div v-if="!temAutoavaliacao" class="bg-white border border-slate-200 rounded-2xl p-6 text-center text-xs text-slate-500 space-y-3">
+        <p>Este instrumento não possui grupo de autoavaliação específico cadastrado.</p>
+        <button
+          type="button"
+          @click="emit('mudarEtapa', 'docentes')"
+          class="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs hover:bg-emerald-700"
+        >
+          Ir para as Questões Principais →
+        </button>
+      </div>
+
       <div
-        v-for="grupo in instrumento.gruposAutoavaliacaoDiscente"
+        v-for="grupo in gruposAuto"
         :key="grupo.id"
         class="bg-white border border-slate-200 rounded-2xl p-5 md:p-7 shadow-xs space-y-6"
       >
@@ -202,7 +249,7 @@ const todasDisciplinasConcluidas = computed(() => {
 
         <div class="space-y-8">
           <div
-            v-for="(questao, qIndex) in grupo.questoes"
+            v-for="(questao, qIndex) in (grupo.questoes || [])"
             :key="questao.id"
             class="space-y-3"
           >
@@ -285,16 +332,16 @@ const todasDisciplinasConcluidas = computed(() => {
       </div>
     </section>
 
-    <!-- CONTEÚDO DA ETAPA 2: Avaliação Docente pelo Discente (RF-AD02) -->
+    <!-- CONTEÚDO DA ETAPA 2: Avaliação Docente / Geral -->
     <section v-else-if="estado.etapaAtual === 'docentes'" class="space-y-6">
-      <!-- Seletor de Disciplina Cursada (Chips/Tabs horizontais) -->
-      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+      <!-- Seletor de Disciplina Cursada (só exibe se tiver componentes!) -->
+      <div v-if="temComponentes" class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
         <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">
           Selecione a disciplina para responder:
         </div>
         <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
           <button
-            v-for="comp in instrumento.componentesMatriculados"
+            v-for="comp in componentes"
             :key="comp.id"
             type="button"
             @click="emit('mudarComponente', comp.id)"
@@ -321,8 +368,11 @@ const todasDisciplinasConcluidas = computed(() => {
         </div>
       </div>
 
-      <!-- Informações da Disciplina e Docente Selecionado -->
-      <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+      <!-- Informações da Disciplina ou Instrumento Geral -->
+      <div
+        v-if="temComponentes && componenteAtivo"
+        class="bg-slate-900 text-white rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row justify-between sm:items-center gap-3"
+      >
         <div>
           <div class="text-xs uppercase tracking-wider text-emerald-400 font-semibold font-mono">
             {{ componenteAtivo.codigo }} • {{ componenteAtivo.turma }}
@@ -334,13 +384,29 @@ const todasDisciplinasConcluidas = computed(() => {
           </p>
         </div>
         <div class="text-xs bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300 self-start sm:self-auto">
-          Componente {{ instrumento.componentesMatriculados.indexOf(componenteAtivo) + 1 }} de {{ instrumento.componentesMatriculados.length }}
+          Componente {{ componentes.indexOf(componenteAtivo) + 1 }} de {{ componentes.length }}
+        </div>
+      </div>
+      <div
+        v-else
+        class="bg-slate-900 text-white rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row justify-between sm:items-center gap-3"
+      >
+        <div>
+          <div class="text-xs uppercase tracking-wider text-emerald-400 font-semibold font-mono">
+            {{ instrumento.modulo || 'AVALIAÇÃO' }} • {{ instrumento.anoCiclo }}
+          </div>
+          <h3 class="text-lg font-bold mt-0.5">{{ instrumento.titulo }}</h3>
+          <p class="text-xs text-slate-300 mt-1">{{ instrumento.subtitulo || 'Instrumento Institucional' }}</p>
         </div>
       </div>
 
-      <!-- Grupos de Questões da Avaliação Docente -->
+      <!-- Grupos de Questões -->
+      <div v-if="gruposDocente.length === 0" class="bg-white border border-slate-200 rounded-2xl p-8 text-center text-xs text-slate-500">
+        Nenhum grupo de questões configurado nesta seção.
+      </div>
+
       <div
-        v-for="grupo in instrumento.gruposAvaliacaoDocente"
+        v-for="grupo in gruposDocente"
         :key="grupo.id"
         class="bg-white border border-slate-200 rounded-2xl p-5 md:p-7 shadow-xs space-y-6"
       >
@@ -351,7 +417,7 @@ const todasDisciplinasConcluidas = computed(() => {
 
         <div class="space-y-7">
           <div
-            v-for="(questao, qIndex) in grupo.questoes"
+            v-for="(questao, qIndex) in (grupo.questoes || [])"
             :key="questao.id"
             class="space-y-3"
           >
@@ -368,10 +434,10 @@ const todasDisciplinasConcluidas = computed(() => {
                   v-for="valor in 5"
                   :key="valor"
                   type="button"
-                  @click="setValorEscala(questao.id, valor, componenteAtivo.id)"
+                  @click="setValorEscala(questao.id, valor, componenteAtivo?.id)"
                   :class="[
                     'py-3.5 px-2 rounded-xl text-center font-bold text-base transition-all duration-150 border',
-                    getRespostaAtual(questao.id, componenteAtivo.id)?.valorEscala === valor
+                    getRespostaAtual(questao.id, componenteAtivo?.id)?.valorEscala === valor
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/30 scale-102'
                       : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
                   ]"
@@ -385,11 +451,11 @@ const todasDisciplinasConcluidas = computed(() => {
               </div>
             </div>
 
-            <!-- Campo Aberto (Texto Livre / Comentários construtivos) -->
+            <!-- Campo Aberto (Texto Livre) -->
             <div v-else-if="questao.tipo === 'TEXTO_LIVRE'" class="space-y-1.5">
               <textarea
-                :value="getRespostaAtual(questao.id, componenteAtivo.id)?.textoLivre || ''"
-                @input="setTextoLivre(questao.id, ($event.target as HTMLTextAreaElement).value, componenteAtivo.id)"
+                :value="getRespostaAtual(questao.id, componenteAtivo?.id)?.textoLivre || ''"
+                @input="setTextoLivre(questao.id, ($event.target as HTMLTextAreaElement).value, componenteAtivo?.id)"
                 rows="3"
                 placeholder="Escreva aqui suas considerações para o docente (opcional e mantido sigilo total)..."
                 class="w-full text-xs md:text-sm p-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-hidden transition-all bg-slate-50/50 hover:bg-white"
@@ -415,10 +481,10 @@ const todasDisciplinasConcluidas = computed(() => {
 
         <div class="flex gap-3 w-full sm:w-auto">
           <button
-            v-if="!todasDisciplinasConcluidas"
+            v-if="temComponentes && !todasDisciplinasConcluidas"
             type="button"
             @click="() => {
-              const proxima = instrumento.componentesMatriculados.find(c => !componenteCompleto(c));
+              const proxima = componentes.find(c => !componenteCompleto(c));
               if (proxima) emit('mudarComponente', proxima.id);
             }"
             class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white font-medium px-5 py-3 rounded-xl text-sm transition-all"
@@ -439,7 +505,7 @@ const todasDisciplinasConcluidas = computed(() => {
       </div>
     </section>
 
-    <!-- TELA DE CONCLUSÃO / SUCESSO DO ENVIO (RF07: Edição permitida durante o período) -->
+    <!-- TELA DE CONCLUSÃO / SUCESSO DO ENVIO -->
     <section v-else-if="estado.etapaAtual === 'finalizacao'" class="bg-white border border-emerald-200 rounded-2xl p-6 md:p-10 text-center space-y-5 shadow-xs">
       <div class="w-16 h-16 bg-emerald-100 text-emerald-700 text-3xl font-bold rounded-full flex items-center justify-center mx-auto shadow-inner">
         ✓
@@ -458,7 +524,7 @@ const todasDisciplinasConcluidas = computed(() => {
           <span class="text-emerald-700 font-mono">HASH-{{ Date.now().toString(36).toUpperCase() }}</span>
         </div>
         <div><strong>Ciclo:</strong> {{ instrumento.anoCiclo }} - {{ instrumento.titulo }}</div>
-        <div><strong>Disciplinas avaliadas:</strong> {{ instrumento.componentesMatriculados.length }}</div>
+        <div><strong>Disciplinas avaliadas:</strong> {{ componentes.length }}</div>
         <div><strong>Data e Hora:</strong> {{ new Date(estado.ultimaModificacao).toLocaleString('pt-BR') }}</div>
       </div>
 

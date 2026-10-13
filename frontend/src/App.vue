@@ -21,12 +21,17 @@ const menuAbertoMobile = ref(false);
 onMounted(async () => {
   const lista = await listarInstrumentosApi();
   if (lista && lista.length > 0) {
-    instrumento.value = lista[0];
+    // Dá preferência ao instrumento com dados completos de disciplinas/questões (ADPD) ou primeiro
+    const adpd = lista.find(i => i.id === 'inst-adpd-2026-1');
+    const escolhido = adpd || lista[0];
+    instrumento.value = escolhido;
+    const novoEstado = carregarEstadoPreenchimento(escolhido.id, escolhido.componentesMatriculados?.[0]?.id || '');
+    Object.assign(estado, novoEstado);
   }
 });
 
 const estado = reactive<EstadoPreenchimento>(
-  carregarEstadoPreenchimento(instrumento.value.id, instrumento.value.componentesMatriculados[0]?.id || '')
+  carregarEstadoPreenchimento(instrumento.value.id, instrumento.value.componentesMatriculados?.[0]?.id || '')
 );
 
 const statusSalvamento = ref<'salvo' | 'salvando' | 'erro'>('salvo');
