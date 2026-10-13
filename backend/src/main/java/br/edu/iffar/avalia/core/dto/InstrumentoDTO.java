@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class InstrumentoDTO {
-    private UUID id;
+    private UUID instrumentoId;
     private String titulo;
     private String subtitulo;
     private ModuloAvaliacao modulo;
@@ -31,8 +31,11 @@ public class InstrumentoDTO {
 
     public InstrumentoDTO() {}
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public UUID getInstrumentoId() { return instrumentoId; }
+    public void setInstrumentoId(UUID instrumentoId) { this.instrumentoId = instrumentoId; }
+
+    public UUID getId() { return instrumentoId; }
+    public void setId(UUID id) { this.instrumentoId = id; }
 
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }

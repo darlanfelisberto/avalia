@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class GrupoDTO {
-    private UUID id;
+    private UUID grupoQuestoesId;
     private String titulo;
     private String descricao;
     private String secao;
@@ -13,8 +13,11 @@ public class GrupoDTO {
 
     public GrupoDTO() {}
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public UUID getGrupoQuestoesId() { return grupoQuestoesId; }
+    public void setGrupoQuestoesId(UUID grupoQuestoesId) { this.grupoQuestoesId = grupoQuestoesId; }
+
+    public UUID getId() { return grupoQuestoesId; }
+    public void setId(UUID id) { this.grupoQuestoesId = id; }
 
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }

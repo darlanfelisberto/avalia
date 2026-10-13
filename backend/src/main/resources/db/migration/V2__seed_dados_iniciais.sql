@@ -3,17 +3,17 @@
 -- =========================================================================
 
 -- 1. Povoamento de Públicos Avaliadores
-INSERT INTO publico_avaliador (id, segmento, nome, descricao, exige_autenticacao, ativo) VALUES
+INSERT INTO publico_avaliador (publico_avaliador_id, segmento, nome, descricao, exige_autenticacao, ativo) VALUES
 ('00000000-0000-0000-0001-000000000001', 'DISCENTE', 'Discentes Matriculados', 'Alunos com matrícula ativa em cursos FIC, Técnicos, Graduação e Pós-Graduação', TRUE, TRUE),
 ('00000000-0000-0000-0001-000000000002', 'DOCENTE', 'Corpo Docente', 'Professores efetivos, substitutos e temporários do quadro do IFFar', TRUE, TRUE),
 ('00000000-0000-0000-0001-000000000003', 'TAE', 'Técnicos-Administrativos em Educação (TAEs)', 'Servidores técnicos de todos os campi e reitoria', TRUE, TRUE),
 ('00000000-0000-0000-0001-000000000004', 'EGRESSO', 'Egressos e Ex-alunos', 'Formandos dos cursos do IFFar nos últimos anos', FALSE, TRUE),
 ('00000000-0000-0000-0001-000000000005', 'SOCIEDADE_CIVIL', 'Sociedade Civil e Comunidade Externa', 'Representantes da comunidade regional assistida pelo IFFar', FALSE, TRUE),
 ('00000000-0000-0000-0001-000000000006', 'TODOS', 'Toda a Comunidade Acadêmica', 'Discentes, Docentes, TAEs e Comunidade Externa integrados (SINAES)', FALSE, TRUE)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (publico_avaliador_id) DO NOTHING;
 
 -- 2. Povoamento de Alvos Avaliativos (Instituição, Campi, Setores, Docentes, Cursos, Turmas)
-INSERT INTO alvo_avaliado (id, tipo, nome, codigo, descricao, campus, ativo) VALUES
+INSERT INTO alvo_avaliado (alvo_avaliado_id, tipo, nome, codigo, descricao, campus, ativo) VALUES
 -- Instituição e Reitoria
 ('00000000-0000-0000-0002-000000000001', 'INSTITUICAO', 'Instituto Federal Farroupilha (Geral)', 'IFFAR-REI', 'Avaliação global do PDI, infraestrutura geral e gestão multicampi', 'Reitoria', TRUE),
 ('00000000-0000-0000-0002-000000000002', 'CAMPUS', 'Reitoria / Campus Santa Maria', 'IFFAR-SMA', 'Estrutura administrativa e acadêmica central', 'Santa Maria', TRUE),
@@ -51,11 +51,11 @@ INSERT INTO alvo_avaliado (id, tipo, nome, codigo, descricao, campus, ativo) VAL
 ('00000000-0000-0000-0002-000000000024', 'TURMA', 'Turma ADS-2026/1 - Banco de Dados Avançado', 'TURMA-ADS-BD', 'Turma presencial - 3º Semestre TADS', 'Panambi', TRUE),
 ('00000000-0000-0000-0002-000000000025', 'TURMA', 'Turma ADS-2026/1 - Redes e Sistemas Distribuídos', 'TURMA-ADS-REDES', 'Turma presencial - 4º Semestre TADS', 'Panambi', TRUE),
 ('00000000-0000-0000-0002-000000000026', 'TURMA', 'Turma AGRO-2026/1 - Manejo e Conservação do Solo', 'TURMA-AGRO-SOLOS', 'Turma 5º Semestre Agronomia', 'Alegrete', TRUE)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (alvo_avaliado_id) DO NOTHING;
 
 -- 3. Inserir Instrumento Inicial da ADPD 2026/1
 INSERT INTO instrumento (
-    id, titulo, subtitulo, modulo, ano_ciclo, periodo_letivo,
+    instrumento_id, titulo, subtitulo, modulo, ano_ciclo, periodo_letivo,
     data_inicio, data_termino, publico_alvo, tipo_alvo, tipo_publico, publicos_permitidos, restringir_vinculo_campus,
     criador_id, criador_nome, anonimo, status
 ) VALUES (
@@ -76,55 +76,55 @@ INSERT INTO instrumento (
     'Comissão Própria de Avaliação (CPA)',
     TRUE,
     'ABERTO'
-) ON CONFLICT (id) DO NOTHING;
+) ON CONFLICT (instrumento_id) DO NOTHING;
 
 -- 4. Inserir Componentes Curriculares da ADPD
-INSERT INTO componente_curricular (id, instrumento_id, codigo, nome, docente_nome, turma) VALUES
+INSERT INTO componente_curricular (componente_curricular_id, instrumento_id, codigo, nome, docente_nome, turma) VALUES
 ('00000000-0000-0000-0004-000000000001', '00000000-0000-0000-0003-000000000001', 'IFF-ADS-01', 'Arquitetura e Engenharia de Software', 'Prof. Dr. Roberto Alencar', 'ADS-2026'),
 ('00000000-0000-0000-0004-000000000002', '00000000-0000-0000-0003-000000000001', 'IFF-ADS-02', 'Banco de Dados Avançado', 'Profa. Dra. Mariana Silveira', 'ADS-2026'),
 ('00000000-0000-0000-0004-000000000003', '00000000-0000-0000-0003-000000000001', 'IFF-ADS-03', 'Redes e Sistemas Distribuídos', 'Prof. Me. Carlos Eduardo Lima', 'ADS-2026')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (componente_curricular_id) DO NOTHING;
 
 -- 5. Inserir Grupo 1: Autoavaliação do Estudante
-INSERT INTO grupo_questoes (id, instrumento_id, secao, titulo, descricao, ordem) VALUES
+INSERT INTO grupo_questoes (grupo_questoes_id, instrumento_id, secao, titulo, descricao, ordem) VALUES
 ('00000000-0000-0000-0005-000000000001', '00000000-0000-0000-0003-000000000001', 'AUTOAVALIACAO_DISCENTE', 'Etapa 1: Autoavaliação do Estudante',
  'Reflita sobre sua dedicação, pontualidade e engajamento nas atividades acadêmicas ao longo do semestre letivo.', 1)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (grupo_questoes_id) DO NOTHING;
 
 -- Inserir Questões do Grupo 1
-INSERT INTO questao (id, grupo_id, enunciado, tipo, obrigatoria, ordem, escala_min, escala_max, rotulo_min, rotulo_max, ajuda) VALUES
+INSERT INTO questao (questao_id, grupo_questoes_id, enunciado, tipo, obrigatoria, ordem, escala_min, escala_max, rotulo_min, rotulo_max, ajuda) VALUES
 ('00000000-0000-0000-0006-000000000001', '00000000-0000-0000-0005-000000000001', 'Mantive frequência regular, pontualidade e dedicação compatível com a carga horária das disciplinas cursadas.', 'ESCALA', TRUE, 1, 1, 5, '1 - Nunca / Raramente', '5 - Sempre / Plenamente', 'Considere presença em aulas presenciais e prazos de entregas.'),
 ('00000000-0000-0000-0006-000000000002', '00000000-0000-0000-0005-000000000001', 'Participei ativamente das aulas, esclarecendo dúvidas e colaborando com os colegas nos trabalhos em equipe.', 'ESCALA', TRUE, 2, 1, 5, '1 - Insatisfatório', '5 - Muito Participativo', NULL)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (questao_id) DO NOTHING;
 
-INSERT INTO questao (id, grupo_id, enunciado, tipo, obrigatoria, ordem) VALUES
+INSERT INTO questao (questao_id, grupo_questoes_id, enunciado, tipo, obrigatoria, ordem) VALUES
 ('00000000-0000-0000-0006-000000000003', '00000000-0000-0000-0005-000000000001', 'Utilizei os canais de atendimento extraclasse (monitoria, atendimento ao aluno) quando necessário.', 'ESCOLHA_UNICA', TRUE, 3)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (questao_id) DO NOTHING;
 
-INSERT INTO opcao_questao (id, questao_id, texto, ordem) VALUES
+INSERT INTO opcao_questao (opcao_questao_id, questao_id, texto, ordem) VALUES
 ('00000000-0000-0000-0007-000000000001', '00000000-0000-0000-0006-000000000003', 'Sim, utilizei com frequência', 0),
 ('00000000-0000-0000-0007-000000000002', '00000000-0000-0000-0006-000000000003', 'Ocasionalmente, quando tive dúvidas pontuais', 1),
 ('00000000-0000-0000-0007-000000000003', '00000000-0000-0000-0006-000000000003', 'Não senti necessidade', 2),
 ('00000000-0000-0000-0007-000000000004', '00000000-0000-0000-0006-000000000003', 'Tive dificuldades de horário para acessar', 3)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (opcao_questao_id) DO NOTHING;
 
 -- 6. Inserir Grupos da Avaliação Docente
-INSERT INTO grupo_questoes (id, instrumento_id, secao, titulo, descricao, ordem) VALUES
+INSERT INTO grupo_questoes (grupo_questoes_id, instrumento_id, secao, titulo, descricao, ordem) VALUES
 ('00000000-0000-0000-0005-000000000002', '00000000-0000-0000-0003-000000000001', 'AVALIACAO_DOCENTE', 'Dimensão Pedagógica e Prática Docente',
  'Avalie a condução da disciplina, planejamento, métodos de ensino e domínio do conteúdo pelo docente.', 2),
 ('00000000-0000-0000-0005-000000000003', '00000000-0000-0000-0003-000000000001', 'AVALIACAO_DOCENTE', 'Avaliação da Aprendizagem e Relação Dialógica',
  'Avalie a pontualidade na devolutiva das avaliações e a disponibilidade para esclarecimento de dúvidas.', 3)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (grupo_questoes_id) DO NOTHING;
 
 -- Inserir Questões da Dimensão Pedagógica
-INSERT INTO questao (id, grupo_id, enunciado, tipo, obrigatoria, ordem, escala_min, escala_max, rotulo_min, rotulo_max) VALUES
+INSERT INTO questao (questao_id, grupo_questoes_id, enunciado, tipo, obrigatoria, ordem, escala_min, escala_max, rotulo_min, rotulo_max) VALUES
 ('00000000-0000-0000-0006-000000000004', '00000000-0000-0000-0005-000000000002', 'O docente apresentou o plano de ensino (objetivos, metodologia e critérios de avaliação) no início das aulas.', 'ESCALA', TRUE, 1, 1, 5, '1 - Não apresentou', '5 - Apresentou com clareza'),
 ('00000000-0000-0000-0006-000000000005', '00000000-0000-0000-0005-000000000002', 'Demonstra domínio aprofundado dos conteúdos e relaciona a teoria com aplicações práticas relevantes.', 'ESCALA', TRUE, 2, 1, 5, '1 - Pouco domínio', '5 - Excelente domínio'),
 ('00000000-0000-0000-0006-000000000006', '00000000-0000-0000-0005-000000000002', 'Utiliza recursos e estratégias didáticas que facilitam a compreensão e incentivam o pensamento crítico.', 'ESCALA', TRUE, 3, 1, 5, '1 - Rígido / Pouco claro', '5 - Dinâmico e Eficaz'),
 ('00000000-0000-0000-0006-000000000007', '00000000-0000-0000-0005-000000000003', 'Fornece devolutivas (feedback) construtivas sobre as atividades e provas em tempo hábil para o aprendizado.', 'ESCALA', TRUE, 4, 1, 5, '1 - Sem devolutiva', '5 - Feedback pontual e detalhado'),
 ('00000000-0000-0000-0006-000000000008', '00000000-0000-0000-0005-000000000003', 'Mantém postura ética, respeitosa e acessível para o diálogo acadêmico com a turma.', 'ESCALA', TRUE, 5, 1, 5, '1 - Inadequado', '5 - Sempre exemplar')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (questao_id) DO NOTHING;
 
-INSERT INTO questao (id, grupo_id, enunciado, tipo, obrigatoria, ordem, ajuda) VALUES
+INSERT INTO questao (questao_id, grupo_questoes_id, enunciado, tipo, obrigatoria, ordem, ajuda) VALUES
 ('00000000-0000-0000-0006-000000000009', '00000000-0000-0000-0005-000000000003', 'Comentários abertos e sugestões para o docente (opcional e preservado o anonimato):', 'TEXTO_LIVRE', FALSE, 6, 'Escreva observações construtivas que possam auxiliar no aprimoramento pedagógico da disciplina.')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (questao_id) DO NOTHING;

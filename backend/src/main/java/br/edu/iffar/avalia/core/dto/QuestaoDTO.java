@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class QuestaoDTO {
-    private UUID id;
+    private UUID questaoId;
     private String enunciado;
     private TipoQuestao tipo;
     private boolean obrigatoria;
@@ -19,8 +19,11 @@ public class QuestaoDTO {
 
     public QuestaoDTO() {}
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public UUID getQuestaoId() { return questaoId; }
+    public void setQuestaoId(UUID questaoId) { this.questaoId = questaoId; }
+
+    public UUID getId() { return questaoId; }
+    public void setId(UUID id) { this.questaoId = id; }
 
     public String getEnunciado() { return enunciado; }
     public void setEnunciado(String enunciado) { this.enunciado = enunciado; }

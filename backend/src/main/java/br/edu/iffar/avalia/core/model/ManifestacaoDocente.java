@@ -9,16 +9,16 @@ public class ManifestacaoDocente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
-    private java.util.UUID id;
+    @Column(name = "manifestacao_docente_id", nullable = false, updatable = false)
+    private java.util.UUID manifestacaoDocenteId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instrumento_id", nullable = false)
     private Instrumento instrumento;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "componente_id", nullable = false)
-    private ComponenteCurricular componente;
+    @JoinColumn(name = "componente_curricular_id", nullable = false)
+    private ComponenteCurricular componenteCurricular;
 
     @Column(name = "docente_nome", nullable = false)
     private String docenteNome;
@@ -34,14 +34,20 @@ public class ManifestacaoDocente {
 
     public ManifestacaoDocente() {}
 
-    public java.util.UUID getId() { return id; }
-    public void setId(java.util.UUID id) { this.id = id; }
+    public java.util.UUID getManifestacaoDocenteId() { return manifestacaoDocenteId; }
+    public void setManifestacaoDocenteId(java.util.UUID manifestacaoDocenteId) { this.manifestacaoDocenteId = manifestacaoDocenteId; }
+
+    public java.util.UUID getId() { return manifestacaoDocenteId; }
+    public void setId(java.util.UUID id) { this.manifestacaoDocenteId = id; }
 
     public Instrumento getInstrumento() { return instrumento; }
     public void setInstrumento(Instrumento instrumento) { this.instrumento = instrumento; }
 
-    public ComponenteCurricular getComponente() { return componente; }
-    public void setComponente(ComponenteCurricular componente) { this.componente = componente; }
+    public ComponenteCurricular getComponenteCurricular() { return componenteCurricular; }
+    public void setComponenteCurricular(ComponenteCurricular componenteCurricular) { this.componenteCurricular = componenteCurricular; }
+
+    public ComponenteCurricular getComponente() { return componenteCurricular; }
+    public void setComponente(ComponenteCurricular componente) { this.componenteCurricular = componente; }
 
     public String getDocenteNome() { return docenteNome; }
     public void setDocenteNome(String docenteNome) { this.docenteNome = docenteNome; }

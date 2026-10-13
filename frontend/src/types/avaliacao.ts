@@ -4,12 +4,14 @@ export type ModuloAvaliacao = 'ADPD' | 'SINAES' | 'APRENDIZAGEM';
 
 export interface OpcaoResposta {
   id: string;
+  opcaoQuestaoId?: string;
   texto: string;
   valor?: number;
 }
 
 export interface Questao {
   id: string;
+  questaoId?: string;
   enunciado: string;
   tipo: TipoQuestao;
   obrigatoria: boolean;
@@ -23,6 +25,7 @@ export interface Questao {
 
 export interface GrupoQuestoes {
   id: string;
+  grupoQuestoesId?: string;
   titulo: string;
   descricao?: string;
   questoes: Questao[];
@@ -30,6 +33,7 @@ export interface GrupoQuestoes {
 
 export interface ComponenteCurricular {
   id: string;
+  componenteCurricularId?: string;
   codigo: string;
   nome: string;
   docenteNome: string;
@@ -42,6 +46,7 @@ export type TipoPublicoAvaliador = 'DISCENTES' | 'DOCENTES' | 'TAES' | 'EGRESSOS
 
 export interface AlvoAvaliado {
   id: string;
+  alvoAvaliadoId?: string;
   tipo: TipoAlvoAvaliado;
   nome: string;
   codigo?: string;
@@ -54,6 +59,7 @@ export interface AlvoAvaliado {
 
 export interface PublicoAvaliador {
   id: string;
+  publicoAvaliadorId?: string;
   segmento: string;
   nome: string;
   descricao?: string;
@@ -71,6 +77,7 @@ export interface UsuarioContexto {
 
 export interface InstrumentoAvaliativo {
   id: string;
+  instrumentoId?: string;
   titulo: string;
   subtitulo: string;
   modulo: ModuloAvaliacao;

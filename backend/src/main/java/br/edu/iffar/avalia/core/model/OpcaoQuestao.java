@@ -9,8 +9,8 @@ public class OpcaoQuestao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
+    @Column(name = "opcao_questao_id", nullable = false, updatable = false)
+    private UUID opcaoQuestaoId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "questao_id", nullable = false)
@@ -24,15 +24,18 @@ public class OpcaoQuestao {
 
     public OpcaoQuestao() {}
 
-    public OpcaoQuestao(UUID id, Questao questao, String texto, int ordem) {
-        this.id = id;
+    public OpcaoQuestao(UUID opcaoQuestaoId, Questao questao, String texto, int ordem) {
+        this.opcaoQuestaoId = opcaoQuestaoId;
         this.questao = questao;
         this.texto = texto;
         this.ordem = ordem;
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public UUID getOpcaoQuestaoId() { return opcaoQuestaoId; }
+    public void setOpcaoQuestaoId(UUID opcaoQuestaoId) { this.opcaoQuestaoId = opcaoQuestaoId; }
+
+    public UUID getId() { return opcaoQuestaoId; }
+    public void setId(UUID id) { this.opcaoQuestaoId = id; }
 
     public Questao getQuestao() { return questao; }
     public void setQuestao(Questao questao) { this.questao = questao; }

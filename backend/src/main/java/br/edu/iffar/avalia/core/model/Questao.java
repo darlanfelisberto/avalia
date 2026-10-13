@@ -11,12 +11,12 @@ public class Questao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
+    @Column(name = "questao_id", nullable = false, updatable = false)
+    private UUID questaoId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "grupo_id", nullable = false)
-    private GrupoQuestoes grupo;
+    @JoinColumn(name = "grupo_questoes_id", nullable = false)
+    private GrupoQuestoes grupoQuestoes;
 
     @Column(name = "enunciado", nullable = false)
     private String enunciado;
@@ -55,11 +55,17 @@ public class Questao {
 
     public Questao() {}
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public UUID getQuestaoId() { return questaoId; }
+    public void setQuestaoId(UUID questaoId) { this.questaoId = questaoId; }
 
-    public GrupoQuestoes getGrupo() { return grupo; }
-    public void setGrupo(GrupoQuestoes grupo) { this.grupo = grupo; }
+    public UUID getId() { return questaoId; }
+    public void setId(UUID id) { this.questaoId = id; }
+
+    public GrupoQuestoes getGrupoQuestoes() { return grupoQuestoes; }
+    public void setGrupoQuestoes(GrupoQuestoes grupoQuestoes) { this.grupoQuestoes = grupoQuestoes; }
+
+    public GrupoQuestoes getGrupo() { return grupoQuestoes; }
+    public void setGrupo(GrupoQuestoes grupo) { this.grupoQuestoes = grupo; }
 
     public String getEnunciado() { return enunciado; }
     public void setEnunciado(String enunciado) { this.enunciado = enunciado; }

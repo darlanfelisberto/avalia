@@ -12,8 +12,8 @@ public class Instrumento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
+    @Column(name = "instrumento_id", nullable = false, updatable = false)
+    private UUID instrumentoId;
 
     @Column(name = "titulo", nullable = false)
     private String titulo;
@@ -88,8 +88,11 @@ public class Instrumento {
     public Instrumento() {}
 
     // Getters and Setters
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public UUID getInstrumentoId() { return instrumentoId; }
+    public void setInstrumentoId(UUID instrumentoId) { this.instrumentoId = instrumentoId; }
+
+    public UUID getId() { return instrumentoId; }
+    public void setId(UUID id) { this.instrumentoId = id; }
 
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }

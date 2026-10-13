@@ -9,8 +9,8 @@ public class PublicoAvaliador {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
-    private java.util.UUID id;
+    @Column(name = "publico_avaliador_id", nullable = false, updatable = false)
+    private java.util.UUID publicoAvaliadorId;
 
     @Column(name = "segmento", nullable = false, length = 32)
     private String segmento;
@@ -32,8 +32,11 @@ public class PublicoAvaliador {
 
     public PublicoAvaliador() {}
 
-    public java.util.UUID getId() { return id; }
-    public void setId(java.util.UUID id) { this.id = id; }
+    public java.util.UUID getPublicoAvaliadorId() { return publicoAvaliadorId; }
+    public void setPublicoAvaliadorId(java.util.UUID publicoAvaliadorId) { this.publicoAvaliadorId = publicoAvaliadorId; }
+
+    public java.util.UUID getId() { return publicoAvaliadorId; }
+    public void setId(java.util.UUID id) { this.publicoAvaliadorId = id; }
 
     public String getSegmento() { return segmento; }
     public void setSegmento(String segmento) { this.segmento = segmento; }

@@ -9,8 +9,8 @@ public class AlvoAvaliado {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
-    private java.util.UUID id;
+    @Column(name = "alvo_avaliado_id", nullable = false, updatable = false)
+    private java.util.UUID alvoAvaliadoId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo", nullable = false, length = 32)
@@ -39,8 +39,11 @@ public class AlvoAvaliado {
 
     public AlvoAvaliado() {}
 
-    public java.util.UUID getId() { return id; }
-    public void setId(java.util.UUID id) { this.id = id; }
+    public java.util.UUID getAlvoAvaliadoId() { return alvoAvaliadoId; }
+    public void setAlvoAvaliadoId(java.util.UUID alvoAvaliadoId) { this.alvoAvaliadoId = alvoAvaliadoId; }
+
+    public java.util.UUID getId() { return alvoAvaliadoId; }
+    public void setId(java.util.UUID id) { this.alvoAvaliadoId = id; }
 
     public TipoAlvoAvaliado getTipo() { return tipo; }
     public void setTipo(TipoAlvoAvaliado tipo) { this.tipo = tipo; }

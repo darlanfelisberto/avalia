@@ -11,8 +11,8 @@ public class GrupoQuestoes {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
+    @Column(name = "grupo_questoes_id", nullable = false, updatable = false)
+    private UUID grupoQuestoesId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instrumento_id", nullable = false)
@@ -31,14 +31,17 @@ public class GrupoQuestoes {
     @Column(name = "ordem", nullable = false)
     private int ordem = 0;
 
-    @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "grupoQuestoes", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("ordem ASC")
     private List<Questao> questoes = new ArrayList<>();
 
     public GrupoQuestoes() {}
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public UUID getGrupoQuestoesId() { return grupoQuestoesId; }
+    public void setGrupoQuestoesId(UUID grupoQuestoesId) { this.grupoQuestoesId = grupoQuestoesId; }
+
+    public UUID getId() { return grupoQuestoesId; }
+    public void setId(UUID id) { this.grupoQuestoesId = id; }
 
     public Instrumento getInstrumento() { return instrumento; }
     public void setInstrumento(Instrumento instrumento) { this.instrumento = instrumento; }

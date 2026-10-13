@@ -56,14 +56,15 @@ public class InstrumentoService {
     @Transactional
     public InstrumentoDTO salvarOuAtualizar(InstrumentoDTO dto) {
         Instrumento inst = null;
-        if (dto.getId() != null) {
-            inst = em.find(Instrumento.class, dto.getId());
+        UUID instId = dto.getInstrumentoId() != null ? dto.getInstrumentoId() : dto.getId();
+        if (instId != null) {
+            inst = em.find(Instrumento.class, instId);
         }
 
         if (inst == null) {
             inst = new Instrumento();
-            if (dto.getId() != null) {
-                inst.setId(dto.getId());
+            if (instId != null) {
+                inst.setInstrumentoId(instId);
             }
             inst.setCreatedAt(OffsetDateTime.now());
             em.persist(inst);
@@ -139,8 +140,8 @@ public class InstrumentoService {
         // Sincronizar grupos sem recriar instâncias existentes (evita violação de chave primária no JPA/EclipseLink)
         Map<UUID, GrupoQuestoes> gruposExistentes = new HashMap<>();
         for (GrupoQuestoes g : inst.getGrupos()) {
-            if (g.getId() != null) {
-                gruposExistentes.put(g.getId(), g);
+            if (g.getGrupoQuestoesId() != null) {
+                gruposExistentes.put(g.getGrupoQuestoesId(), g);
             }
         }
 
@@ -173,15 +174,15 @@ public class InstrumentoService {
         // 3. Componentes curriculares (para ADPD)
         Map<UUID, ComponenteCurricular> compsExistentes = new HashMap<>();
         for (ComponenteCurricular c : inst.getComponentes()) {
-            if (c.getId() != null) {
-                compsExistentes.put(c.getId(), c);
+            if (c.getComponenteCurricularId() != null) {
+                compsExistentes.put(c.getComponenteCurricularId(), c);
             }
         }
 
         List<ComponenteCurricular> compsSincronizados = new ArrayList<>();
         if (dto.getComponentesMatriculados() != null) {
             for (ComponenteDTO cDto : dto.getComponentesMatriculados()) {
-                UUID cId = cDto.getId();
+                UUID cId = cDto.getComponenteCurricularId() != null ? cDto.getComponenteCurricularId() : cDto.getId();
                 ComponenteCurricular comp = null;
                 if (cId != null) {
                     comp = compsExistentes.get(cId);
@@ -189,7 +190,7 @@ public class InstrumentoService {
                 if (comp == null) {
                     comp = new ComponenteCurricular();
                     if (cId != null) {
-                        comp.setId(cId);
+                        comp.setComponenteCurricularId(cId);
                     }
                     comp.setInstrumento(inst);
                 }
@@ -213,7 +214,7 @@ public class InstrumentoService {
     }
 
     private GrupoQuestoes sincronizarGrupo(GrupoDTO gDto, Instrumento inst, SecaoInstrumento secao, int ordem, Map<UUID, GrupoQuestoes> existentes) {
-        UUID id = gDto.getId();
+        UUID id = gDto.getGrupoQuestoesId() != null ? gDto.getGrupoQuestoesId() : gDto.getId();
         GrupoQuestoes grupo = null;
         if (id != null) {
             grupo = existentes.get(id);
@@ -221,7 +222,7 @@ public class InstrumentoService {
         if (grupo == null) {
             grupo = new GrupoQuestoes();
             if (id != null) {
-                grupo.setId(id);
+                grupo.setGrupoQuestoesId(id);
             }
             grupo.setInstrumento(inst);
         }
@@ -243,8 +244,8 @@ public class InstrumentoService {
 
         Map<UUID, Questao> questoesExistentes = new HashMap<>();
         for (Questao q : grupo.getQuestoes()) {
-            if (q.getId() != null) {
-                questoesExistentes.put(q.getId(), q);
+            if (q.getQuestaoId() != null) {
+                questoesExistentes.put(q.getQuestaoId(), q);
             }
         }
 
@@ -252,7 +253,7 @@ public class InstrumentoService {
         int ordemQuestao = 1;
 
         for (QuestaoDTO qDto : questoesDto) {
-            UUID qId = qDto.getId();
+            UUID qId = qDto.getQuestaoId() != null ? qDto.getQuestaoId() : qDto.getId();
             Questao q = null;
             if (qId != null) {
                 q = questoesExistentes.get(qId);
@@ -260,9 +261,9 @@ public class InstrumentoService {
             if (q == null) {
                 q = new Questao();
                 if (qId != null) {
-                    q.setId(qId);
+                    q.setQuestaoId(qId);
                 }
-                q.setGrupo(grupo);
+                q.setGrupoQuestoes(grupo);
             }
 
             q.setEnunciado(qDto.getEnunciado());
@@ -296,8 +297,8 @@ public class InstrumentoService {
 
         Map<UUID, OpcaoQuestao> opcoesExistentes = new HashMap<>();
         for (OpcaoQuestao o : questao.getOpcoes()) {
-            if (o.getId() != null) {
-                opcoesExistentes.put(o.getId(), o);
+            if (o.getOpcaoQuestaoId() != null) {
+                opcoesExistentes.put(o.getOpcaoQuestaoId(), o);
             }
         }
 
@@ -305,7 +306,7 @@ public class InstrumentoService {
         int ordemOpcao = 0;
 
         for (OpcaoRespostaDTO oDto : opcoesDto) {
-            UUID oId = oDto.getId();
+            UUID oId = oDto.getOpcaoQuestaoId() != null ? oDto.getOpcaoQuestaoId() : oDto.getId();
             OpcaoQuestao o = null;
             if (oId != null) {
                 o = opcoesExistentes.get(oId);
@@ -313,7 +314,7 @@ public class InstrumentoService {
             if (o == null) {
                 o = new OpcaoQuestao();
                 if (oId != null) {
-                    o.setId(oId);
+                    o.setOpcaoQuestaoId(oId);
                 }
                 o.setQuestao(questao);
             }
@@ -343,7 +344,7 @@ public class InstrumentoService {
 
     private InstrumentoDTO converterParaDTO(Instrumento inst) {
         InstrumentoDTO dto = new InstrumentoDTO();
-        dto.setId(inst.getId());
+        dto.setInstrumentoId(inst.getInstrumentoId());
         dto.setTitulo(inst.getTitulo());
         dto.setSubtitulo(inst.getSubtitulo());
         dto.setModulo(inst.getModulo());
@@ -380,14 +381,14 @@ public class InstrumentoService {
         // Grupos separados por seção
         for (GrupoQuestoes g : inst.getGrupos()) {
             GrupoDTO gDto = new GrupoDTO();
-            gDto.setId(g.getId());
+            gDto.setGrupoQuestoesId(g.getGrupoQuestoesId());
             gDto.setTitulo(g.getTitulo());
             gDto.setDescricao(g.getDescricao());
             gDto.setSecao(g.getSecao().name());
 
             for (Questao q : g.getQuestoes()) {
                 QuestaoDTO qDto = new QuestaoDTO();
-                qDto.setId(q.getId());
+                qDto.setQuestaoId(q.getQuestaoId());
                 qDto.setEnunciado(q.getEnunciado());
                 qDto.setTipo(q.getTipo());
                 qDto.setObrigatoria(q.isObrigatoria());
@@ -400,7 +401,7 @@ public class InstrumentoService {
                 if (q.getOpcoes() != null && !q.getOpcoes().isEmpty()) {
                     List<OpcaoRespostaDTO> opts = new ArrayList<>();
                     for (OpcaoQuestao opt : q.getOpcoes()) {
-                        opts.add(new OpcaoRespostaDTO(opt.getId(), opt.getTexto()));
+                        opts.add(new OpcaoRespostaDTO(opt.getOpcaoQuestaoId(), opt.getTexto()));
                     }
                     qDto.setOpcoes(opts);
                 } else if (q.getOpcoesJson() != null && !q.getOpcoesJson().isEmpty()) {
@@ -426,7 +427,7 @@ public class InstrumentoService {
         // Componentes curriculares
         for (ComponenteCurricular c : inst.getComponentes()) {
             dto.getComponentesMatriculados().add(new ComponenteDTO(
-                    c.getId(), c.getCodigo(), c.getNome(), c.getDocenteNome(), c.getTurma()
+                    c.getComponenteCurricularId(), c.getCodigo(), c.getNome(), c.getDocenteNome(), c.getTurma()
             ));
         }
 

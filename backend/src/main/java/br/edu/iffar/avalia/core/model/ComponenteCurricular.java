@@ -8,8 +8,8 @@ public class ComponenteCurricular {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id")
-    private java.util.UUID id;
+    @Column(name = "componente_curricular_id", nullable = false, updatable = false)
+    private java.util.UUID componenteCurricularId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instrumento_id", nullable = false)
@@ -29,8 +29,11 @@ public class ComponenteCurricular {
 
     public ComponenteCurricular() {}
 
-    public java.util.UUID getId() { return id; }
-    public void setId(java.util.UUID id) { this.id = id; }
+    public java.util.UUID getComponenteCurricularId() { return componenteCurricularId; }
+    public void setComponenteCurricularId(java.util.UUID componenteCurricularId) { this.componenteCurricularId = componenteCurricularId; }
+
+    public java.util.UUID getId() { return componenteCurricularId; }
+    public void setId(java.util.UUID id) { this.componenteCurricularId = id; }
 
     public Instrumento getInstrumento() { return instrumento; }
     public void setInstrumento(Instrumento instrumento) { this.instrumento = instrumento; }
