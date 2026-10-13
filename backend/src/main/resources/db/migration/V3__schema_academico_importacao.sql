@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS academico.unidade (
     atualizado_em       TIMESTAMP DEFAULT now()
 );
 
+ALTER TABLE academico.unidade ADD COLUMN IF NOT EXISTS path LTREE;
+
 CREATE INDEX IF NOT EXISTS idx_academico_unidade_path   ON academico.unidade USING GIST(path);
 CREATE INDEX IF NOT EXISTS idx_academico_unidade_id_pai ON academico.unidade(id_pai);
 

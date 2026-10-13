@@ -8,8 +8,9 @@ import java.time.OffsetDateTime;
 public class AlvoAvaliado {
 
     @Id
-    @Column(name = "id", length = 64)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
+    private java.util.UUID id;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo", nullable = false, length = 32)
@@ -38,8 +39,8 @@ public class AlvoAvaliado {
 
     public AlvoAvaliado() {}
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public java.util.UUID getId() { return id; }
+    public void setId(java.util.UUID id) { this.id = id; }
 
     public TipoAlvoAvaliado getTipo() { return tipo; }
     public void setTipo(TipoAlvoAvaliado tipo) { this.tipo = tipo; }

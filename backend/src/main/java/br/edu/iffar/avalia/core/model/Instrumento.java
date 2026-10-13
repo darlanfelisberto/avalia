@@ -4,14 +4,16 @@ import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "instrumento")
 public class Instrumento {
 
     @Id
-    @Column(name = "id", length = 64)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false, updatable = false)
+    private UUID id;
 
     @Column(name = "titulo", nullable = false)
     private String titulo;
@@ -46,8 +48,17 @@ public class Instrumento {
     @Column(name = "tipo_publico", nullable = false, length = 32)
     private TipoPublicoAvaliador tipoPublico = TipoPublicoAvaliador.DISCENTES;
 
-    @Column(name = "alvo_especifico_id", length = 64)
-    private String alvoEspecificoId;
+    @Column(name = "publicos_permitidos", length = 255)
+    private String publicosPermitidos;
+
+    @Column(name = "restringir_vinculo_campus", nullable = false)
+    private boolean restringirVinculoCampus = true;
+
+    @Column(name = "alvo_especifico_id")
+    private UUID alvoEspecificoId;
+
+    @Column(name = "alvos_especificos_ids")
+    private String alvosEspecificosIds;
 
     @Column(name = "criador_id", nullable = false, length = 64)
     private String criadorId = "usr-cpa-cain";
@@ -77,8 +88,8 @@ public class Instrumento {
     public Instrumento() {}
 
     // Getters and Setters
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
@@ -110,8 +121,17 @@ public class Instrumento {
     public TipoPublicoAvaliador getTipoPublico() { return tipoPublico; }
     public void setTipoPublico(TipoPublicoAvaliador tipoPublico) { this.tipoPublico = tipoPublico; }
 
-    public String getAlvoEspecificoId() { return alvoEspecificoId; }
-    public void setAlvoEspecificoId(String alvoEspecificoId) { this.alvoEspecificoId = alvoEspecificoId; }
+    public String getPublicosPermitidos() { return publicosPermitidos; }
+    public void setPublicosPermitidos(String publicosPermitidos) { this.publicosPermitidos = publicosPermitidos; }
+
+    public boolean isRestringirVinculoCampus() { return restringirVinculoCampus; }
+    public void setRestringirVinculoCampus(boolean restringirVinculoCampus) { this.restringirVinculoCampus = restringirVinculoCampus; }
+
+    public UUID getAlvoEspecificoId() { return alvoEspecificoId; }
+    public void setAlvoEspecificoId(UUID alvoEspecificoId) { this.alvoEspecificoId = alvoEspecificoId; }
+
+    public String getAlvosEspecificosIds() { return alvosEspecificosIds; }
+    public void setAlvosEspecificosIds(String alvosEspecificosIds) { this.alvosEspecificosIds = alvosEspecificosIds; }
 
     public String getCriadorId() { return criadorId; }
     public void setCriadorId(String criadorId) { this.criadorId = criadorId; }

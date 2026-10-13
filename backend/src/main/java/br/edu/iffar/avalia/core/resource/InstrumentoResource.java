@@ -8,6 +8,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.UUID;
 
 @Path("/instrumentos")
 @Produces(MediaType.APPLICATION_JSON)
@@ -25,7 +26,7 @@ public class InstrumentoResource {
 
     @GET
     @Path("/{id}")
-    public Response buscarPorId(@PathParam("id") String id) {
+    public Response buscarPorId(@PathParam("id") UUID id) {
         InstrumentoDTO dto = instrumentoService.buscarPorId(id);
         if (dto == null) {
             return Response.status(Response.Status.NOT_FOUND)
@@ -49,7 +50,7 @@ public class InstrumentoResource {
 
     @PUT
     @Path("/{id}")
-    public Response atualizar(@PathParam("id") String id, InstrumentoDTO dto) {
+    public Response atualizar(@PathParam("id") UUID id, InstrumentoDTO dto) {
         dto.setId(id);
         InstrumentoDTO atualizado = instrumentoService.salvarOuAtualizar(dto);
         return Response.ok(atualizado).build();
@@ -57,7 +58,7 @@ public class InstrumentoResource {
 
     @DELETE
     @Path("/{id}")
-    public Response remover(@PathParam("id") String id) {
+    public Response remover(@PathParam("id") UUID id) {
         boolean removido = instrumentoService.remover(id);
         if (removido) {
             return Response.noContent().build();

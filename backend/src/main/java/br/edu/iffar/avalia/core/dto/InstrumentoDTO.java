@@ -3,9 +3,10 @@ package br.edu.iffar.avalia.core.dto;
 import br.edu.iffar.avalia.core.model.ModuloAvaliacao;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class InstrumentoDTO {
-    private String id;
+    private UUID id;
     private String titulo;
     private String subtitulo;
     private ModuloAvaliacao modulo;
@@ -16,7 +17,10 @@ public class InstrumentoDTO {
     private String publicoAlvo;
     private String tipoAlvo = "DOCENTE";
     private String tipoPublico = "DISCENTES";
-    private String alvoEspecificoId;
+    private List<String> publicosPermitidos = new ArrayList<>();
+    private boolean restringirVinculoCampus = true;
+    private UUID alvoEspecificoId;
+    private List<String> alvosEspecificosIds = new ArrayList<>();
     private String criadorId = "usr-cpa-cain";
     private String criadorNome = "Comissão Própria de Avaliação (CPA)";
     private boolean anonimo;
@@ -27,8 +31,8 @@ public class InstrumentoDTO {
 
     public InstrumentoDTO() {}
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
@@ -60,8 +64,17 @@ public class InstrumentoDTO {
     public String getTipoPublico() { return tipoPublico; }
     public void setTipoPublico(String tipoPublico) { this.tipoPublico = tipoPublico; }
 
-    public String getAlvoEspecificoId() { return alvoEspecificoId; }
-    public void setAlvoEspecificoId(String alvoEspecificoId) { this.alvoEspecificoId = alvoEspecificoId; }
+    public List<String> getPublicosPermitidos() { return publicosPermitidos; }
+    public void setPublicosPermitidos(List<String> publicosPermitidos) { this.publicosPermitidos = publicosPermitidos; }
+
+    public boolean isRestringirVinculoCampus() { return restringirVinculoCampus; }
+    public void setRestringirVinculoCampus(boolean restringirVinculoCampus) { this.restringirVinculoCampus = restringirVinculoCampus; }
+
+    public UUID getAlvoEspecificoId() { return alvoEspecificoId; }
+    public void setAlvoEspecificoId(UUID alvoEspecificoId) { this.alvoEspecificoId = alvoEspecificoId; }
+
+    public List<String> getAlvosEspecificosIds() { return alvosEspecificosIds; }
+    public void setAlvosEspecificosIds(List<String> alvosEspecificosIds) { this.alvosEspecificosIds = alvosEspecificosIds; }
 
     public String getCriadorId() { return criadorId; }
     public void setCriadorId(String criadorId) { this.criadorId = criadorId; }

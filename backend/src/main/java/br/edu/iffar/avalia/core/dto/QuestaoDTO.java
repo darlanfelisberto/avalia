@@ -3,9 +3,10 @@ package br.edu.iffar.avalia.core.dto;
 import br.edu.iffar.avalia.core.model.TipoQuestao;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class QuestaoDTO {
-    private String id;
+    private UUID id;
     private String enunciado;
     private TipoQuestao tipo;
     private boolean obrigatoria;
@@ -18,8 +19,8 @@ public class QuestaoDTO {
 
     public QuestaoDTO() {}
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getEnunciado() { return enunciado; }
     public void setEnunciado(String enunciado) { this.enunciado = enunciado; }

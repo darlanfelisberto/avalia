@@ -45,7 +45,7 @@ public class InstrumentoService {
         return resultado;
     }
 
-    public InstrumentoDTO buscarPorId(String id) {
+    public InstrumentoDTO buscarPorId(UUID id) {
         Instrumento inst = em.find(Instrumento.class, id);
         if (inst == null) {
             return null;
@@ -55,14 +55,16 @@ public class InstrumentoService {
 
     @Transactional
     public InstrumentoDTO salvarOuAtualizar(InstrumentoDTO dto) {
-        if (dto.getId() == null || dto.getId().trim().isEmpty()) {
-            dto.setId("inst-" + UUID.randomUUID().toString().substring(0, 8));
+        Instrumento inst = null;
+        if (dto.getId() != null) {
+            inst = em.find(Instrumento.class, dto.getId());
         }
 
-        Instrumento inst = em.find(Instrumento.class, dto.getId());
         if (inst == null) {
             inst = new Instrumento();
-            inst.setId(dto.getId());
+            if (dto.getId() != null) {
+                inst.setId(dto.getId());
+            }
             inst.setCreatedAt(OffsetDateTime.now());
             em.persist(inst);
         }
@@ -81,14 +83,40 @@ public class InstrumentoService {
                 inst.setTipoAlvo(TipoAlvoAvaliado.DOCENTE);
             }
         }
-        if (dto.getTipoPublico() != null) {
+        if (dto.getPublicosPermitidos() != null && !dto.getPublicosPermitidos().isEmpty()) {
+            inst.setPublicosPermitidos(String.join(",", dto.getPublicosPermitidos()));
+            if (dto.getPublicosPermitidos().size() > 1) {
+                inst.setTipoPublico(TipoPublicoAvaliador.TODOS);
+            } else {
+                try {
+                    inst.setTipoPublico(TipoPublicoAvaliador.valueOf(dto.getPublicosPermitidos().get(0)));
+                } catch (Exception e) {
+                    inst.setTipoPublico(TipoPublicoAvaliador.TODOS);
+                }
+            }
+        } else if (dto.getTipoPublico() != null) {
             try {
                 inst.setTipoPublico(TipoPublicoAvaliador.valueOf(dto.getTipoPublico()));
             } catch (Exception e) {
                 inst.setTipoPublico(TipoPublicoAvaliador.DISCENTES);
             }
+            inst.setPublicosPermitidos(inst.getTipoPublico().name());
         }
-        inst.setAlvoEspecificoId(dto.getAlvoEspecificoId());
+        inst.setRestringirVinculoCampus(dto.isRestringirVinculoCampus());
+        if (dto.getAlvosEspecificosIds() != null && !dto.getAlvosEspecificosIds().isEmpty()) {
+            inst.setAlvosEspecificosIds(String.join(",", dto.getAlvosEspecificosIds()));
+            try {
+                inst.setAlvoEspecificoId(UUID.fromString(dto.getAlvosEspecificosIds().get(0)));
+            } catch (Exception e) {
+                inst.setAlvoEspecificoId(null);
+            }
+        } else if (dto.getAlvoEspecificoId() != null) {
+            inst.setAlvoEspecificoId(dto.getAlvoEspecificoId());
+            inst.setAlvosEspecificosIds(dto.getAlvoEspecificoId().toString());
+        } else {
+            inst.setAlvoEspecificoId(null);
+            inst.setAlvosEspecificosIds(null);
+        }
         if (dto.getCriadorId() != null && !dto.getCriadorId().trim().isEmpty()) {
             inst.setCriadorId(dto.getCriadorId());
         }
@@ -109,7 +137,7 @@ public class InstrumentoService {
         }
 
         // Sincronizar grupos sem recriar instâncias existentes (evita violação de chave primária no JPA/EclipseLink)
-        Map<String, GrupoQuestoes> gruposExistentes = new HashMap<>();
+        Map<UUID, GrupoQuestoes> gruposExistentes = new HashMap<>();
         for (GrupoQuestoes g : inst.getGrupos()) {
             if (g.getId() != null) {
                 gruposExistentes.put(g.getId(), g);
@@ -143,7 +171,7 @@ public class InstrumentoService {
         }
 
         // 3. Componentes curriculares (para ADPD)
-        Map<String, ComponenteCurricular> compsExistentes = new HashMap<>();
+        Map<UUID, ComponenteCurricular> compsExistentes = new HashMap<>();
         for (ComponenteCurricular c : inst.getComponentes()) {
             if (c.getId() != null) {
                 compsExistentes.put(c.getId(), c);
@@ -153,16 +181,16 @@ public class InstrumentoService {
         List<ComponenteCurricular> compsSincronizados = new ArrayList<>();
         if (dto.getComponentesMatriculados() != null) {
             for (ComponenteDTO cDto : dto.getComponentesMatriculados()) {
-                String cId = cDto.getId();
-                if (cId == null || cId.trim().isEmpty()) {
-                    cId = "comp-" + UUID.randomUUID().toString().substring(0, 8);
-                    cDto.setId(cId);
+                UUID cId = cDto.getId();
+                ComponenteCurricular comp = null;
+                if (cId != null) {
+                    comp = compsExistentes.get(cId);
                 }
-
-                ComponenteCurricular comp = compsExistentes.get(cId);
                 if (comp == null) {
                     comp = new ComponenteCurricular();
-                    comp.setId(cId);
+                    if (cId != null) {
+                        comp.setId(cId);
+                    }
                     comp.setInstrumento(inst);
                 }
                 comp.setCodigo(cDto.getCodigo());
@@ -184,17 +212,17 @@ public class InstrumentoService {
         return converterParaDTO(inst);
     }
 
-    private GrupoQuestoes sincronizarGrupo(GrupoDTO gDto, Instrumento inst, SecaoInstrumento secao, int ordem, Map<String, GrupoQuestoes> existentes) {
-        String id = gDto.getId();
-        if (id == null || id.trim().isEmpty()) {
-            id = "grp-" + UUID.randomUUID().toString().substring(0, 8);
-            gDto.setId(id);
+    private GrupoQuestoes sincronizarGrupo(GrupoDTO gDto, Instrumento inst, SecaoInstrumento secao, int ordem, Map<UUID, GrupoQuestoes> existentes) {
+        UUID id = gDto.getId();
+        GrupoQuestoes grupo = null;
+        if (id != null) {
+            grupo = existentes.get(id);
         }
-
-        GrupoQuestoes grupo = existentes.get(id);
         if (grupo == null) {
             grupo = new GrupoQuestoes();
-            grupo.setId(id);
+            if (id != null) {
+                grupo.setId(id);
+            }
             grupo.setInstrumento(inst);
         }
 
@@ -213,7 +241,7 @@ public class InstrumentoService {
             return;
         }
 
-        Map<String, Questao> questoesExistentes = new HashMap<>();
+        Map<UUID, Questao> questoesExistentes = new HashMap<>();
         for (Questao q : grupo.getQuestoes()) {
             if (q.getId() != null) {
                 questoesExistentes.put(q.getId(), q);
@@ -224,16 +252,16 @@ public class InstrumentoService {
         int ordemQuestao = 1;
 
         for (QuestaoDTO qDto : questoesDto) {
-            String qId = qDto.getId();
-            if (qId == null || qId.trim().isEmpty()) {
-                qId = "q-" + UUID.randomUUID().toString().substring(0, 8);
-                qDto.setId(qId);
+            UUID qId = qDto.getId();
+            Questao q = null;
+            if (qId != null) {
+                q = questoesExistentes.get(qId);
             }
-
-            Questao q = questoesExistentes.get(qId);
             if (q == null) {
                 q = new Questao();
-                q.setId(qId);
+                if (qId != null) {
+                    q.setId(qId);
+                }
                 q.setGrupo(grupo);
             }
 
@@ -266,7 +294,7 @@ public class InstrumentoService {
             return;
         }
 
-        Map<String, OpcaoQuestao> opcoesExistentes = new HashMap<>();
+        Map<UUID, OpcaoQuestao> opcoesExistentes = new HashMap<>();
         for (OpcaoQuestao o : questao.getOpcoes()) {
             if (o.getId() != null) {
                 opcoesExistentes.put(o.getId(), o);
@@ -277,16 +305,16 @@ public class InstrumentoService {
         int ordemOpcao = 0;
 
         for (OpcaoRespostaDTO oDto : opcoesDto) {
-            String oId = oDto.getId();
-            if (oId == null || oId.trim().isEmpty()) {
-                oId = "opt-" + UUID.randomUUID().toString().substring(0, 8);
-                oDto.setId(oId);
+            UUID oId = oDto.getId();
+            OpcaoQuestao o = null;
+            if (oId != null) {
+                o = opcoesExistentes.get(oId);
             }
-
-            OpcaoQuestao o = opcoesExistentes.get(oId);
             if (o == null) {
                 o = new OpcaoQuestao();
-                o.setId(oId);
+                if (oId != null) {
+                    o.setId(oId);
+                }
                 o.setQuestao(questao);
             }
 
@@ -304,7 +332,7 @@ public class InstrumentoService {
     }
 
     @Transactional
-    public boolean remover(String id) {
+    public boolean remover(UUID id) {
         Instrumento inst = em.find(Instrumento.class, id);
         if (inst != null) {
             em.remove(inst);
@@ -323,7 +351,20 @@ public class InstrumentoService {
         dto.setPublicoAlvo(inst.getPublicoAlvo());
         dto.setTipoAlvo(inst.getTipoAlvo() != null ? inst.getTipoAlvo().name() : "DOCENTE");
         dto.setTipoPublico(inst.getTipoPublico() != null ? inst.getTipoPublico().name() : "DISCENTES");
+        dto.setRestringirVinculoCampus(inst.isRestringirVinculoCampus());
+        if (inst.getPublicosPermitidos() != null && !inst.getPublicosPermitidos().trim().isEmpty()) {
+            dto.setPublicosPermitidos(new ArrayList<>(java.util.Arrays.asList(inst.getPublicosPermitidos().split(","))));
+        } else if (inst.getTipoPublico() != null) {
+            dto.setPublicosPermitidos(new ArrayList<>(java.util.List.of(inst.getTipoPublico().name())));
+        }
         dto.setAlvoEspecificoId(inst.getAlvoEspecificoId());
+        if (inst.getAlvosEspecificosIds() != null && !inst.getAlvosEspecificosIds().trim().isEmpty()) {
+            dto.setAlvosEspecificosIds(new ArrayList<>(java.util.Arrays.asList(inst.getAlvosEspecificosIds().split(","))));
+        } else if (inst.getAlvoEspecificoId() != null) {
+            dto.setAlvosEspecificosIds(new ArrayList<>(java.util.List.of(inst.getAlvoEspecificoId().toString())));
+        } else {
+            dto.setAlvosEspecificosIds(new ArrayList<>());
+        }
         dto.setCriadorId(inst.getCriadorId());
         dto.setCriadorNome(inst.getCriadorNome());
         dto.setAnonimo(inst.isAnonimo());

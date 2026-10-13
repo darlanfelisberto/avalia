@@ -7,8 +7,9 @@ import jakarta.persistence.*;
 public class ComponenteCurricular {
 
     @Id
-    @Column(name = "id", length = 64)
-    private String id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id")
+    private java.util.UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instrumento_id", nullable = false)
@@ -28,8 +29,8 @@ public class ComponenteCurricular {
 
     public ComponenteCurricular() {}
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public java.util.UUID getId() { return id; }
+    public void setId(java.util.UUID id) { this.id = id; }
 
     public Instrumento getInstrumento() { return instrumento; }
     public void setInstrumento(Instrumento instrumento) { this.instrumento = instrumento; }

@@ -76,7 +76,10 @@ export interface InstrumentoAvaliativo {
   modulo: ModuloAvaliacao;
   tipoAlvo: TipoAlvoAvaliado;
   tipoPublico: TipoPublicoAvaliador;
+  publicosPermitidos?: TipoPublicoAvaliador[];
+  restringirVinculoCampus?: boolean;
   alvoEspecificoId?: string;
+  alvosEspecificosIds?: string[];
   criadorId?: string;
   criadorNome?: string;
   anoCiclo: string;

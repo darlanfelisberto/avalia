@@ -2,9 +2,10 @@ package br.edu.iffar.avalia.core.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class GrupoDTO {
-    private String id;
+    private UUID id;
     private String titulo;
     private String descricao;
     private String secao;
@@ -12,8 +13,8 @@ public class GrupoDTO {
 
     public GrupoDTO() {}
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }

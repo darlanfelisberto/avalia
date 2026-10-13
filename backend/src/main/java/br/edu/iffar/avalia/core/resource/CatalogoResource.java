@@ -41,10 +41,9 @@ public class CatalogoResource {
     @Path("/alvos")
     @Transactional
     public Response salvarAlvo(AlvoAvaliado alvo) {
-        if (alvo.getId() == null || alvo.getId().trim().isEmpty()) {
-            alvo.setId("alvo-" + UUID.randomUUID().toString().substring(0, 8));
+        if (alvo.getCreatedAt() == null) {
+            alvo.setCreatedAt(OffsetDateTime.now());
         }
-        alvo.setCreatedAt(OffsetDateTime.now());
         em.merge(alvo);
         return Response.ok(alvo).build();
     }
@@ -52,7 +51,7 @@ public class CatalogoResource {
     @DELETE
     @Path("/alvos/{id}")
     @Transactional
-    public Response removerAlvo(@PathParam("id") String id) {
+    public Response removerAlvo(@PathParam("id") UUID id) {
         AlvoAvaliado a = em.find(AlvoAvaliado.class, id);
         if (a != null) {
             em.remove(a);
@@ -74,10 +73,9 @@ public class CatalogoResource {
     @Path("/publicos")
     @Transactional
     public Response salvarPublico(PublicoAvaliador publico) {
-        if (publico.getId() == null || publico.getId().trim().isEmpty()) {
-            publico.setId("pub-" + UUID.randomUUID().toString().substring(0, 8));
+        if (publico.getCreatedAt() == null) {
+            publico.setCreatedAt(OffsetDateTime.now());
         }
-        publico.setCreatedAt(OffsetDateTime.now());
         em.merge(publico);
         return Response.ok(publico).build();
     }

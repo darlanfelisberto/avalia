@@ -1,7 +1,9 @@
 package br.edu.iffar.avalia.core.dto;
 
+import java.util.UUID;
+
 public class ComponenteDTO {
-    private String id;
+    private UUID id;
     private String codigo;
     private String nome;
     private String docenteNome;
@@ -9,7 +11,7 @@ public class ComponenteDTO {
 
     public ComponenteDTO() {}
 
-    public ComponenteDTO(String id, String codigo, String nome, String docenteNome, String turma) {
+    public ComponenteDTO(UUID id, String codigo, String nome, String docenteNome, String turma) {
         this.id = id;
         this.codigo = codigo;
         this.nome = nome;
@@ -17,8 +19,8 @@ public class ComponenteDTO {
         this.turma = turma;
     }
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getCodigo() { return codigo; }
     public void setCodigo(String codigo) { this.codigo = codigo; }

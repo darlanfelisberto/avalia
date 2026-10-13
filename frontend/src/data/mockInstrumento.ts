@@ -1,12 +1,14 @@
 import type { InstrumentoAvaliativo } from '../types/avaliacao';
 
 export const instrumentoADPDMock: InstrumentoAvaliativo = {
-  id: 'inst-adpd-2026-1',
+  id: '00000000-0000-0000-0003-000000000001',
   titulo: 'Avaliação Docente pelo Discente (ADPD)',
   subtitulo: 'Instituto Federal Farroupilha - Resolução CONSUP nº 104/2013',
   modulo: 'ADPD',
   tipoAlvo: 'DOCENTE',
   tipoPublico: 'DISCENTES',
+  publicosPermitidos: ['DISCENTES'],
+  restringirVinculoCampus: true,
   anoCiclo: '2026/1',
   periodoLetivo: '1º Semestre de 2026',
   dataInicio: '2026-10-01T08:00',
@@ -14,21 +16,21 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
   anonimo: true,
   componentesMatriculados: [
     {
-      id: 'comp-1',
+      id: '00000000-0000-0000-0004-000000000001',
       codigo: 'IFF-ADS-01',
       nome: 'Arquitetura e Engenharia de Software',
       docenteNome: 'Prof. Dr. Roberto Alencar',
       turma: 'ADS-2026'
     },
     {
-      id: 'comp-2',
+      id: '00000000-0000-0000-0004-000000000002',
       codigo: 'IFF-ADS-02',
       nome: 'Banco de Dados Avançado',
       docenteNome: 'Profa. Dra. Mariana Silveira',
       turma: 'ADS-2026'
     },
     {
-      id: 'comp-3',
+      id: '00000000-0000-0000-0004-000000000003',
       codigo: 'IFF-ADS-03',
       nome: 'Redes e Sistemas Distribuídos',
       docenteNome: 'Prof. Me. Carlos Eduardo Lima',
@@ -37,12 +39,12 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
   ],
   gruposAutoavaliacaoDiscente: [
     {
-      id: 'grp-auto-1',
+      id: '00000000-0000-0000-0005-000000000001',
       titulo: 'Etapa 1: Autoavaliação do Estudante',
       descricao: 'Reflita sobre sua dedicação, pontualidade e engajamento nas atividades acadêmicas ao longo do semestre letivo.',
       questoes: [
         {
-          id: 'q-auto-01',
+          id: '00000000-0000-0000-0006-000000000001',
           enunciado: 'Mantive frequência regular, pontualidade e dedicação compatível com a carga horária das disciplinas cursadas.',
           tipo: 'ESCALA',
           obrigatoria: true,
@@ -53,7 +55,7 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
           ajuda: 'Considere presença em aulas síncronas/presenciais e prazos de entregas.'
         },
         {
-          id: 'q-auto-02',
+          id: '00000000-0000-0000-0006-000000000002',
           enunciado: 'Participei ativamente das aulas, esclarecendo dúvidas e colaborando com os colegas nos trabalhos em equipe.',
           tipo: 'ESCALA',
           obrigatoria: true,
@@ -63,15 +65,15 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
           rotuloMax: '5 - Muito Participativo'
         },
         {
-          id: 'q-auto-03',
+          id: '00000000-0000-0000-0006-000000000003',
           enunciado: 'Utilizei os canais de atendimento extraclasse (monitoria, atendimento ao aluno) quando necessário.',
           tipo: 'ESCOLHA_UNICA',
           obrigatoria: true,
           opcoes: [
-            { id: 'opt-sim', texto: 'Sim, utilizei com frequência' },
-            { id: 'opt-as-vezes', texto: 'Ocasionalmente, quando tive dúvidas pontuais' },
-            { id: 'opt-nao-precisei', texto: 'Não senti necessidade' },
-            { id: 'opt-nao-consegui', texto: 'Tive dificuldades de horário para acessar' }
+            { id: '00000000-0000-0000-0007-000000000001', texto: 'Sim, utilizei com frequência' },
+            { id: '00000000-0000-0000-0007-000000000002', texto: 'Ocasionalmente, quando tive dúvidas pontuais' },
+            { id: '00000000-0000-0000-0007-000000000003', texto: 'Não senti necessidade' },
+            { id: '00000000-0000-0000-0007-000000000004', texto: 'Tive dificuldades de horário para acessar' }
           ]
         }
       ]
@@ -79,12 +81,12 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
   ],
   gruposAvaliacaoDocente: [
     {
-      id: 'grp-doc-didatica',
+      id: '00000000-0000-0000-0005-000000000002',
       titulo: 'Dimensão Pedagógica e Prática Docente',
       descricao: 'Avalie a condução da disciplina, planejamento, métodos de ensino e domínio do conteúdo pelo docente.',
       questoes: [
         {
-          id: 'q-doc-01',
+          id: '00000000-0000-0000-0006-000000000004',
           enunciado: 'O docente apresentou o plano de ensino (objetivos, metodologia e critérios de avaliação) no início das aulas.',
           tipo: 'ESCALA',
           obrigatoria: true,
@@ -94,7 +96,7 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
           rotuloMax: '5 - Apresentou com clareza'
         },
         {
-          id: 'q-doc-02',
+          id: '00000000-0000-0000-0006-000000000005',
           enunciado: 'Demonstra domínio aprofundado dos conteúdos e relaciona a teoria com aplicações práticas relevantes.',
           tipo: 'ESCALA',
           obrigatoria: true,
@@ -104,7 +106,7 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
           rotuloMax: '5 - Excelente domínio'
         },
         {
-          id: 'q-doc-03',
+          id: '00000000-0000-0000-0006-000000000006',
           enunciado: 'Utiliza recursos e estratégias didáticas que facilitam a compreensão e incentivam o pensamento crítico.',
           tipo: 'ESCALA',
           obrigatoria: true,
@@ -116,12 +118,12 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
       ]
     },
     {
-      id: 'grp-doc-relacionamento',
+      id: '00000000-0000-0000-0005-000000000003',
       titulo: 'Avaliação da Aprendizagem e Relação Dialógica',
       descricao: 'Avalie a pontualidade na devolutiva das avaliações e a disponibilidade para esclarecimento de dúvidas.',
       questoes: [
         {
-          id: 'q-doc-04',
+          id: '00000000-0000-0000-0006-000000000007',
           enunciado: 'Fornece devolutivas (feedback) construtivas sobre as atividades e provas em tempo hábil para o aprendizado.',
           tipo: 'ESCALA',
           obrigatoria: true,
@@ -131,7 +133,7 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
           rotuloMax: '5 - Feedback pontual e detalhado'
         },
         {
-          id: 'q-doc-05',
+          id: '00000000-0000-0000-0006-000000000008',
           enunciado: 'Mantém postura ética, respeitosa e acessível para o diálogo acadêmico com a turma.',
           tipo: 'ESCALA',
           obrigatoria: true,
@@ -141,7 +143,7 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
           rotuloMax: '5 - Sempre exemplar'
         },
         {
-          id: 'q-doc-06',
+          id: '00000000-0000-0000-0006-000000000009',
           enunciado: 'Comentários abertos e sugestões para o docente (opcional e preservado o anonimato):',
           tipo: 'TEXTO_LIVRE',
           obrigatoria: false,
