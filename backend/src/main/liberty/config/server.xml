@@ -10,22 +10,22 @@
         <feature>persistence-3.2</feature>
     </featureManager>
 
-    <!-- Variáveis de ambiente injetadas pelo container/SO (sem senhas ou IPs no fonte) -->
+    <!-- Variáveis injetadas pelo container/SO ou com defaultValue vazio (sem credenciais fixas no fonte) -->
     <variable name="APP_DB_IP" defaultValue="localhost"/>
     <variable name="APP_DB_PORT" defaultValue="5432"/>
     <variable name="APP_DB_DATABASE" defaultValue="avalia"/>
-    <variable name="APP_DB_USER"/>
-    <variable name="APP_DB_PASSWORD"/>
+    <variable name="APP_DB_USER" defaultValue=""/>
+    <variable name="APP_DB_PASSWORD" defaultValue=""/>
 
-    <variable name="APP_DB_SIG_IP"/>
+    <variable name="APP_DB_SIG_IP" defaultValue=""/>
     <variable name="APP_DB_SIG_PORT" defaultValue="5432"/>
     <variable name="APP_DB_SIG_DATABASE" defaultValue="sigaa"/>
-    <variable name="APP_DB_SIG_USER"/>
-    <variable name="APP_DB_SIG_PASSWORD"/>
+    <variable name="APP_DB_SIG_USER" defaultValue=""/>
+    <variable name="APP_DB_SIG_PASSWORD" defaultValue=""/>
 
     <httpEndpoint id="defaultHttpEndpoint"
-                  httpPort="${default.http.port}"
-                  httpsPort="${default.https.port}"/>
+                  httpPort="9080"
+                  httpsPort="9443"/>
 
     <!-- Para exibir logs detalhados de SQL no messages.log e console (descomente abaixo):
     <logging traceSpecification="*=info:eclipselink=fine:eclipselink.sql=fine:org.eclipse.persistence=fine"

@@ -9,7 +9,8 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
   tipoPublico: 'DISCENTES',
   anoCiclo: '2026/1',
   periodoLetivo: '1º Semestre de 2026',
-  dataTermino: '2026-11-30T23:59:59',
+  dataInicio: '2026-10-01T08:00',
+  dataTermino: '2026-11-30T23:59',
   anonimo: true,
   componentesMatriculados: [
     {

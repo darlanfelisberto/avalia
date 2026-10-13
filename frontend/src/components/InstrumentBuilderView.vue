@@ -79,11 +79,71 @@ async function atualizarListagem() {
   carregandoQuestionarios.value = false;
 }
 
+function formatarDataPtBr(dataStr?: string): string {
+  if (!dataStr) return '—';
+  try {
+    // Se contiver YYYY-MM-DD com ou sem horário
+    if (dataStr.includes('T')) {
+      const partes = dataStr.split('T');
+      const dataParte = partes[0];
+      const horaMin = (partes[1] || '').substring(0, 5);
+      if (dataParte.includes('-')) {
+        const [ano, mes, dia] = dataParte.split('-');
+        return `${dia}/${mes}/${ano}${horaMin ? ` às ${horaMin}` : ''}`;
+      }
+    }
+    // Se for apenas data YYYY-MM-DD
+    if (dataStr.length === 10 && dataStr.includes('-')) {
+      const [ano, mes, dia] = dataStr.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+    const d = new Date(dataStr);
+    if (!isNaN(d.getTime())) {
+      const dia = String(d.getDate()).padStart(2, '0');
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const ano = d.getFullYear();
+      const hora = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${dia}/${mes}/${ano} às ${hora}:${min}`;
+    }
+    return dataStr;
+  } catch {
+    return dataStr;
+  }
+}
+
 onMounted(async () => {
   catalogoAlvos.value = await listarAlvosApi();
   catalogoPublicos.value = await listarPublicosApi();
   await atualizarListagem();
 });
+
+function paraDatetimeLocal(dataStr?: string, horaPadrao: string = '08:00'): string {
+  if (!dataStr) return '';
+  // Se já contiver T com hora e minuto
+  if (dataStr.includes('T')) {
+    const partes = dataStr.split('T');
+    const dataParte = partes[0];
+    const horaParte = (partes[1] || '').substring(0, 5);
+    return `${dataParte}T${horaParte || horaPadrao}`;
+  }
+  // Se for apenas YYYY-MM-DD
+  if (dataStr.length >= 10 && dataStr.includes('-')) {
+    return `${dataStr.substring(0, 10)}T${horaPadrao}`;
+  }
+  try {
+    const d = new Date(dataStr);
+    if (!isNaN(d.getTime())) {
+      const ano = d.getFullYear();
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      const hora = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${ano}-${mes}-${dia}T${hora}:${min}`;
+    }
+  } catch {}
+  return dataStr;
+}
 
 function normalizarInstrumento(inst: InstrumentoAvaliativo): InstrumentoAvaliativo {
   const copia = JSON.parse(JSON.stringify(inst || {}));
@@ -94,6 +154,22 @@ function normalizarInstrumento(inst: InstrumentoAvaliativo): InstrumentoAvaliati
   if (!copia.gruposAutoavaliacaoDiscente) copia.gruposAutoavaliacaoDiscente = [];
   if (!copia.gruposAvaliacaoDocente) copia.gruposAvaliacaoDocente = [];
   if (!copia.componentesMatriculados) copia.componentesMatriculados = [];
+
+  // Garantir que os campos de data e hora sejam compatíveis com <input type="datetime-local"> (YYYY-MM-DDTHH:mm)
+  if (copia.dataInicio) {
+    copia.dataInicio = paraDatetimeLocal(copia.dataInicio, '08:00');
+  } else {
+    const hoje = new Date().toISOString().substring(0, 10);
+    copia.dataInicio = `${hoje}T08:00`;
+  }
+
+  if (copia.dataTermino) {
+    copia.dataTermino = paraDatetimeLocal(copia.dataTermino, '23:59');
+  } else {
+    const daqui30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+    copia.dataTermino = `${daqui30Dias}T23:59`;
+  }
+
   return copia;
 }
 
@@ -124,8 +200,8 @@ function iniciarNovoQuestionario() {
     criadorNome: u.nome,
     anoCiclo: `${new Date().getFullYear()}/1`,
     periodoLetivo: 'Semestre Vigente',
-    dataInicio: new Date().toISOString().substring(0, 10),
-    dataTermino: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10),
+    dataInicio: `${new Date().toISOString().substring(0, 10)}T08:00`,
+    dataTermino: `${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10)}T23:59`,
     publicoAlvo: 'Comunidade Acadêmica / Estudantes',
     anonimo: true,
     gruposAutoavaliacaoDiscente: [],
@@ -383,6 +459,7 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
                   <th class="py-3 px-4">Instrumento / Título</th>
                   <th class="py-3 px-4">Módulo</th>
                   <th class="py-3 px-4">Ciclo</th>
+                  <th class="py-3 px-4">Período de Aplicação</th>
                   <th class="py-3 px-4">Alvo Avaliado</th>
                   <th class="py-3 px-4">Público Respondente</th>
                   <th class="py-3 px-4">Autor / Criador</th>
@@ -409,6 +486,15 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
                   </td>
                   <td class="py-3.5 px-4 whitespace-nowrap font-medium text-slate-600">
                     {{ item.anoCiclo }}
+                  </td>
+                  <td class="py-3.5 px-4 whitespace-nowrap text-slate-600 font-mono text-[11px]">
+                    <div class="flex items-center gap-1.5 text-slate-700">
+                      <span>📅</span>
+                      <span>{{ formatarDataPtBr(item.dataInicio) }}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 pl-5">
+                      até {{ formatarDataPtBr(item.dataTermino) }}
+                    </div>
                   </td>
                   <td class="py-3.5 px-4 whitespace-nowrap">
                     <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
@@ -651,21 +737,23 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700">Período de Aplicação - Início (RF04):</label>
+          <label class="text-xs font-bold text-slate-700">Período de Aplicação - Início (Data e Horário):</label>
           <input
             v-model="form.dataInicio"
-            type="date"
-            class="w-full text-xs p-3 border border-slate-200 rounded-xl"
+            type="datetime-local"
+            class="w-full text-xs p-3 border border-slate-200 rounded-xl bg-white font-medium"
           />
+          <p class="text-[11px] text-slate-400">Momento a partir do qual o formulário fica disponível.</p>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700">Período de Aplicação - Término (RF04):</label>
+          <label class="text-xs font-bold text-slate-700">Período de Aplicação - Término (Data e Horário):</label>
           <input
             v-model="form.dataTermino"
-            type="date"
-            class="w-full text-xs p-3 border border-slate-200 rounded-xl"
+            type="datetime-local"
+            class="w-full text-xs p-3 border border-slate-200 rounded-xl bg-white font-medium"
           />
+          <p class="text-[11px] text-slate-400">Prazo final para preenchimento e envio de respostas.</p>
         </div>
 
         <div class="space-y-1.5">

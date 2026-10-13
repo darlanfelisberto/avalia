@@ -70,7 +70,9 @@ public class InstrumentoService {
         inst.setTitulo(dto.getTitulo());
         inst.setSubtitulo(dto.getSubtitulo());
         inst.setModulo(dto.getModulo() != null ? dto.getModulo() : ModuloAvaliacao.ADPD);
-        inst.setAnoCiclo(dto.getAnoCiclo());
+        inst.setAnoCiclo(dto.getAnoCiclo() != null && !dto.getAnoCiclo().trim().isEmpty()
+                ? dto.getAnoCiclo()
+                : String.valueOf(java.time.Year.now().getValue()));
         inst.setPublicoAlvo(dto.getPublicoAlvo());
         if (dto.getTipoAlvo() != null) {
             try {
@@ -97,11 +99,11 @@ public class InstrumentoService {
         inst.setStatus(dto.getStatus() != null ? dto.getStatus() : "ABERTO");
         inst.setUpdatedAt(OffsetDateTime.now());
 
-        if (dto.getDataInicio() != null && !dto.getDataInicio().isEmpty()) {
-            inst.setDataInicio(OffsetDateTime.parse(formatarIso(dto.getDataInicio())));
+        if (dto.getDataInicio() != null && !dto.getDataInicio().trim().isEmpty()) {
+            inst.setDataInicio(converterParaOffsetDateTime(dto.getDataInicio()));
         }
-        if (dto.getDataTermino() != null && !dto.getDataTermino().isEmpty()) {
-            inst.setDataTermino(OffsetDateTime.parse(formatarIso(dto.getDataTermino())));
+        if (dto.getDataTermino() != null && !dto.getDataTermino().trim().isEmpty()) {
+            inst.setDataTermino(converterParaOffsetDateTime(dto.getDataTermino()));
         } else {
             inst.setDataTermino(OffsetDateTime.now().plusDays(30));
         }
@@ -390,10 +392,35 @@ public class InstrumentoService {
         return dto;
     }
 
-    private String formatarIso(String dataStr) {
-        if (dataStr.length() == 10) { // Formato YYYY-MM-DD
-            return dataStr + "T00:00:00Z";
+    private OffsetDateTime converterParaOffsetDateTime(String dataStr) {
+        if (dataStr == null || dataStr.trim().isEmpty()) {
+            return null;
         }
-        return dataStr;
+        String str = dataStr.trim();
+        java.time.ZoneId fuso = java.time.ZoneId.systemDefault();
+        try {
+            if (str.length() == 10 && str.contains("-")) {
+                // Formato YYYY-MM-DD
+                return java.time.LocalDate.parse(str).atStartOfDay(fuso).toOffsetDateTime();
+            }
+            if (str.length() == 16 && str.contains("T")) {
+                // Formato YYYY-MM-DDTHH:mm (vindo do input type="datetime-local")
+                return java.time.LocalDateTime.parse(str + ":00").atZone(fuso).toOffsetDateTime();
+            }
+            if (!str.contains("Z") && !str.contains("+") && str.lastIndexOf("-") <= 7) {
+                // Formato sem timezone, ex: 2026-11-30T23:59:59
+                return java.time.LocalDateTime.parse(str).atZone(fuso).toOffsetDateTime();
+            }
+            return OffsetDateTime.parse(str);
+        } catch (Exception e) {
+            try {
+                if (str.length() >= 16 && str.contains("T")) {
+                    return java.time.LocalDateTime.parse(str.substring(0, 16) + ":00").atZone(fuso).toOffsetDateTime();
+                }
+                return java.time.LocalDate.parse(str.substring(0, 10)).atStartOfDay(fuso).toOffsetDateTime();
+            } catch (Exception ex) {
+                return OffsetDateTime.now();
+            }
+        }
     }
 }
