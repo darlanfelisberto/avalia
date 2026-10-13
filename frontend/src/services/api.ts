@@ -33,7 +33,7 @@ export async function buscarInstrumentoApi(id: string): Promise<InstrumentoAvali
   return carregarInstrumentoAtivo();
 }
 
-export async function salvarInstrumentoApi(instrumento: InstrumentoAvaliativo): Promise<InstrumentoAvaliativo> {
+export async function salvarInstrumentoApi(instrumento: InstrumentoAvaliativo): Promise<{ sucesso: boolean; instrumento: InstrumentoAvaliativo; erro?: string }> {
   // Salva no cache local primeiro para garantia offline
   salvarInstrumento(instrumento);
 
@@ -47,13 +47,16 @@ export async function salvarInstrumentoApi(instrumento: InstrumentoAvaliativo): 
     if (res.ok) {
       const salvo = await res.json();
       salvarInstrumento(salvo);
-      return salvo;
+      return { sucesso: true, instrumento: salvo };
+    } else {
+      const errText = await res.text();
+      console.error('Erro na resposta da API:', res.status, errText);
+      return { sucesso: false, instrumento, erro: `HTTP ${res.status}: ${errText}` };
     }
-  } catch (e) {
+  } catch (e: any) {
     console.warn('Falha na chamada REST com Open Liberty, mantido no storage local', e);
+    return { sucesso: false, instrumento, erro: e?.message || 'Falha de conexão com o servidor' };
   }
-
-  return instrumento;
 }
 
 // --- Catálogo de Alvos e Públicos ---

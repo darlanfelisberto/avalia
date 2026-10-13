@@ -38,20 +38,24 @@ const estado = reactive<EstadoPreenchimento>(
 const statusSalvamento = ref<'salvo' | 'salvando' | 'erro'>('salvo');
 const ultimaSalvaHora = ref(new Date().toLocaleTimeString('pt-BR'));
 
-// Calcula total de itens obrigatórios (Autoavaliação + por disciplina)
+// Calcula total de itens obrigatórios (Autoavaliação + por disciplina ou geral)
 const totalQuestoesObrigatorias = computed(() => {
   let count = 0;
   // Autoavaliação discente
-  for (const g of instrumento.value.gruposAutoavaliacaoDiscente) {
-    for (const q of g.questoes) {
+  for (const g of (instrumento.value.gruposAutoavaliacaoDiscente || [])) {
+    for (const q of (g.questoes || [])) {
       if (q.obrigatoria) count++;
     }
   }
-  // Por cada componente curricular matriculado
-  const obrigPorComp = instrumento.value.gruposAvaliacaoDocente.reduce((acc, g) => {
-    return acc + g.questoes.filter(q => q.obrigatoria).length;
+  const obrigGeral = (instrumento.value.gruposAvaliacaoDocente || []).reduce((acc, g) => {
+    return acc + (g.questoes || []).filter(q => q.obrigatoria).length;
   }, 0);
-  count += obrigPorComp * instrumento.value.componentesMatriculados.length;
+
+  if (instrumento.value.componentesMatriculados && instrumento.value.componentesMatriculados.length > 0) {
+    count += obrigGeral * instrumento.value.componentesMatriculados.length;
+  } else {
+    count += obrigGeral;
+  }
   return count;
 });
 
@@ -59,20 +63,31 @@ const totalQuestoesObrigatorias = computed(() => {
 const respostasConcluidas = computed(() => {
   let count = 0;
   // Autoavaliação
-  for (const g of instrumento.value.gruposAutoavaliacaoDiscente) {
-    for (const q of g.questoes) {
+  for (const g of (instrumento.value.gruposAutoavaliacaoDiscente || [])) {
+    for (const q of (g.questoes || [])) {
       if (q.obrigatoria) {
         const resp = estado.respostas[`${q.id}_geral`];
         if (resp && (resp.valorEscala !== undefined || resp.opcaoId)) count++;
       }
     }
   }
-  // Docente por componente
-  for (const comp of instrumento.value.componentesMatriculados) {
-    for (const g of instrumento.value.gruposAvaliacaoDocente) {
-      for (const q of g.questoes) {
+  // Por componente ou avaliação direta/geral
+  if (instrumento.value.componentesMatriculados && instrumento.value.componentesMatriculados.length > 0) {
+    for (const comp of instrumento.value.componentesMatriculados) {
+      for (const g of (instrumento.value.gruposAvaliacaoDocente || [])) {
+        for (const q of (g.questoes || [])) {
+          if (q.obrigatoria) {
+            const resp = estado.respostas[`${q.id}_${comp.id}`];
+            if (resp && (resp.valorEscala !== undefined || resp.opcaoId)) count++;
+          }
+        }
+      }
+    }
+  } else {
+    for (const g of (instrumento.value.gruposAvaliacaoDocente || [])) {
+      for (const q of (g.questoes || [])) {
         if (q.obrigatoria) {
-          const resp = estado.respostas[`${q.id}_${comp.id}`];
+          const resp = estado.respostas[`${q.id}_geral`];
           if (resp && (resp.valorEscala !== undefined || resp.opcaoId)) count++;
         }
       }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import type { InstrumentoAvaliativo, EstadoPreenchimento, RespostaItem, ComponenteCurricular } from '../types/avaliacao';
 
 const props = defineProps<{
@@ -29,6 +29,18 @@ const gruposDocente = computed(() => props.instrumento?.gruposAvaliacaoDocente |
 
 const temAutoavaliacao = computed(() => gruposAuto.value.length > 0);
 const temAvaliacaoDocente = computed(() => gruposDocente.value.length > 0);
+
+onMounted(() => {
+  if (!temAutoavaliacao.value && props.estado?.etapaAtual === 'autoavaliacao') {
+    emit('mudarEtapa', 'docentes');
+  }
+});
+
+watch(temAutoavaliacao, (tem) => {
+  if (!tem && props.estado?.etapaAtual === 'autoavaliacao') {
+    emit('mudarEtapa', 'docentes');
+  }
+});
 
 // Chave auxiliar para buscar resposta no mapa
 function getChaveResposta(questaoId: string, compId?: string): string {
@@ -142,8 +154,8 @@ const todasDisciplinasConcluidas = computed(() => {
       </div>
     </div>
 
-    <!-- Navegador de Etapas do Instrumento -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <!-- Navegador de Etapas do Instrumento (exibido apenas se houver múltiplas etapas) -->
+    <div v-if="temAutoavaliacao && temAvaliacaoDocente" class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <!-- Card Etapa 1: Autoavaliação -->
       <button
         type="button"
@@ -472,12 +484,14 @@ const todasDisciplinasConcluidas = computed(() => {
       <!-- Barra de Ações / Próxima Disciplina ou Conclusão -->
       <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
         <button
+          v-if="temAutoavaliacao"
           type="button"
           @click="emit('mudarEtapa', 'autoavaliacao')"
           class="text-xs text-slate-600 hover:text-slate-900 font-medium px-4 py-2"
         >
           ← Voltar para Autoavaliação
         </button>
+        <div v-else></div>
 
         <div class="flex gap-3 w-full sm:w-auto">
           <button
@@ -532,7 +546,7 @@ const todasDisciplinasConcluidas = computed(() => {
       <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-center gap-3">
         <button
           type="button"
-          @click="emit('mudarEtapa', 'autoavaliacao')"
+          @click="emit('mudarEtapa', temAutoavaliacao ? 'autoavaliacao' : 'docentes')"
           class="border border-slate-300 hover:border-slate-400 bg-white text-slate-700 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all"
         >
           Revisar ou Editar Respostas (RF07)

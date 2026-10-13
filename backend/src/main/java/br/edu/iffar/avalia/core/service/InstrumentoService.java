@@ -12,7 +12,9 @@ import jakarta.transaction.Transactional;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -104,54 +106,75 @@ public class InstrumentoService {
             inst.setDataTermino(OffsetDateTime.now().plusDays(30));
         }
 
-        // Limpar grupos antigos e reassociar
-        inst.getGrupos().clear();
+        // Sincronizar grupos sem recriar instâncias existentes (evita violação de chave primária no JPA/EclipseLink)
+        Map<String, GrupoQuestoes> gruposExistentes = new HashMap<>();
+        for (GrupoQuestoes g : inst.getGrupos()) {
+            if (g.getId() != null) {
+                gruposExistentes.put(g.getId(), g);
+            }
+        }
+
+        List<GrupoQuestoes> gruposSincronizados = new ArrayList<>();
         int ordemGrupo = 1;
 
         // 1. Grupos de Autoavaliação Discente
         if (dto.getGruposAutoavaliacaoDiscente() != null) {
             for (GrupoDTO gDto : dto.getGruposAutoavaliacaoDiscente()) {
-                GrupoQuestoes grupo = new GrupoQuestoes();
-                grupo.setId(gDto.getId() != null ? gDto.getId() : "grp-" + UUID.randomUUID().toString().substring(0, 8));
-                grupo.setInstrumento(inst);
-                grupo.setSecao(SecaoInstrumento.AUTOAVALIACAO_DISCENTE);
-                grupo.setTitulo(gDto.getTitulo());
-                grupo.setDescricao(gDto.getDescricao());
-                grupo.setOrdem(ordemGrupo++);
-
-                associarQuestoes(grupo, gDto.getQuestoes());
-                inst.getGrupos().add(grupo);
+                GrupoQuestoes grupo = sincronizarGrupo(gDto, inst, SecaoInstrumento.AUTOAVALIACAO_DISCENTE, ordemGrupo++, gruposExistentes);
+                gruposSincronizados.add(grupo);
             }
         }
 
         // 2. Grupos de Avaliação Docente
         if (dto.getGruposAvaliacaoDocente() != null) {
             for (GrupoDTO gDto : dto.getGruposAvaliacaoDocente()) {
-                GrupoQuestoes grupo = new GrupoQuestoes();
-                grupo.setId(gDto.getId() != null ? gDto.getId() : "grp-" + UUID.randomUUID().toString().substring(0, 8));
-                grupo.setInstrumento(inst);
-                grupo.setSecao(SecaoInstrumento.AVALIACAO_DOCENTE);
-                grupo.setTitulo(gDto.getTitulo());
-                grupo.setDescricao(gDto.getDescricao());
-                grupo.setOrdem(ordemGrupo++);
+                GrupoQuestoes grupo = sincronizarGrupo(gDto, inst, SecaoInstrumento.AVALIACAO_DOCENTE, ordemGrupo++, gruposExistentes);
+                gruposSincronizados.add(grupo);
+            }
+        }
 
-                associarQuestoes(grupo, gDto.getQuestoes());
-                inst.getGrupos().add(grupo);
+        inst.getGrupos().removeIf(g -> !gruposSincronizados.contains(g));
+        for (GrupoQuestoes g : gruposSincronizados) {
+            if (!inst.getGrupos().contains(g)) {
+                inst.getGrupos().add(g);
             }
         }
 
         // 3. Componentes curriculares (para ADPD)
-        inst.getComponentes().clear();
+        Map<String, ComponenteCurricular> compsExistentes = new HashMap<>();
+        for (ComponenteCurricular c : inst.getComponentes()) {
+            if (c.getId() != null) {
+                compsExistentes.put(c.getId(), c);
+            }
+        }
+
+        List<ComponenteCurricular> compsSincronizados = new ArrayList<>();
         if (dto.getComponentesMatriculados() != null) {
             for (ComponenteDTO cDto : dto.getComponentesMatriculados()) {
-                ComponenteCurricular comp = new ComponenteCurricular();
-                comp.setId(cDto.getId() != null ? cDto.getId() : "comp-" + UUID.randomUUID().toString().substring(0, 8));
-                comp.setInstrumento(inst);
+                String cId = cDto.getId();
+                if (cId == null || cId.trim().isEmpty()) {
+                    cId = "comp-" + UUID.randomUUID().toString().substring(0, 8);
+                    cDto.setId(cId);
+                }
+
+                ComponenteCurricular comp = compsExistentes.get(cId);
+                if (comp == null) {
+                    comp = new ComponenteCurricular();
+                    comp.setId(cId);
+                    comp.setInstrumento(inst);
+                }
                 comp.setCodigo(cDto.getCodigo());
                 comp.setNome(cDto.getNome());
                 comp.setDocenteNome(cDto.getDocenteNome());
                 comp.setTurma(cDto.getTurma());
-                inst.getComponentes().add(comp);
+                compsSincronizados.add(comp);
+            }
+        }
+
+        inst.getComponentes().removeIf(c -> !compsSincronizados.contains(c));
+        for (ComponenteCurricular c : compsSincronizados) {
+            if (!inst.getComponentes().contains(c)) {
+                inst.getComponentes().add(c);
             }
         }
 
@@ -159,23 +182,59 @@ public class InstrumentoService {
         return converterParaDTO(inst);
     }
 
-    @Transactional
-    public boolean remover(String id) {
-        Instrumento inst = em.find(Instrumento.class, id);
-        if (inst != null) {
-            em.remove(inst);
-            return true;
+    private GrupoQuestoes sincronizarGrupo(GrupoDTO gDto, Instrumento inst, SecaoInstrumento secao, int ordem, Map<String, GrupoQuestoes> existentes) {
+        String id = gDto.getId();
+        if (id == null || id.trim().isEmpty()) {
+            id = "grp-" + UUID.randomUUID().toString().substring(0, 8);
+            gDto.setId(id);
         }
-        return false;
+
+        GrupoQuestoes grupo = existentes.get(id);
+        if (grupo == null) {
+            grupo = new GrupoQuestoes();
+            grupo.setId(id);
+            grupo.setInstrumento(inst);
+        }
+
+        grupo.setSecao(secao);
+        grupo.setTitulo(gDto.getTitulo());
+        grupo.setDescricao(gDto.getDescricao());
+        grupo.setOrdem(ordem);
+
+        sincronizarQuestoes(grupo, gDto.getQuestoes());
+        return grupo;
     }
 
-    private void associarQuestoes(GrupoQuestoes grupo, List<QuestaoDTO> questoesDto) {
-        if (questoesDto == null) return;
+    private void sincronizarQuestoes(GrupoQuestoes grupo, List<QuestaoDTO> questoesDto) {
+        if (questoesDto == null) {
+            grupo.getQuestoes().clear();
+            return;
+        }
+
+        Map<String, Questao> questoesExistentes = new HashMap<>();
+        for (Questao q : grupo.getQuestoes()) {
+            if (q.getId() != null) {
+                questoesExistentes.put(q.getId(), q);
+            }
+        }
+
+        List<Questao> novasQuestoes = new ArrayList<>();
         int ordemQuestao = 1;
+
         for (QuestaoDTO qDto : questoesDto) {
-            Questao q = new Questao();
-            q.setId(qDto.getId() != null ? qDto.getId() : "q-" + UUID.randomUUID().toString().substring(0, 8));
-            q.setGrupo(grupo);
+            String qId = qDto.getId();
+            if (qId == null || qId.trim().isEmpty()) {
+                qId = "q-" + UUID.randomUUID().toString().substring(0, 8);
+                qDto.setId(qId);
+            }
+
+            Questao q = questoesExistentes.get(qId);
+            if (q == null) {
+                q = new Questao();
+                q.setId(qId);
+                q.setGrupo(grupo);
+            }
+
             q.setEnunciado(qDto.getEnunciado());
             q.setTipo(qDto.getTipo() != null ? qDto.getTipo() : TipoQuestao.ESCALA);
             q.setObrigatoria(qDto.isObrigatoria());
@@ -186,12 +245,70 @@ public class InstrumentoService {
             q.setRotuloMax(qDto.getRotuloMax());
             q.setAjuda(qDto.getAjuda());
 
-            if (qDto.getOpcoes() != null && !qDto.getOpcoes().isEmpty()) {
-                q.setOpcoesJson(jsonb.toJson(qDto.getOpcoes()));
+            sincronizarOpcoes(q, qDto.getOpcoes());
+
+            novasQuestoes.add(q);
+        }
+
+        grupo.getQuestoes().removeIf(q -> !novasQuestoes.contains(q));
+        for (Questao q : novasQuestoes) {
+            if (!grupo.getQuestoes().contains(q)) {
+                grupo.getQuestoes().add(q);
+            }
+        }
+    }
+
+    private void sincronizarOpcoes(Questao questao, List<OpcaoRespostaDTO> opcoesDto) {
+        if (opcoesDto == null) {
+            questao.getOpcoes().clear();
+            return;
+        }
+
+        Map<String, OpcaoQuestao> opcoesExistentes = new HashMap<>();
+        for (OpcaoQuestao o : questao.getOpcoes()) {
+            if (o.getId() != null) {
+                opcoesExistentes.put(o.getId(), o);
+            }
+        }
+
+        List<OpcaoQuestao> novasOpcoes = new ArrayList<>();
+        int ordemOpcao = 0;
+
+        for (OpcaoRespostaDTO oDto : opcoesDto) {
+            String oId = oDto.getId();
+            if (oId == null || oId.trim().isEmpty()) {
+                oId = "opt-" + UUID.randomUUID().toString().substring(0, 8);
+                oDto.setId(oId);
             }
 
-            grupo.getQuestoes().add(q);
+            OpcaoQuestao o = opcoesExistentes.get(oId);
+            if (o == null) {
+                o = new OpcaoQuestao();
+                o.setId(oId);
+                o.setQuestao(questao);
+            }
+
+            o.setTexto(oDto.getTexto() != null ? oDto.getTexto() : "");
+            o.setOrdem(ordemOpcao++);
+            novasOpcoes.add(o);
         }
+
+        questao.getOpcoes().removeIf(o -> !novasOpcoes.contains(o));
+        for (OpcaoQuestao o : novasOpcoes) {
+            if (!questao.getOpcoes().contains(o)) {
+                questao.getOpcoes().add(o);
+            }
+        }
+    }
+
+    @Transactional
+    public boolean remover(String id) {
+        Instrumento inst = em.find(Instrumento.class, id);
+        if (inst != null) {
+            em.remove(inst);
+            return true;
+        }
+        return false;
     }
 
     private InstrumentoDTO converterParaDTO(Instrumento inst) {
@@ -237,7 +354,13 @@ public class InstrumentoService {
                 qDto.setRotuloMax(q.getRotuloMax());
                 qDto.setAjuda(q.getAjuda());
 
-                if (q.getOpcoesJson() != null && !q.getOpcoesJson().isEmpty()) {
+                if (q.getOpcoes() != null && !q.getOpcoes().isEmpty()) {
+                    List<OpcaoRespostaDTO> opts = new ArrayList<>();
+                    for (OpcaoQuestao opt : q.getOpcoes()) {
+                        opts.add(new OpcaoRespostaDTO(opt.getId(), opt.getTexto()));
+                    }
+                    qDto.setOpcoes(opts);
+                } else if (q.getOpcoesJson() != null && !q.getOpcoesJson().isEmpty()) {
                     try {
                         List<OpcaoRespostaDTO> opts = jsonb.fromJson(
                                 q.getOpcoesJson(),

@@ -5,7 +5,6 @@ import type {
   GrupoQuestoes,
   Questao,
   TipoQuestao,
-  ComponenteCurricular,
   AlvoAvaliado,
   PublicoAvaliador
 } from '../types/avaliacao';
@@ -162,10 +161,8 @@ function editarQuestionario(inst: InstrumentoAvaliativo) {
   modoVisualizacao.value = 'formulario';
 }
 
-// Aba de edição ativa: grupos de autoavaliação ou grupos de avaliação docente
-const abaAtiva = ref<'autoavaliacao' | 'docentes' | 'disciplinas'>('docentes');
-
 const mensagemSucesso = ref(false);
+const mensagemErro = ref<string | null>(null);
 
 // Salvar instrumento no Open Liberty Backend e localmente
 async function salvar() {
@@ -174,14 +171,19 @@ async function salvar() {
   if (!form.criadorId) form.criadorId = u.id;
   if (!form.criadorNome) form.criadorNome = u.nome;
 
-  const salvo = await salvarInstrumentoApi(form);
-  Object.assign(form, salvo);
-  emit('instrumentoAtualizado', JSON.parse(JSON.stringify(salvo)));
-  await atualizarListagem();
-  mensagemSucesso.value = true;
-  setTimeout(() => {
-    mensagemSucesso.value = false;
-  }, 4000);
+  mensagemErro.value = null;
+  const res = await salvarInstrumentoApi(form);
+  if (res.sucesso) {
+    Object.assign(form, res.instrumento);
+    emit('instrumentoAtualizado', JSON.parse(JSON.stringify(res.instrumento)));
+    await atualizarListagem();
+    mensagemSucesso.value = true;
+    setTimeout(() => {
+      mensagemSucesso.value = false;
+    }, 4000);
+  } else {
+    mensagemErro.value = res.erro || 'Erro ao sincronizar com o servidor PostgreSQL/Liberty.';
+  }
 }
 
 // Restaurar padrão
@@ -193,11 +195,15 @@ function restaurarPadrao() {
   }
 }
 
-// Gerenciamento de Grupos
+// Gerenciamento de Grupos (Estrutura única do questionário)
 function getGruposAtuais(): GrupoQuestoes[] {
-  return abaAtiva.value === 'autoavaliacao'
-    ? form.gruposAutoavaliacaoDiscente
-    : form.gruposAvaliacaoDocente;
+  // Se for autoavaliação pura e não tiver grupos na lista principal, migra ou unifica
+  if (!form.gruposAvaliacaoDocente) form.gruposAvaliacaoDocente = [];
+  if (form.gruposAvaliacaoDocente.length === 0 && form.gruposAutoavaliacaoDiscente?.length > 0) {
+    form.gruposAvaliacaoDocente = [...form.gruposAutoavaliacaoDiscente];
+    form.gruposAutoavaliacaoDiscente = [];
+  }
+  return form.gruposAvaliacaoDocente;
 }
 
 function adicionarGrupo() {
@@ -207,21 +213,12 @@ function adicionarGrupo() {
     descricao: 'Descreva os objetivos desta dimensão avaliativa...',
     questoes: []
   };
-
-  if (abaAtiva.value === 'autoavaliacao') {
-    form.gruposAutoavaliacaoDiscente.push(novoGrupo);
-  } else {
-    form.gruposAvaliacaoDocente.push(novoGrupo);
-  }
+  getGruposAtuais().push(novoGrupo);
 }
 
 function removerGrupo(grupoIndex: number) {
   if (confirm('Tem certeza que deseja remover este grupo e todas as suas questões?')) {
-    if (abaAtiva.value === 'autoavaliacao') {
-      form.gruposAutoavaliacaoDiscente.splice(grupoIndex, 1);
-    } else {
-      form.gruposAvaliacaoDocente.splice(grupoIndex, 1);
-    }
+    getGruposAtuais().splice(grupoIndex, 1);
   }
 }
 
@@ -290,24 +287,6 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
       { id: `opt-1-${Date.now()}`, texto: 'Opção 1' },
       { id: `opt-2-${Date.now()}`, texto: 'Opção 2' }
     ];
-  }
-}
-
-// Gerenciamento de Disciplinas (para ADPD)
-function adicionarDisciplina() {
-  const novoComp: ComponenteCurricular = {
-    id: `comp-${Date.now()}`,
-    codigo: 'IFF-NOVO-01',
-    nome: 'Nova Disciplina / Componente Curricular',
-    docenteNome: 'Prof. Nome do Docente',
-    turma: 'Turma Regular'
-  };
-  form.componentesMatriculados.push(novoComp);
-}
-
-function removerDisciplina(index: number) {
-  if (form.componentesMatriculados.length > 1) {
-    form.componentesMatriculados.splice(index, 1);
   }
 }
 </script>
@@ -599,6 +578,24 @@ function removerDisciplina(index: number) {
       </button>
     </div>
 
+    <!-- Alerta de Erro -->
+    <div
+      v-if="mensagemErro"
+      class="p-4 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-900 font-semibold flex items-center justify-between shadow-2xs"
+    >
+      <div class="flex items-center gap-2">
+        <span class="text-base text-rose-600 font-bold">⚠️</span>
+        <span>Erro ao salvar no servidor: {{ mensagemErro }}</span>
+      </div>
+      <button
+        type="button"
+        @click="mensagemErro = null"
+        class="text-rose-500 hover:text-rose-700 font-bold px-2 py-1"
+      >
+        ✕
+      </button>
+    </div>
+
     <!-- SEÇÃO 1: Dados Gerais do Instrumento (RF01, RF04, RF05, RF08) -->
     <div class="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-xs space-y-5">
       <div class="border-b border-slate-100 pb-3">
@@ -728,124 +725,38 @@ function removerDisciplina(index: number) {
       </div>
     </div>
 
-    <!-- SEÇÃO 2: Abas para Gerenciar as Etapas e Grupos -->
+    <!-- SEÇÃO 2: Estrutura de Dimensões e Grupos de Questões do Instrumento -->
     <div class="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-xs space-y-6">
       <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-slate-100 pb-4">
         <div>
           <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">
-            2. Estrutura de Dimensões e Grupos de Questões
+            2. Dimensões e Questões do Instrumento
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">
-            Agrupe os itens avaliativos por temas e configure os enunciados (RF01, RF02, RF03).
+            Cadastre as dimensões avaliativas e as questões direcionadas ao público selecionado ({{ form.tipoPublico }}).
           </p>
         </div>
 
-        <div class="flex gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
-          <button
-            type="button"
-            @click="abaAtiva = 'docentes'"
-            :class="[
-              'px-3 py-1.5 rounded-lg transition-all',
-              abaAtiva === 'docentes' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-            ]"
-          >
-            Avaliação Docente ({{ form.gruposAvaliacaoDocente?.length || 0 }} grupos)
-          </button>
-
-          <button
-            type="button"
-            @click="abaAtiva = 'autoavaliacao'"
-            :class="[
-              'px-3 py-1.5 rounded-lg transition-all',
-              abaAtiva === 'autoavaliacao' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-            ]"
-          >
-            Autoavaliação Discente ({{ form.gruposAutoavaliacaoDiscente?.length || 0 }} grupos)
-          </button>
-
-          <button
-            type="button"
-            @click="abaAtiva = 'disciplinas'"
-            :class="[
-              'px-3 py-1.5 rounded-lg transition-all',
-              abaAtiva === 'disciplinas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-            ]"
-          >
-            Disciplinas / Turmas ({{ form.componentesMatriculados?.length || 0 }})
-          </button>
-        </div>
+        <button
+          type="button"
+          @click="adicionarGrupo"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 self-start sm:self-center shadow-xs"
+        >
+          <span>＋</span>
+          <span>Nova Dimensão / Grupo de Questões</span>
+        </button>
       </div>
 
-      <!-- VISÃO: GESTÃO DE DISCIPLINAS / COMPONENTES (Para ADPD) -->
-      <div v-if="abaAtiva === 'disciplinas'" class="space-y-4">
-        <div class="flex justify-between items-center">
-          <p class="text-xs text-slate-500">
-            Componentes curriculares e docentes vinculados a este ciclo avaliativo (sincronizados com o SIGAA).
-          </p>
-          <button
-            type="button"
-            @click="adicionarDisciplina"
-            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1"
-          >
-            <span>+</span>
-            <span>Adicionar Componente</span>
-          </button>
-        </div>
-
-        <div class="space-y-2">
-          <div
-            v-for="(comp, cIdx) in form.componentesMatriculados"
-            :key="comp.id"
-            class="p-4 border border-slate-200 rounded-xl bg-slate-50/50 flex flex-col md:flex-row items-center gap-3"
-          >
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 flex-1 w-full">
-              <input
-                v-model="comp.codigo"
-                type="text"
-                placeholder="Código"
-                class="text-xs p-2.5 border border-slate-200 rounded-lg bg-white font-mono"
-              />
-              <input
-                v-model="comp.nome"
-                type="text"
-                placeholder="Nome da Disciplina"
-                class="text-xs p-2.5 border border-slate-200 rounded-lg bg-white sm:col-span-2 font-medium"
-              />
-              <input
-                v-model="comp.docenteNome"
-                type="text"
-                placeholder="Nome do Docente"
-                class="text-xs p-2.5 border border-slate-200 rounded-lg bg-white"
-              />
-            </div>
-            <button
-              type="button"
-              @click="removerDisciplina(cIdx)"
-              title="Excluir disciplina"
-              class="text-rose-500 hover:text-rose-700 p-2 text-xs font-bold"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- VISÃO: CONSTRUTOR DE GRUPOS E QUESTÕES -->
-      <div v-else class="space-y-6">
-        <div class="flex justify-between items-center">
-          <div class="text-xs text-slate-600">
-            Etapa selecionada:
-            <strong class="text-slate-900">
-              {{ abaAtiva === 'autoavaliacao' ? 'Autoavaliação do Estudante' : 'Avaliação do Desempenho Docente' }}
-            </strong>
-          </div>
+      <!-- VISÃO: CONSTRUTOR DE GRUPOS E QUESTÕES DIRETAS -->
+      <div class="space-y-6">
+        <div v-if="getGruposAtuais().length === 0" class="p-8 text-center border-2 border-dashed border-slate-200 rounded-2xl space-y-3">
+          <p class="text-xs text-slate-500">Este questionário ainda não possui dimensões ou questões cadastradas.</p>
           <button
             type="button"
             @click="adicionarGrupo"
-            class="bg-slate-900 hover:bg-black text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5"
+            class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg"
           >
-            <span>+</span>
-            <span>Novo Grupo / Dimensão</span>
+            Adicionar Primeira Dimensão
           </button>
         </div>
 

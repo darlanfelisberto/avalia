@@ -17,6 +17,11 @@
                   httpPort="${default.http.port}"
                   httpsPort="${default.https.port}"/>
 
+    <!-- Para exibir logs detalhados de SQL no messages.log e console (descomente abaixo):
+    <logging traceSpecification="*=info:eclipselink=fine:eclipselink.sql=fine:org.eclipse.persistence=fine"
+             consoleLogLevel="INFO"/>
+    -->
+
     <webApplication location="avalia.war" contextRoot="/">
     </webApplication>
 

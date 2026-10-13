@@ -1,6 +1,7 @@
 package br.edu.iffar.avalia.core.dto;
 
 import br.edu.iffar.avalia.core.model.TipoQuestao;
+import java.util.ArrayList;
 import java.util.List;
 
 public class QuestaoDTO {
@@ -12,7 +13,7 @@ public class QuestaoDTO {
     private Integer escalaMax;
     private String rotuloMin;
     private String rotuloMax;
-    private List<OpcaoRespostaDTO> opcoes;
+    private List<OpcaoRespostaDTO> opcoes = new ArrayList<>();
     private String ajuda;
 
     public QuestaoDTO() {}

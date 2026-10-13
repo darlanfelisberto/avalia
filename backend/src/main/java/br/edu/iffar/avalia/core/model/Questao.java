@@ -1,6 +1,8 @@
 package br.edu.iffar.avalia.core.model;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "questao")
@@ -39,8 +41,12 @@ public class Questao {
     @Column(name = "rotulo_max", length = 100)
     private String rotuloMax;
 
-    @Column(name = "opcoes_json", columnDefinition = "jsonb")
+    @Column(name = "opcoes_json", columnDefinition = "TEXT")
     private String opcoesJson;
+
+    @OneToMany(mappedBy = "questao", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("ordem ASC")
+    private List<OpcaoQuestao> opcoes = new ArrayList<>();
 
     @Column(name = "ajuda")
     private String ajuda;
@@ -79,6 +85,9 @@ public class Questao {
 
     public String getOpcoesJson() { return opcoesJson; }
     public void setOpcoesJson(String opcoesJson) { this.opcoesJson = opcoesJson; }
+
+    public List<OpcaoQuestao> getOpcoes() { return opcoes; }
+    public void setOpcoes(List<OpcaoQuestao> opcoes) { this.opcoes = opcoes; }
 
     public String getAjuda() { return ajuda; }
     public void setAjuda(String ajuda) { this.ajuda = ajuda; }
