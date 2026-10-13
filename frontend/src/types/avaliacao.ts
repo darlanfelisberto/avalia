@@ -40,7 +40,7 @@ export interface ComponenteCurricular {
   turma: string;
 }
 
-export type TipoAlvoAvaliado = 'INSTITUICAO' | 'CAMPUS' | 'SETOR' | 'DOCENTE' | 'CURSO' | 'TURMA' | 'AUTOAVALIACAO';
+export type TipoAlvoAvaliado = 'INSTITUICAO' | 'CAMPUS' | 'SETOR' | 'DOCENTE' | 'SERVIDOR' | 'CURSO' | 'TURMA' | 'AUTOAVALIACAO';
 
 export type TipoPublicoAvaliador = 'DISCENTES' | 'DOCENTES' | 'TAES' | 'EGRESSOS' | 'SOCIEDADE_CIVIL' | 'TODOS';
 
@@ -53,6 +53,7 @@ export interface AlvoAvaliado {
   descricao?: string;
   responsavelNome?: string;
   campus?: string;
+  idOrigemSigaa?: string;
   ativo: boolean;
   createdAt?: string;
 }

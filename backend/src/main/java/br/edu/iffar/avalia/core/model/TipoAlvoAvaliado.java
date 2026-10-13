@@ -5,6 +5,7 @@ public enum TipoAlvoAvaliado {
     CAMPUS,
     SETOR,
     DOCENTE,
+    SERVIDOR,
     CURSO,
     TURMA,
     AUTOAVALIACAO

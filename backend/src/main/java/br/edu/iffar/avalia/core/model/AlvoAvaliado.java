@@ -31,6 +31,9 @@ public class AlvoAvaliado {
     @Column(name = "campus", length = 100)
     private String campus;
 
+    @Column(name = "id_origem_sigaa", length = 64)
+    private String idOrigemSigaa;
+
     @Column(name = "ativo", nullable = false)
     private boolean ativo = true;
 
@@ -62,6 +65,9 @@ public class AlvoAvaliado {
 
     public String getCampus() { return campus; }
     public void setCampus(String campus) { this.campus = campus; }
+
+    public String getIdOrigemSigaa() { return idOrigemSigaa; }
+    public void setIdOrigemSigaa(String idOrigemSigaa) { this.idOrigemSigaa = idOrigemSigaa; }
 
     public boolean isAtivo() { return ativo; }
     public void setAtivo(boolean ativo) { this.ativo = ativo; }

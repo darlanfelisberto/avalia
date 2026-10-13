@@ -119,6 +119,80 @@ onMounted(async () => {
   await atualizarListagem();
 });
 
+function paraDatetimeLocal(dataStr?: string, horaPadrao: string = '08:00'): string {
+  if (!dataStr) return '';
+  if (dataStr.includes('T')) {
+    const partes = dataStr.split('T');
+    const dataParte = partes[0];
+    const horaParte = (partes[1] || '').substring(0, 5);
+    return `${dataParte}T${horaParte || horaPadrao}`;
+  }
+  if (dataStr.length >= 10 && dataStr.includes('-')) {
+    return `${dataStr.substring(0, 10)}T${horaPadrao}`;
+  }
+  try {
+    const d = new Date(dataStr);
+    if (!isNaN(d.getTime())) {
+      const ano = d.getFullYear();
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      const hora = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${ano}-${mes}-${dia}T${hora}:${min}`;
+    }
+  } catch {}
+  return dataStr;
+}
+
+function normalizarInstrumento(inst: InstrumentoAvaliativo): InstrumentoAvaliativo {
+  const copia = JSON.parse(JSON.stringify(inst || {}));
+  if (!copia.tipoAlvo) copia.tipoAlvo = 'DOCENTE';
+  if (!copia.tipoPublico) copia.tipoPublico = 'DISCENTES';
+  if (!copia.publicosPermitidos || copia.publicosPermitidos.length === 0) {
+    copia.publicosPermitidos = [copia.tipoPublico || 'DISCENTES'];
+  }
+  if (copia.restringirVinculoCampus === undefined) {
+    copia.restringirVinculoCampus = true;
+  }
+  if (!copia.alvosEspecificosIds) {
+    copia.alvosEspecificosIds = copia.alvoEspecificoId ? [copia.alvoEspecificoId] : [];
+  }
+  if (!copia.criadorId) copia.criadorId = usuarioLogado.value?.id || 'usr-cpa-cain';
+  if (!copia.criadorNome) copia.criadorNome = usuarioLogado.value?.nome || 'Comissão Própria de Avaliação (CPA)';
+  if (!copia.gruposAutoavaliacaoDiscente) copia.gruposAutoavaliacaoDiscente = [];
+  if (!copia.gruposAvaliacaoDocente) copia.gruposAvaliacaoDocente = [];
+  if (!copia.componentesMatriculados) copia.componentesMatriculados = [];
+
+  if (copia.dataInicio) {
+    copia.dataInicio = paraDatetimeLocal(copia.dataInicio, '08:00');
+  } else {
+    const hoje = new Date().toISOString().substring(0, 10);
+    copia.dataInicio = `${hoje}T08:00`;
+  }
+
+  if (copia.dataTermino) {
+    copia.dataTermino = paraDatetimeLocal(copia.dataTermino, '23:59');
+  } else {
+    const daqui30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+    copia.dataTermino = `${daqui30Dias}T23:59`;
+  }
+
+  return copia;
+}
+
+// Cópia reativa para edição do instrumento
+const form = reactive<InstrumentoAvaliativo>(normalizarInstrumento(props.instrumento));
+
+watch(
+  () => props.instrumento,
+  (novo) => {
+    if (novo) {
+      Object.assign(form, normalizarInstrumento(novo));
+    }
+  },
+  { deep: true }
+);
+
 const termoBuscaAlvo = ref('');
 
 const rotuloTipoAlvo = computed(() => {
@@ -129,6 +203,7 @@ function rotuloPorTipo(tipo?: string) {
   switch (tipo) {
     case 'CAMPUS': return { singular: 'Campus', plural: 'Campi', icone: '📍', descricao: 'Avaliação da infraestrutura, gestão e serviços da unidade.' };
     case 'DOCENTE': return { singular: 'Docente', plural: 'Docentes', icone: '👨‍🏫', descricao: 'Avaliação da prática didático-pedagógica e relação dialógica.' };
+    case 'SERVIDOR': return { singular: 'Servidor / TAE', plural: 'Servidores / TAEs', icone: '💼', descricao: 'Avaliação de desempenho ou atuação de servidor técnico-administrativo.' };
     case 'TURMA': return { singular: 'Turma', plural: 'Turmas', icone: '👥', descricao: 'Avaliação de turma e componente curricular específico.' };
     case 'CURSO': return { singular: 'Curso', plural: 'Cursos', icone: '📚', descricao: 'Avaliação do projeto pedagógico e infraestrutura do curso.' };
     case 'SETOR': return { singular: 'Setor', plural: 'Setores', icone: '🛠️', descricao: 'Avaliação de atendimento e eficiência de setor administrativo.' };
@@ -137,6 +212,26 @@ function rotuloPorTipo(tipo?: string) {
     default: return { singular: 'Alvo', plural: 'Alvos', icone: '🎯', descricao: 'Avaliação específica.' };
   }
 }
+
+const carregandoAlvos = ref(false);
+
+async function carregarAlvosPorTipo(tipo: string) {
+  carregandoAlvos.value = true;
+  try {
+    catalogoAlvos.value = await listarAlvosApi(tipo);
+  } finally {
+    carregandoAlvos.value = false;
+  }
+}
+
+watch(
+  () => form.tipoAlvo,
+  (novoTipo) => {
+    if (novoTipo) {
+      carregarAlvosPorTipo(novoTipo);
+    }
+  }
+);
 
 const instanciasAlvoDisponiveis = computed(() => {
   return catalogoAlvos.value.filter(a => a.tipo === form.tipoAlvo);
@@ -227,6 +322,10 @@ function aoMudarTipoAlvo() {
     form.publicosPermitidos = ['DISCENTES'];
     form.tipoPublico = 'DISCENTES';
     form.restringirVinculoCampus = false;
+  } else if (form.tipoAlvo === 'SERVIDOR') {
+    form.publicosPermitidos = ['DISCENTES', 'DOCENTES', 'TAES'];
+    form.tipoPublico = 'TODOS';
+    form.restringirVinculoCampus = true;
   } else if (form.tipoAlvo === 'TURMA') {
     form.publicosPermitidos = ['DISCENTES'];
     form.tipoPublico = 'DISCENTES';
@@ -264,83 +363,7 @@ function obterResumoAlvo(item: InstrumentoAvaliativo): string {
   return `${ids.length} selecionados (${primeiro} +${ids.length - 1})`;
 }
 
-function paraDatetimeLocal(dataStr?: string, horaPadrao: string = '08:00'): string {
-  if (!dataStr) return '';
-  // Se já contiver T com hora e minuto
-  if (dataStr.includes('T')) {
-    const partes = dataStr.split('T');
-    const dataParte = partes[0];
-    const horaParte = (partes[1] || '').substring(0, 5);
-    return `${dataParte}T${horaParte || horaPadrao}`;
-  }
-  // Se for apenas YYYY-MM-DD
-  if (dataStr.length >= 10 && dataStr.includes('-')) {
-    return `${dataStr.substring(0, 10)}T${horaPadrao}`;
-  }
-  try {
-    const d = new Date(dataStr);
-    if (!isNaN(d.getTime())) {
-      const ano = d.getFullYear();
-      const mes = String(d.getMonth() + 1).padStart(2, '0');
-      const dia = String(d.getDate()).padStart(2, '0');
-      const hora = String(d.getHours()).padStart(2, '0');
-      const min = String(d.getMinutes()).padStart(2, '0');
-      return `${ano}-${mes}-${dia}T${hora}:${min}`;
-    }
-  } catch {}
-  return dataStr;
-}
 
-function normalizarInstrumento(inst: InstrumentoAvaliativo): InstrumentoAvaliativo {
-  const copia = JSON.parse(JSON.stringify(inst || {}));
-  if (!copia.tipoAlvo) copia.tipoAlvo = 'DOCENTE';
-  if (!copia.tipoPublico) copia.tipoPublico = 'DISCENTES';
-  if (!copia.publicosPermitidos || copia.publicosPermitidos.length === 0) {
-    copia.publicosPermitidos = [copia.tipoPublico || 'DISCENTES'];
-  }
-  if (copia.restringirVinculoCampus === undefined) {
-    copia.restringirVinculoCampus = true;
-  }
-  if (!copia.alvosEspecificosIds) {
-    copia.alvosEspecificosIds = copia.alvoEspecificoId ? [copia.alvoEspecificoId] : [];
-  }
-  if (!copia.criadorId) copia.criadorId = usuarioLogado.value?.id || 'usr-cpa-cain';
-  if (!copia.criadorNome) copia.criadorNome = usuarioLogado.value?.nome || 'Comissão Própria de Avaliação (CPA)';
-  if (!copia.gruposAutoavaliacaoDiscente) copia.gruposAutoavaliacaoDiscente = [];
-  if (!copia.gruposAvaliacaoDocente) copia.gruposAvaliacaoDocente = [];
-  if (!copia.componentesMatriculados) copia.componentesMatriculados = [];
-
-  // Garantir que os campos de data e hora sejam compatíveis com <input type="datetime-local"> (YYYY-MM-DDTHH:mm)
-  if (copia.dataInicio) {
-    copia.dataInicio = paraDatetimeLocal(copia.dataInicio, '08:00');
-  } else {
-    const hoje = new Date().toISOString().substring(0, 10);
-    copia.dataInicio = `${hoje}T08:00`;
-  }
-
-  if (copia.dataTermino) {
-    copia.dataTermino = paraDatetimeLocal(copia.dataTermino, '23:59');
-  } else {
-    const daqui30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
-    copia.dataTermino = `${daqui30Dias}T23:59`;
-  }
-
-  return copia;
-}
-
-// Cópia reativa para edição do instrumento
-const form = reactive<InstrumentoAvaliativo>(normalizarInstrumento(props.instrumento));
-
-// Sincronizar form sempre que o instrumento recebido nas props mudar
-watch(
-  () => props.instrumento,
-  (novo) => {
-    if (novo) {
-      Object.assign(form, normalizarInstrumento(novo));
-    }
-  },
-  { deep: true }
-);
 
 function iniciarNovoQuestionario() {
   const u = carregarUsuarioAtivo();
@@ -922,6 +945,7 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
           >
             <option value="CAMPUS">📍 Campus / Unidade de Ensino Específica (Avaliação do Campus)</option>
             <option value="DOCENTE">👨‍🏫 Docente (por Componente Curricular / Turma)</option>
+            <option value="SERVIDOR">💼 Servidor Técnico-Administrativo (TAE / Atendimento)</option>
             <option value="INSTITUICAO">🏛️ Instituição Geral (PDI, Infraestrutura Global)</option>
             <option value="SETOR">🛠️ Setor Administrativo / Atendimento (TI, Biblioteca, etc.)</option>
             <option value="CURSO">📚 Curso de Graduação / Técnico</option>
@@ -933,7 +957,7 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
 
         <!-- PAINEL DINÂMICO GENÉRICO DE CONFIGURAÇÃO DE ALVO E ESCOPO -->
         <div
-          v-if="['CAMPUS', 'DOCENTE', 'TURMA', 'CURSO', 'SETOR'].includes(form.tipoAlvo)"
+          v-if="['CAMPUS', 'DOCENTE', 'SERVIDOR', 'TURMA', 'CURSO', 'SETOR'].includes(form.tipoAlvo)"
           class="space-y-4 md:col-span-2 p-4 md:p-5 bg-purple-50/60 border border-purple-200 rounded-2xl"
         >
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-purple-100 pb-3">
