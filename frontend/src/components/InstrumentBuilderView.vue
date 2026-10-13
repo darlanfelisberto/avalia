@@ -350,45 +350,28 @@ watch(
 
 function iniciarNovoQuestionario() {
   const u = carregarUsuarioAtivo();
+  const papel = u?.papelAtivo || u?.papel || 'CPA';
   const novo: InstrumentoAvaliativo = {
     id: crypto.randomUUID(),
-    titulo: 'Novo Instrumento de Avaliação',
-    subtitulo: `${u.campus} - Ano ${new Date().getFullYear()}`,
-    modulo: u.papel === 'DOCENTE' ? 'APRENDIZAGEM' : (u.papel === 'CPA' ? 'SINAES' : 'ADPD'),
-    tipoAlvo: u.papel === 'DOCENTE' ? 'TURMA' : 'INSTITUICAO',
+    titulo: '',
+    subtitulo: '',
+    modulo: papel === 'DOCENTE' ? 'APRENDIZAGEM' : (papel === 'CPA' ? 'SINAES' : 'ADPD'),
+    tipoAlvo: papel === 'DOCENTE' ? 'TURMA' : 'INSTITUICAO',
     tipoPublico: 'DISCENTES',
     publicosPermitidos: ['DISCENTES'],
     restringirVinculoCampus: true,
     alvosEspecificosIds: [],
     alvoEspecificoId: undefined,
-    criadorId: u.id,
-    criadorNome: u.nome,
+    criadorId: u?.id || u?.cpf || '00000000000',
+    criadorNome: u?.nome || 'Comissão Própria de Avaliação',
     anoCiclo: `${new Date().getFullYear()}/1`,
-    periodoLetivo: 'Semestre Vigente',
+    periodoLetivo: '',
     dataInicio: `${new Date().toISOString().substring(0, 10)}T08:00`,
     dataTermino: `${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10)}T23:59`,
-    publicoAlvo: 'Comunidade Acadêmica / Estudantes',
+    publicoAlvo: '',
     anonimo: true,
     gruposAutoavaliacaoDiscente: [],
-    gruposAvaliacaoDocente: [
-      {
-        id: crypto.randomUUID(),
-        titulo: 'Dimensão 1: Prática Pedagógica e Conteúdos',
-        descricao: 'Avaliação dos itens de aprendizagem e métodos didáticos',
-        questoes: [
-          {
-            id: crypto.randomUUID(),
-            enunciado: 'O planejamento e cronograma foram cumpridos com clareza.',
-            tipo: 'ESCALA',
-            obrigatoria: true,
-            escalaMin: 1,
-            escalaMax: 5,
-            rotuloMin: '1 - Discordo',
-            rotuloMax: '5 - Concordo'
-          }
-        ]
-      }
-    ],
+    gruposAvaliacaoDocente: [],
     componentesMatriculados: []
   };
 
@@ -409,8 +392,8 @@ const mensagemErro = ref<string | null>(null);
 async function salvar() {
   // Garante que o criador ativo fica registrado se for criação
   const u = carregarUsuarioAtivo();
-  if (!form.criadorId) form.criadorId = u.id;
-  if (!form.criadorNome) form.criadorNome = u.nome;
+  if (!form.criadorId) form.criadorId = u?.id || u?.cpf || '00000000000';
+  if (!form.criadorNome) form.criadorNome = u?.nome || 'Comissão Própria de Avaliação';
 
   mensagemErro.value = null;
   const res = await salvarInstrumentoApi(form);
@@ -450,8 +433,8 @@ function getGruposAtuais(): GrupoQuestoes[] {
 function adicionarGrupo() {
   const novoGrupo: GrupoQuestoes = {
     id: crypto.randomUUID(),
-    titulo: 'Novo Grupo de Questões / Dimensão',
-    descricao: 'Descreva os objetivos desta dimensão avaliativa...',
+    titulo: 'Novo Grupo de Questões',
+    descricao: 'Descreva os objetivos deste grupo...',
     questoes: []
   };
   getGruposAtuais().push(novoGrupo);
@@ -869,30 +852,29 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
     <div class="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-xs space-y-5">
       <div class="border-b border-slate-100 pb-3">
         <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">
-          1. Dados Gerais e Parâmetros Institucionais
+          1. Dados Gerais
         </h3>
         <p class="text-xs text-slate-500 mt-0.5">
-          Identificação do instrumento e parametrização do período e público-alvo (RF04 e RF05).
+          Identificação do instrumento e parametrização do período e público-alvo.
         </p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="space-y-1.5 md:col-span-2">
-          <label class="text-xs font-bold text-slate-700">Título do Instrumento Avaliativo (RF01):</label>
+          <label class="text-xs font-bold text-slate-700">Título do Instrumento:</label>
           <input
             v-model="form.titulo"
             type="text"
-            placeholder="Ex: Avaliação Docente pelo Discente (ADPD)"
+            placeholder=""
             class="w-full text-xs md:text-sm p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-hidden font-semibold"
           />
         </div>
 
         <div class="space-y-1.5 md:col-span-2">
-          <label class="text-xs font-bold text-slate-700">Subtítulo / Fundamentação Normativa:</label>
+          <label class="text-xs font-bold text-slate-700">Subtítulo:</label>
           <input
             v-model="form.subtitulo"
             type="text"
-            placeholder="Ex: Instituto Federal Farroupilha - Resolução CONSUP nº 104/2013"
             class="w-full text-xs md:text-sm p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-hidden text-slate-600"
           />
         </div>
@@ -920,23 +902,21 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700">Período de Aplicação - Início (Data e Horário):</label>
+          <label class="text-xs font-bold text-slate-700">Início:</label>
           <input
             v-model="form.dataInicio"
             type="datetime-local"
             class="w-full text-xs p-3 border border-slate-200 rounded-xl bg-white font-medium"
           />
-          <p class="text-[11px] text-slate-400">Momento a partir do qual o formulário fica disponível.</p>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700">Período de Aplicação - Término (Data e Horário):</label>
+          <label class="text-xs font-bold text-slate-700">Término:</label>
           <input
             v-model="form.dataTermino"
             type="datetime-local"
             class="w-full text-xs p-3 border border-slate-200 rounded-xl bg-white font-medium"
           />
-          <p class="text-[11px] text-slate-400">Prazo final para preenchimento e envio de respostas.</p>
         </div>
 
         <!-- Alvo Avaliado -->
@@ -1217,14 +1197,13 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
         </div>
 
         <div class="space-y-1.5 flex flex-col justify-center">
-          <label class="text-xs font-bold text-slate-700 mb-1">Garantia de Anonimato (RF08 / RNF03):</label>
+          <label class="text-xs font-bold text-slate-700 mb-1">Respostas Anonimas:</label>
           <label class="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-800">
             <input
               v-model="form.anonimo"
               type="checkbox"
               class="w-4 h-4 text-emerald-600 rounded-sm border-slate-300 focus:ring-emerald-500"
             />
-            <span>Ativar armazenamento anônimo (Respostas desvinculadas de matrícula/CPF)</span>
           </label>
         </div>
       </div>
@@ -1237,9 +1216,6 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
           <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">
             2. Questões do Instrumento
           </h3>
-          <p class="text-xs text-slate-500 mt-0.5">
-            Cadastre as dimensões avaliativas e as questões direcionadas ao público selecionado ({{ form.tipoPublico }}).
-          </p>
         </div>
 
         <button
@@ -1255,13 +1231,13 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
       <!-- VISÃO: CONSTRUTOR DE GRUPOS E QUESTÕES DIRETAS -->
       <div class="space-y-6">
         <div v-if="getGruposAtuais().length === 0" class="p-8 text-center border-2 border-dashed border-slate-200 rounded-2xl space-y-3">
-          <p class="text-xs text-slate-500">Este questionário ainda não possui dimensões ou questões cadastradas.</p>
+          <p class="text-xs text-slate-500">Este questionário ainda não possui um grupo e questões cadastradas.</p>
           <button
             type="button"
             @click="adicionarGrupo"
             class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg"
           >
-            Adicionar Primeira Dimensão
+            Adicionar o primeiro Grupo
           </button>
         </div>
 

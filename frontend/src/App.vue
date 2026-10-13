@@ -9,14 +9,16 @@ import TeacherFeedbackView from './components/TeacherFeedbackView.vue';
 import ManagementActionPlanView from './components/ManagementActionPlanView.vue';
 import TechnicalView from './components/TechnicalView.vue';
 import SincronizacaoView from './components/SincronizacaoView.vue';
+import LoginView from './components/LoginView.vue';
 
-import type { RespostaItem, EstadoPreenchimento, InstrumentoAvaliativo } from './types/avaliacao';
-import { carregarEstadoPreenchimento, salvarEstadoPreenchimento, carregarInstrumentoAtivo } from './services/storage';
+import type { RespostaItem, EstadoPreenchimento, InstrumentoAvaliativo, UsuarioContexto } from './types/avaliacao';
+import { carregarEstadoPreenchimento, salvarEstadoPreenchimento, carregarInstrumentoAtivo, carregarUsuarioAtivo, salvarUsuarioAtivo, limparUsuarioAtivo, temPermissao } from './services/storage';
 import { listarInstrumentosApi } from './services/api';
 
+const usuarioLogado = ref<UsuarioContexto | null>(carregarUsuarioAtivo());
 const instrumento = ref<InstrumentoAvaliativo>(carregarInstrumentoAtivo());
 
-// Visão inicial definida como "Cadastro de Questionário" (conforme solicitado)
+// Visão inicial definida como "Cadastro de Questionário" (ou ajustada de acordo com o papel)
 const visaoAtual = ref<'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao'>('builder');
 const menuAbertoMobile = ref(false);
 
@@ -158,20 +160,65 @@ function testarNoRespondente() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function onUsuarioAlterado() {
-  // Sincroniza estado geral se o perfil de usuario mudar
+function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' {
+  if (!u) return 'discente';
+  const papel = u.papelAtivo || u.papel;
+  if (papel === 'CPA' || papel === 'ADMIN') return 'builder';
+  if (papel === 'DOCENTE') return 'docente';
+  if (papel === 'GESTAO') return 'gestao';
+  if (papel === 'DISCENTE' || papel === 'TAE') return 'discente';
+  return 'discente';
+}
+
+function aoLoginSucesso(usuario: UsuarioContexto) {
+  usuarioLogado.value = usuario;
+  salvarUsuarioAtivo(usuario, usuario.token);
+  visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
+}
+
+function aoLogout() {
+  usuarioLogado.value = null;
+  limparUsuarioAtivo();
+}
+
+function onUsuarioAlterado(usuario: UsuarioContexto) {
+  usuarioLogado.value = usuario;
+  salvarUsuarioAtivo(usuario, usuario.token);
+  // Se a visão atual não for permitida para o novo papel, redireciona
+  if (visaoAtual.value === 'builder' && !temPermissao(usuario, 'INSTRUMENTO_CRIAR') && !temPermissao(usuario, 'INSTRUMENTO_VISUALIZAR')) {
+    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
+  } else if (visaoAtual.value === 'catalogo' && !temPermissao(usuario, 'CATALOGO_GERENCIAR')) {
+    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
+  } else if (visaoAtual.value === 'docente' && !temPermissao(usuario, 'DOCENTE_MANIFESTAR')) {
+    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
+  } else if (visaoAtual.value === 'gestao' && !temPermissao(usuario, 'GESTAO_ENCAMINHAR')) {
+    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
+  } else if (visaoAtual.value === 'sincronizacao' && !temPermissao(usuario, 'SIGAA_SINCRONIZAR')) {
+    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
+  } else if (visaoAtual.value === 'tecnica' && !temPermissao(usuario, 'AUDITORIA_ACESSAR')) {
+    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
+  }
   statusSalvamento.value = 'salvo';
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-800 flex">
+  <!-- Tela de Login se não estiver autenticado -->
+  <LoginView
+    v-if="!usuarioLogado"
+    @loginSucesso="aoLoginSucesso"
+  />
+
+  <!-- Aplicação Principal Autenticada -->
+  <div v-else class="min-h-screen bg-slate-50 text-slate-800 flex">
     <!-- Menu Lateral Esquerdo Institucional -->
     <Sidebar
       :visaoAtual="visaoAtual"
       :menuAbertoMobile="menuAbertoMobile"
+      :usuario="usuarioLogado"
       @mudarVisao="visaoAtual = $event"
       @fecharMenuMobile="menuAbertoMobile = false"
+      @logout="aoLogout"
     />
 
     <!-- Área de Conteúdo Principal (deslocada pela largura da Sidebar no Desktop) -->
@@ -182,8 +229,10 @@ function onUsuarioAlterado() {
         :ultimaSalvaHora="ultimaSalvaHora"
         :respostasConcluidas="respostasConcluidas"
         :totalQuestoesObrigatorias="totalQuestoesObrigatorias"
+        :usuario="usuarioLogado"
         @abrirMenuMobile="menuAbertoMobile = true"
         @usuarioAlterado="onUsuarioAlterado"
+        @logout="aoLogout"
       />
 
       <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8">

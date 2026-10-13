@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import type { UsuarioContexto } from '../types/avaliacao';
-import { carregarUsuarioAtivo, salvarUsuarioAtivo, USUARIOS_SIMULADOS } from '../services/storage';
+import { salvarUsuarioAtivo } from '../services/storage';
 
 const props = defineProps<{
   visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao';
@@ -9,28 +9,26 @@ const props = defineProps<{
   ultimaSalvaHora: string;
   respostasConcluidas: number;
   totalQuestoesObrigatorias: number;
+  usuario: UsuarioContexto | null;
 }>();
 
 const emit = defineEmits<{
   (e: 'abrirMenuMobile'): void;
   (e: 'usuarioAlterado', usuario: UsuarioContexto): void;
+  (e: 'logout'): void;
 }>();
 
-const usuarioAtivo = ref<UsuarioContexto>(carregarUsuarioAtivo());
-const listaUsuarios = USUARIOS_SIMULADOS as UsuarioContexto[];
-
-function trocarUsuario(novo: UsuarioContexto) {
-  usuarioAtivo.value = novo;
-  salvarUsuarioAtivo(novo);
-  emit('usuarioAlterado', novo);
-}
-
-function aoMudarUsuario(e: Event) {
+function alternarPapelAtivo(e: Event) {
+  if (!props.usuario) return;
   const target = e.target as HTMLSelectElement;
-  const encontrado = listaUsuarios.find(u => u.id === target.value);
-  if (encontrado) {
-    trocarUsuario(encontrado);
-  }
+  const novoPapel = target.value as any;
+  const atualizado: UsuarioContexto = {
+    ...props.usuario,
+    papel: novoPapel,
+    papelAtivo: novoPapel
+  };
+  salvarUsuarioAtivo(atualizado);
+  emit('usuarioAlterado', atualizado);
 }
 
 const tituloVisao = computed(() => {
@@ -116,21 +114,46 @@ const percentual = computed(() => {
 
       <!-- Usuário Ativo e Indicadores -->
       <div class="flex items-center gap-3 sm:gap-4 shrink-0">
-        <!-- Seletor Rápido de Usuário (Simulação de Autenticação) -->
-        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1.5">
-          <span class="text-base">👤</span>
-          <div class="flex flex-col text-left">
-            <span class="text-[9px] uppercase tracking-wider font-bold text-slate-400">Usuário Ativo:</span>
-            <select
-              :value="usuarioAtivo.id"
-              @change="aoMudarUsuario"
-              class="bg-transparent font-bold text-xs text-slate-800 outline-hidden cursor-pointer"
-            >
-              <option v-for="u in listaUsuarios" :key="u.id" :value="u.id">
-                {{ u.nome }} ({{ u.papel }})
-              </option>
-            </select>
+        <!-- Usuário Autenticado e Papel Ativo -->
+        <div v-if="usuario" class="flex items-center gap-2.5 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-1.5 shadow-2xs">
+          <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+            {{ usuario.nome?.charAt(0) || 'U' }}
           </div>
+          <div class="flex flex-col text-left">
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-xs text-slate-800 max-w-[120px] sm:max-w-[180px] truncate" :title="usuario.nome">
+                {{ usuario.nome }}
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono hidden md:inline">({{ usuario.cpfFormatado || usuario.cpf }})</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <!-- Se tiver mais de um papel, permite alternar -->
+              <select
+                v-if="usuario.papeis && usuario.papeis.length > 1"
+                :value="usuario.papelAtivo || usuario.papel"
+                @change="alternarPapelAtivo"
+                class="bg-transparent font-semibold text-[10px] text-emerald-700 outline-hidden cursor-pointer hover:underline"
+                title="Alternar Perfil Ativo"
+              >
+                <option v-for="p in usuario.papeis" :key="p" :value="p">
+                  Perfil: {{ p }}
+                </option>
+              </select>
+              <span v-else class="text-[10px] font-semibold text-emerald-700 uppercase tracking-wide">
+                {{ usuario.papelAtivo || usuario.papel }}
+              </span>
+              <span class="text-[10px] text-slate-400">&bull;</span>
+              <span class="text-[10px] text-slate-500 truncate max-w-[100px]">{{ usuario.campus || 'Geral' }}</span>
+            </div>
+          </div>
+
+          <button
+            @click="emit('logout')"
+            class="ml-1 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer text-xs"
+            title="Sair / Desconectar"
+          >
+            Sair
+          </button>
         </div>
 
         <!-- Indicador de Auto-Save e Progresso -->

@@ -171,3 +171,34 @@ export async function executarSincronizacaoApi(params: {
   }
 }
 
+// --- Autenticação por CPF e Permissões ---
+
+export async function loginPorCpfApi(cpf: string): Promise<import('../types/avaliacao').AuthResponseDTO> {
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cpf })
+    });
+    const data = await res.json();
+    return data;
+  } catch (e: any) {
+    return {
+      autenticado: false,
+      mensagem: e?.message || 'Não foi possível conectar ao servidor para autenticação.'
+    };
+  }
+}
+
+export async function listarUsuariosDemonstracaoApi(): Promise<import('../types/avaliacao').UsuarioContexto[]> {
+  try {
+    const res = await fetch('/api/auth/demonstracao');
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (e) {
+    console.warn('Falha ao obter contas de demonstração do servidor', e);
+  }
+  return [];
+}
+

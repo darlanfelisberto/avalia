@@ -107,51 +107,121 @@ export function resetarInstrumentoParaPadrao(): InstrumentoAvaliativo {
 
 // --- Usuário Ativo Simulado (para vincular aos questionários) ---
 
-const STORAGE_KEY_USUARIO = 'iffar_avalia_usuario_ativo';
+// --- Usuário Ativo e Sessão de Autenticação ---
 
-export const USUARIOS_SIMULADOS = [
+const STORAGE_KEY_USUARIO = 'iffar_avalia_usuario_ativo';
+const STORAGE_KEY_TOKEN = 'iffar_avalia_token';
+
+export const USUARIO_PADRAO_CPA: import('../types/avaliacao').UsuarioContexto = {
+  id: '00000000-0000-0000-0008-000000000001',
+  cpf: '00000000000',
+  cpfFormatado: '000.000.000-00',
+  nome: 'Comissão Própria de Avaliação (CPA / CAIN)',
+  email: 'cpa@iffar.edu.br',
+  papel: 'CPA',
+  papelAtivo: 'CPA',
+  campus: 'Reitoria',
+  papeis: ['CPA', 'DOCENTE', 'GESTAO'],
+  permissoes: [
+    'INSTRUMENTO_CRIAR',
+    'INSTRUMENTO_EDITAR',
+    'INSTRUMENTO_EXCLUIR',
+    'INSTRUMENTO_VISUALIZAR',
+    'CATALOGO_GERENCIAR',
+    'AVALIACAO_RESPONDER',
+    'DOCENTE_MANIFESTAR',
+    'GESTAO_ENCAMINHAR',
+    'SIGAA_SINCRONIZAR',
+    'AUDITORIA_ACESSAR'
+  ]
+};
+
+export const USUARIOS_SIMULADOS: import('../types/avaliacao').UsuarioContexto[] = [
+  USUARIO_PADRAO_CPA,
   {
-    id: 'usr-cpa-cain',
-    nome: 'Comissão Própria de Avaliação (CPA / CAIN)',
-    papel: 'CPA' as const,
-    campus: 'Reitoria'
+    id: '00000000-0000-0000-0008-000000000003',
+    cpf: '92782396072',
+    cpfFormatado: '927.823.960-72',
+    nome: 'Rafaelle Ribeiro Gonçalves',
+    email: 'rafaelle.goncalves@iffar.edu.br',
+    papel: 'DOCENTE',
+    papelAtivo: 'DOCENTE',
+    campus: 'Campus Panambi',
+    papeis: ['DOCENTE'],
+    permissoes: ['DOCENTE_MANIFESTAR', 'AVALIACAO_RESPONDER', 'INSTRUMENTO_VISUALIZAR']
   },
   {
-    id: 'usr-doc-roberto',
-    nome: 'Prof. Dr. Roberto Alencar',
-    papel: 'DOCENTE' as const,
-    campus: 'Alegrete'
+    id: '00000000-0000-0000-0008-000000000004',
+    cpf: '14537997702',
+    cpfFormatado: '145.379.977-02',
+    nome: 'Rafael Henrique Bispo dos Santos',
+    email: 'rafael.santos@aluno.iffar.edu.br',
+    papel: 'DISCENTE',
+    papelAtivo: 'DISCENTE',
+    campus: 'Campus Frederico Westphalen',
+    papeis: ['DISCENTE'],
+    permissoes: ['AVALIACAO_RESPONDER']
   },
   {
-    id: 'usr-doc-mariana',
-    nome: 'Profa. Dra. Mariana Silveira',
-    papel: 'DOCENTE' as const,
-    campus: 'Alegrete'
-  },
-  {
-    id: 'usr-coord-ads',
-    nome: 'Coordenação TADS',
-    papel: 'GESTAO' as const,
-    campus: 'Alegrete'
+    id: '00000000-0000-0000-0008-000000000005',
+    cpf: '53549406053',
+    cpfFormatado: '535.494.060-53',
+    nome: 'Helena Sebastiany Coelho',
+    email: 'helena.coelho@iffar.edu.br',
+    papel: 'GESTAO',
+    papelAtivo: 'GESTAO',
+    campus: 'Reitoria',
+    papeis: ['GESTAO'],
+    permissoes: ['GESTAO_ENCAMINHAR', 'INSTRUMENTO_VISUALIZAR', 'AVALIACAO_RESPONDER']
   }
 ];
 
-export function carregarUsuarioAtivo() {
+export function carregarUsuarioAtivo(): import('../types/avaliacao').UsuarioContexto | null {
   try {
     const salvo = localStorage.getItem(STORAGE_KEY_USUARIO);
-    if (salvo) return JSON.parse(salvo);
+    if (salvo) {
+      const u = JSON.parse(salvo);
+      if (u && u.cpf) {
+        if (!u.papel && u.papelAtivo) u.papel = u.papelAtivo;
+        return u;
+      }
+    }
   } catch (e) {
     console.warn('Erro ao carregar usuário ativo', e);
   }
-  return USUARIOS_SIMULADOS[0];
+  return null;
 }
 
-export function salvarUsuarioAtivo(usuario: any) {
+export function salvarUsuarioAtivo(usuario: import('../types/avaliacao').UsuarioContexto, token?: string) {
   try {
+    if (!usuario.papel && usuario.papelAtivo) {
+      usuario.papel = usuario.papelAtivo;
+    }
     localStorage.setItem(STORAGE_KEY_USUARIO, JSON.stringify(usuario));
+    if (token) {
+      localStorage.setItem(STORAGE_KEY_TOKEN, token);
+    }
   } catch (e) {
     console.error('Erro ao salvar usuário ativo', e);
   }
+}
+
+export function limparUsuarioAtivo() {
+  try {
+    localStorage.removeItem(STORAGE_KEY_USUARIO);
+    localStorage.removeItem(STORAGE_KEY_TOKEN);
+  } catch (e) {
+    console.error('Erro ao limpar sessão', e);
+  }
+}
+
+export function temPermissao(
+  usuario: import('../types/avaliacao').UsuarioContexto | null,
+  permissao: import('../types/avaliacao').PermissaoUsuario
+): boolean {
+  if (!usuario) return false;
+  if (usuario.papel === 'CPA' || usuario.papelAtivo === 'CPA') return true;
+  return Array.isArray(usuario.permissoes) && usuario.permissoes.includes(permissao);
 }
 
 

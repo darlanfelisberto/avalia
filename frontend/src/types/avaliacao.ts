@@ -68,11 +68,39 @@ export interface PublicoAvaliador {
   createdAt?: string;
 }
 
+export type PapelUsuario = 'CPA' | 'DOCENTE' | 'DISCENTE' | 'GESTAO' | 'TAE' | 'ADMIN';
+
+export type PermissaoUsuario =
+  | 'INSTRUMENTO_CRIAR'
+  | 'INSTRUMENTO_EDITAR'
+  | 'INSTRUMENTO_EXCLUIR'
+  | 'INSTRUMENTO_VISUALIZAR'
+  | 'CATALOGO_GERENCIAR'
+  | 'AVALIACAO_RESPONDER'
+  | 'DOCENTE_MANIFESTAR'
+  | 'GESTAO_ENCAMINHAR'
+  | 'SIGAA_SINCRONIZAR'
+  | 'AUDITORIA_ACESSAR';
+
 export interface UsuarioContexto {
-  id: string;
+  id?: string;
+  cpf: string;
+  cpfFormatado?: string;
   nome: string;
-  papel: 'CPA' | 'DOCENTE' | 'DISCENTE' | 'GESTAO';
+  email?: string;
   campus: string;
+  papel: PapelUsuario;
+  papelAtivo?: PapelUsuario;
+  papeis: PapelUsuario[];
+  permissoes: PermissaoUsuario[];
+  token?: string;
+}
+
+export interface AuthResponseDTO {
+  autenticado: boolean;
+  token?: string;
+  mensagem: string;
+  usuario?: UsuarioContexto;
 }
 
 export interface InstrumentoAvaliativo {
