@@ -730,7 +730,7 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
       <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-slate-100 pb-4">
         <div>
           <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">
-            2. Dimensões e Questões do Instrumento
+            2. Questões do Instrumento
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">
             Cadastre as dimensões avaliativas e as questões direcionadas ao público selecionado ({{ form.tipoPublico }}).
