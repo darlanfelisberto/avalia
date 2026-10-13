@@ -1,11 +1,11 @@
 <script setup lang="ts">
 defineProps<{
-  visaoAtual: 'builder' | 'discente' | 'docente' | 'gestao' | 'tecnica';
+  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica';
   menuAbertoMobile: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: 'mudarVisao', visao: 'builder' | 'discente' | 'docente' | 'gestao' | 'tecnica'): void;
+  (e: 'mudarVisao', visao: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica'): void;
   (e: 'fecharMenuMobile'): void;
 }>();
 </script>
@@ -74,6 +74,28 @@ const emit = defineEmits<{
             </div>
             <span
               v-if="visaoAtual === 'builder'"
+              class="w-1.5 h-1.5 rounded-full bg-white"
+            ></span>
+          </button>
+
+          <!-- Segundo Item: Públicos e Alvos Avaliados -->
+          <button
+            type="button"
+            @click="() => { emit('mudarVisao', 'catalogo'); emit('fecharMenuMobile'); }"
+            :class="[
+              'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left group',
+              visaoAtual === 'catalogo'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            ]"
+          >
+            <span class="text-base">🎯</span>
+            <div class="flex-1">
+              <div>Públicos e Alvos</div>
+              <div class="text-[10px] opacity-75 font-normal">Quem avalia e o que é avaliado</div>
+            </div>
+            <span
+              v-if="visaoAtual === 'catalogo'"
               class="w-1.5 h-1.5 rounded-full bg-white"
             ></span>
           </button>

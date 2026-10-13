@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, onMounted } from 'vue';
 import type {
   InstrumentoAvaliativo,
   GrupoQuestoes,
   Questao,
   TipoQuestao,
-  ComponenteCurricular
+  ComponenteCurricular,
+  AlvoAvaliado,
+  PublicoAvaliador
 } from '../types/avaliacao';
-import { salvarInstrumentoApi } from '../services/api';
+import { salvarInstrumentoApi, listarAlvosApi, listarPublicosApi } from '../services/api';
 import { resetarInstrumentoParaPadrao } from '../services/storage';
 
 const props = defineProps<{
@@ -19,8 +21,18 @@ const emit = defineEmits<{
   (e: 'testarNoRespondente'): void;
 }>();
 
+const catalogoAlvos = ref<AlvoAvaliado[]>([]);
+const catalogoPublicos = ref<PublicoAvaliador[]>([]);
+
+onMounted(async () => {
+  catalogoAlvos.value = await listarAlvosApi();
+  catalogoPublicos.value = await listarPublicosApi();
+});
+
 function normalizarInstrumento(inst: InstrumentoAvaliativo): InstrumentoAvaliativo {
   const copia = JSON.parse(JSON.stringify(inst || {}));
+  if (!copia.tipoAlvo) copia.tipoAlvo = 'DOCENTE';
+  if (!copia.tipoPublico) copia.tipoPublico = 'DISCENTES';
   if (!copia.gruposAutoavaliacaoDiscente) copia.gruposAutoavaliacaoDiscente = [];
   if (!copia.gruposAvaliacaoDocente) copia.gruposAvaliacaoDocente = [];
   if (!copia.componentesMatriculados) copia.componentesMatriculados = [];
@@ -324,7 +336,40 @@ function removerDisciplina(index: number) {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700">Público-Alvo Associado (RF05):</label>
+          <label class="text-xs font-bold text-slate-700">Público Respondente (Quem Avalia):</label>
+          <select
+            v-model="form.tipoPublico"
+            class="w-full text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 font-semibold text-slate-800"
+          >
+            <option value="DISCENTES">🎓 Discentes Matriculados (Alunos)</option>
+            <option value="DOCENTES">👨‍🏫 Corpo Docente (Professores)</option>
+            <option value="TAES">🏢 Técnicos-Administrativos (TAEs)</option>
+            <option value="EGRESSOS">📜 Egressos e Ex-alunos</option>
+            <option value="SOCIEDADE_CIVIL">🤝 Sociedade Civil / Comunidade Regional</option>
+            <option value="TODOS">🌐 Toda a Comunidade Acadêmica Integrada</option>
+          </select>
+          <p class="text-[11px] text-slate-400">Define permissão e credencial necessária para acessar.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">Foco / Alvo Avaliado (O que é Avaliado):</label>
+          <select
+            v-model="form.tipoAlvo"
+            class="w-full text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 font-semibold text-slate-800"
+          >
+            <option value="DOCENTE">👨‍🏫 Docente (por Componente Curricular / Turma)</option>
+            <option value="INSTITUICAO">🏛️ Instituição Geral (PDI, Infraestrutura Global)</option>
+            <option value="CAMPUS">📍 Campus / Unidade de Ensino Específica</option>
+            <option value="SETOR">🛠️ Setor Administrativo / Atendimento (TI, Biblioteca, etc.)</option>
+            <option value="CURSO">📚 Curso de Graduação / Técnico</option>
+            <option value="TURMA">👥 Turma / Disciplina Específica</option>
+            <option value="AUTOAVALIACAO">👤 Próprio Estudante (Autoavaliação Discente)</option>
+          </select>
+          <p class="text-[11px] text-slate-400">Define o objeto de julgamento e agregação de relatórios.</p>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700">Texto Informativo de Público-Alvo:</label>
           <input
             v-model="form.publicoAlvo"
             type="text"

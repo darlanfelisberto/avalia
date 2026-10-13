@@ -38,6 +38,17 @@ public class Instrumento {
     @Column(name = "publico_alvo")
     private String publicoAlvo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_alvo", nullable = false, length = 32)
+    private TipoAlvoAvaliado tipoAlvo = TipoAlvoAvaliado.DOCENTE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_publico", nullable = false, length = 32)
+    private TipoPublicoAvaliador tipoPublico = TipoPublicoAvaliador.DISCENTES;
+
+    @Column(name = "alvo_especifico_id", length = 64)
+    private String alvoEspecificoId;
+
     @Column(name = "anonimo", nullable = false)
     private boolean anonimo = true;
 
@@ -86,6 +97,15 @@ public class Instrumento {
 
     public String getPublicoAlvo() { return publicoAlvo; }
     public void setPublicoAlvo(String publicoAlvo) { this.publicoAlvo = publicoAlvo; }
+
+    public TipoAlvoAvaliado getTipoAlvo() { return tipoAlvo; }
+    public void setTipoAlvo(TipoAlvoAvaliado tipoAlvo) { this.tipoAlvo = tipoAlvo; }
+
+    public TipoPublicoAvaliador getTipoPublico() { return tipoPublico; }
+    public void setTipoPublico(TipoPublicoAvaliador tipoPublico) { this.tipoPublico = tipoPublico; }
+
+    public String getAlvoEspecificoId() { return alvoEspecificoId; }
+    public void setAlvoEspecificoId(String alvoEspecificoId) { this.alvoEspecificoId = alvoEspecificoId; }
 
     public boolean isAnonimo() { return anonimo; }
     public void setAnonimo(boolean anonimo) { this.anonimo = anonimo; }

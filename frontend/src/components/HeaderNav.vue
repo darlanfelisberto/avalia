@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 
 const props = defineProps<{
-  visaoAtual: 'builder' | 'discente' | 'docente' | 'gestao' | 'tecnica';
+  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica';
   statusSalvamento: 'salvo' | 'salvando' | 'erro';
   ultimaSalvaHora: string;
   respostasConcluidas: number;
@@ -20,6 +20,12 @@ const tituloVisao = computed(() => {
         titulo: 'Cadastro de Questionário',
         categoria: 'Gestão de Instrumentos',
         codigo: 'RF01 a RF05'
+      };
+    case 'catalogo':
+      return {
+        titulo: 'Catálogo de Públicos e Alvos Avaliados',
+        categoria: 'Gestão de Instrumentos',
+        codigo: 'Núcleo Parametrizável'
       };
     case 'discente':
       return {

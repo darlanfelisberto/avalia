@@ -36,11 +36,40 @@ export interface ComponenteCurricular {
   turma: string;
 }
 
+export type TipoAlvoAvaliado = 'INSTITUICAO' | 'CAMPUS' | 'SETOR' | 'DOCENTE' | 'CURSO' | 'TURMA' | 'AUTOAVALIACAO';
+
+export type TipoPublicoAvaliador = 'DISCENTES' | 'DOCENTES' | 'TAES' | 'EGRESSOS' | 'SOCIEDADE_CIVIL' | 'TODOS';
+
+export interface AlvoAvaliado {
+  id: string;
+  tipo: TipoAlvoAvaliado;
+  nome: string;
+  codigo?: string;
+  descricao?: string;
+  responsavelNome?: string;
+  campus?: string;
+  ativo: boolean;
+  createdAt?: string;
+}
+
+export interface PublicoAvaliador {
+  id: string;
+  segmento: string;
+  nome: string;
+  descricao?: string;
+  exigeAutenticacao: boolean;
+  ativo: boolean;
+  createdAt?: string;
+}
+
 export interface InstrumentoAvaliativo {
   id: string;
   titulo: string;
   subtitulo: string;
   modulo: ModuloAvaliacao;
+  tipoAlvo: TipoAlvoAvaliado;
+  tipoPublico: TipoPublicoAvaliador;
+  alvoEspecificoId?: string;
   anoCiclo: string;
   periodoLetivo: string;
   dataInicio?: string;

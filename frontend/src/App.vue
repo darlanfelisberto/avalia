@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar.vue';
 import HeaderNav from './components/HeaderNav.vue';
 import StudentRespondentView from './components/StudentRespondentView.vue';
 import InstrumentBuilderView from './components/InstrumentBuilderView.vue';
+import PublicosAlvosView from './components/PublicosAlvosView.vue';
 import TeacherFeedbackView from './components/TeacherFeedbackView.vue';
 import ManagementActionPlanView from './components/ManagementActionPlanView.vue';
 import TechnicalView from './components/TechnicalView.vue';
@@ -15,7 +16,7 @@ import { listarInstrumentosApi } from './services/api';
 const instrumento = ref<InstrumentoAvaliativo>(carregarInstrumentoAtivo());
 
 // Visão inicial definida como "Cadastro de Questionário" (conforme solicitado)
-const visaoAtual = ref<'builder' | 'discente' | 'docente' | 'gestao' | 'tecnica'>('builder');
+const visaoAtual = ref<'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica'>('builder');
 const menuAbertoMobile = ref(false);
 
 onMounted(async () => {
@@ -172,7 +173,12 @@ function testarNoRespondente() {
           @testarNoRespondente="testarNoRespondente"
         />
 
-        <!-- 2. Estudante Respondente (SPA Mobile-First com Auto-Save - RF06) -->
+        <!-- 2. Catálogo de Públicos e Alvos Avaliados (Instituição, Setores, Docentes, Alunos) -->
+        <PublicosAlvosView
+          v-else-if="visaoAtual === 'catalogo'"
+        />
+
+        <!-- 3. Estudante Respondente (SPA Mobile-First com Auto-Save - RF06) -->
         <StudentRespondentView
           v-else-if="visaoAtual === 'discente'"
           :instrumento="instrumento"

@@ -62,8 +62,22 @@ public class InstrumentoService {
         inst.setSubtitulo(dto.getSubtitulo());
         inst.setModulo(dto.getModulo() != null ? dto.getModulo() : ModuloAvaliacao.ADPD);
         inst.setAnoCiclo(dto.getAnoCiclo());
-        inst.setPeriodoLetivo(dto.getPeriodoLetivo());
         inst.setPublicoAlvo(dto.getPublicoAlvo());
+        if (dto.getTipoAlvo() != null) {
+            try {
+                inst.setTipoAlvo(TipoAlvoAvaliado.valueOf(dto.getTipoAlvo()));
+            } catch (Exception e) {
+                inst.setTipoAlvo(TipoAlvoAvaliado.DOCENTE);
+            }
+        }
+        if (dto.getTipoPublico() != null) {
+            try {
+                inst.setTipoPublico(TipoPublicoAvaliador.valueOf(dto.getTipoPublico()));
+            } catch (Exception e) {
+                inst.setTipoPublico(TipoPublicoAvaliador.DISCENTES);
+            }
+        }
+        inst.setAlvoEspecificoId(dto.getAlvoEspecificoId());
         inst.setAnonimo(dto.isAnonimo());
         inst.setStatus(dto.getStatus() != null ? dto.getStatus() : "ABERTO");
         inst.setUpdatedAt(OffsetDateTime.now());
@@ -174,8 +188,10 @@ public class InstrumentoService {
         dto.setSubtitulo(inst.getSubtitulo());
         dto.setModulo(inst.getModulo());
         dto.setAnoCiclo(inst.getAnoCiclo());
-        dto.setPeriodoLetivo(inst.getPeriodoLetivo());
         dto.setPublicoAlvo(inst.getPublicoAlvo());
+        dto.setTipoAlvo(inst.getTipoAlvo() != null ? inst.getTipoAlvo().name() : "DOCENTE");
+        dto.setTipoPublico(inst.getTipoPublico() != null ? inst.getTipoPublico().name() : "DISCENTES");
+        dto.setAlvoEspecificoId(inst.getAlvoEspecificoId());
         dto.setAnonimo(inst.isAnonimo());
         dto.setStatus(inst.getStatus());
 

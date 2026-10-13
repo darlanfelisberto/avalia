@@ -14,6 +14,9 @@ public class InstrumentoDTO {
     private String dataInicio;
     private String dataTermino;
     private String publicoAlvo;
+    private String tipoAlvo = "DOCENTE";
+    private String tipoPublico = "DISCENTES";
+    private String alvoEspecificoId;
     private boolean anonimo;
     private String status;
     private List<GrupoDTO> gruposAutoavaliacaoDiscente = new ArrayList<>();
@@ -48,6 +51,15 @@ public class InstrumentoDTO {
 
     public String getPublicoAlvo() { return publicoAlvo; }
     public void setPublicoAlvo(String publicoAlvo) { this.publicoAlvo = publicoAlvo; }
+
+    public String getTipoAlvo() { return tipoAlvo; }
+    public void setTipoAlvo(String tipoAlvo) { this.tipoAlvo = tipoAlvo; }
+
+    public String getTipoPublico() { return tipoPublico; }
+    public void setTipoPublico(String tipoPublico) { this.tipoPublico = tipoPublico; }
+
+    public String getAlvoEspecificoId() { return alvoEspecificoId; }
+    public void setAlvoEspecificoId(String alvoEspecificoId) { this.alvoEspecificoId = alvoEspecificoId; }
 
     public boolean isAnonimo() { return anonimo; }
     public void setAnonimo(boolean anonimo) { this.anonimo = anonimo; }
