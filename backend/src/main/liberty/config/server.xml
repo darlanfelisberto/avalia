@@ -10,8 +10,18 @@
         <feature>persistence-3.2</feature>
     </featureManager>
 
-    <variable name="APP_DB_USER" defaultValue="postgres"/>
-    <variable name="APP_DB_PASSWORD" defaultValue="postgres"/>
+    <!-- Variáveis de ambiente injetadas pelo container/SO (sem senhas ou IPs no fonte) -->
+    <variable name="APP_DB_IP" defaultValue="localhost"/>
+    <variable name="APP_DB_PORT" defaultValue="5432"/>
+    <variable name="APP_DB_DATABASE" defaultValue="avalia"/>
+    <variable name="APP_DB_USER"/>
+    <variable name="APP_DB_PASSWORD"/>
+
+    <variable name="APP_DB_SIG_IP"/>
+    <variable name="APP_DB_SIG_PORT" defaultValue="5432"/>
+    <variable name="APP_DB_SIG_DATABASE" defaultValue="sigaa"/>
+    <variable name="APP_DB_SIG_USER"/>
+    <variable name="APP_DB_SIG_PASSWORD"/>
 
     <httpEndpoint id="defaultHttpEndpoint"
                   httpPort="${default.http.port}"
@@ -30,12 +40,20 @@
         <fileset dir="${server.config.dir}/lib/global" includes="postgresql-*.jar"/>
     </library>
 
-    <!-- DataSource oficial do AVALIA -->
+    <!-- DataSource oficial do AVALIA (Base Local) -->
     <dataSource id="AvaliaDataSource" jndiName="jdbc/avaliaDS">
         <jdbcDriver libraryRef="postgresqlLib"/>
-        <properties.postgresql serverName="localhost" portNumber="5432"
+        <properties.postgresql serverName="${APP_DB_IP}" portNumber="${APP_DB_PORT}"
                                 databaseName="avalia"
                                 user="${APP_DB_USER}" password="${APP_DB_PASSWORD}"/>
+    </dataSource>
+
+    <!-- DataSource gerenciado do SIGAA (Base Remota para Integração - Contém schemas comum, rh, ensino e public) -->
+    <dataSource id="SigaaDataSource" jndiName="jdbc/sigaaDS">
+        <jdbcDriver libraryRef="postgresqlLib"/>
+        <properties.postgresql serverName="${APP_DB_SIG_IP}" portNumber="${APP_DB_SIG_PORT}"
+                                databaseName="sigaa"
+                                user="${APP_DB_SIG_USER}" password="${APP_DB_SIG_PASSWORD}"/>
     </dataSource>
 
 </server>

@@ -743,7 +743,7 @@ function mudarTipoQuestao(questao: Questao, novoTipo: TipoQuestao) {
           class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 self-start sm:self-center shadow-xs"
         >
           <span>＋</span>
-          <span>Nova Dimensão / Grupo de Questões</span>
+          <span>Novo Grupo de Questões</span>
         </button>
       </div>
 

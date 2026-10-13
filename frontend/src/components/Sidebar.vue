@@ -1,11 +1,11 @@
 <script setup lang="ts">
 defineProps<{
-  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica';
+  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao';
   menuAbertoMobile: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: 'mudarVisao', visao: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica'): void;
+  (e: 'mudarVisao', visao: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao'): void;
   (e: 'fecharMenuMobile'): void;
 }>();
 </script>
@@ -178,6 +178,28 @@ const emit = defineEmits<{
             </div>
             <span
               v-if="visaoAtual === 'gestao'"
+              class="w-1.5 h-1.5 rounded-full bg-white"
+            ></span>
+          </button>
+
+          <!-- Item: Sincronização SIGAA / SIGRH -->
+          <button
+            type="button"
+            @click="() => { emit('mudarVisao', 'sincronizacao'); emit('fecharMenuMobile'); }"
+            :class="[
+              'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left',
+              visaoAtual === 'sincronizacao'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            ]"
+          >
+            <span class="text-base">🔄</span>
+            <div class="flex-1">
+              <div>Sincronização SIGAA</div>
+              <div class="text-[10px] opacity-75 font-normal">Carga Acadêmica & RH (SIGAA)</div>
+            </div>
+            <span
+              v-if="visaoAtual === 'sincronizacao'"
               class="w-1.5 h-1.5 rounded-full bg-white"
             ></span>
           </button>

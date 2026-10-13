@@ -4,7 +4,7 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { carregarUsuarioAtivo, salvarUsuarioAtivo, USUARIOS_SIMULADOS } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica';
+  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao';
   statusSalvamento: 'salvo' | 'salvando' | 'erro';
   ultimaSalvaHora: string;
   respostasConcluidas: number;

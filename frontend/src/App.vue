@@ -8,6 +8,7 @@ import PublicosAlvosView from './components/PublicosAlvosView.vue';
 import TeacherFeedbackView from './components/TeacherFeedbackView.vue';
 import ManagementActionPlanView from './components/ManagementActionPlanView.vue';
 import TechnicalView from './components/TechnicalView.vue';
+import SincronizacaoView from './components/SincronizacaoView.vue';
 
 import type { RespostaItem, EstadoPreenchimento, InstrumentoAvaliativo } from './types/avaliacao';
 import { carregarEstadoPreenchimento, salvarEstadoPreenchimento, carregarInstrumentoAtivo } from './services/storage';
@@ -16,7 +17,7 @@ import { listarInstrumentosApi } from './services/api';
 const instrumento = ref<InstrumentoAvaliativo>(carregarInstrumentoAtivo());
 
 // Visão inicial definida como "Cadastro de Questionário" (conforme solicitado)
-const visaoAtual = ref<'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica'>('builder');
+const visaoAtual = ref<'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao'>('builder');
 const menuAbertoMobile = ref(false);
 
 onMounted(async () => {
@@ -228,6 +229,11 @@ function onUsuarioAlterado() {
           :estado="estado"
           :instrumento="instrumento"
           @reiniciarTeste="reiniciarTeste"
+        />
+
+        <!-- 6. Sincronização & Integração SIGAA / SIGRH -->
+        <SincronizacaoView
+          v-else-if="visaoAtual === 'sincronizacao'"
         />
       </main>
 
