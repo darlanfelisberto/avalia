@@ -5,6 +5,7 @@ import { avaliacaoApi } from '../services/avaliacaoApi';
 import { carregarUsuarioAtivo } from '../services/storage';
 import AvaliacaoEstruturaEditor from './AvaliacaoEstruturaEditor.vue';
 import AvaliacaoConjuntoModal from './AvaliacaoConjuntoModal.vue';
+import InstrumentoPreview from './InstrumentoPreview.vue';
 
 const MODULOS: { valor: ModuloInstrumento; rotulo: string }[] = [
   { valor: 'ADPD', rotulo: 'Avaliação Docente pelo Discente (ADPD)' },
@@ -20,6 +21,7 @@ const VINCULOS = [
 
 // ---------------------------------------------------------------- estado
 const modo = ref<'lista' | 'form'>('lista');
+const previsualizando = ref(false);
 const instrumentos = ref<InstrumentoAv[]>([]);
 const tipos = ref<TipoEntidade[]>([]);
 const conjuntos = ref<ConjuntoOpcao[]>([]);
@@ -173,6 +175,10 @@ function aoSalvarConjunto(c: ConjuntoOpcao) {
   modalConjunto.value = false;
 }
 
+function voltarDaPrevia() {
+  previsualizando.value = false;
+}
+
 const fmtData = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '—');
 const corStatus: Record<string, string> = {
   RASCUNHO: 'bg-slate-100 text-slate-700',
@@ -186,6 +192,8 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
 
 <template>
   <div class="space-y-6">
+    <InstrumentoPreview v-if="previsualizando" :instrumento="form" :conjuntos="conjuntos" @voltar="voltarDaPrevia" />
+    <template v-else>
     <p v-if="erro" class="p-4 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-900 font-semibold flex justify-between gap-3">
       <span>⚠️ {{ erro }}</span><button type="button" @click="erro = null">✕</button>
     </p>
@@ -244,6 +252,9 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
           <h2 class="text-xl font-bold text-slate-900 mt-1">{{ form.titulo || 'Cadastro de Instrumento' }}</h2>
         </div>
         <div class="flex gap-2.5">
+          <button type="button" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl" @click="previsualizando = true">
+            👁 Visualizar instrumento
+          </button>
           <button type="button" :disabled="salvando" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl disabled:opacity-50" @click="salvar">
             💾 {{ salvando ? 'Salvando…' : 'Salvar' }}
           </button>
@@ -327,6 +338,7 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
       />
     </template>
 
+    </template>
     <AvaliacaoConjuntoModal v-if="modalConjunto" @salvo="aoSalvarConjunto" @fechar="modalConjunto = false" />
   </div>
 </template>

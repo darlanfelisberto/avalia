@@ -4,7 +4,7 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { salvarUsuarioAtivo } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'catalogo' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
+  visaoAtual: 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
   usuario: UsuarioContexto | null;
 }>();
 
@@ -34,12 +34,6 @@ const tituloVisao = computed(() => {
         titulo: 'Cadastro de Instrumentos',
         categoria: 'Gestão de Instrumentos',
         codigo: 'Schema avaliacao'
-      };
-    case 'catalogo':
-      return {
-        titulo: 'Catálogo de Públicos e Alvos Avaliados',
-        categoria: 'Gestão de Instrumentos',
-        codigo: 'Núcleo Parametrizável'
       };
     case 'responder':
       return { titulo: 'Responder Avaliações', categoria: 'Aplicação e Respostas', codigo: '' };

@@ -2,7 +2,6 @@
 import { ref, reactive } from 'vue';
 import Sidebar from './components/Sidebar.vue';
 import HeaderNav from './components/HeaderNav.vue';
-import PublicosAlvosView from './components/PublicosAlvosView.vue';
 import TeacherFeedbackView from './components/TeacherFeedbackView.vue';
 import ManagementActionPlanView from './components/ManagementActionPlanView.vue';
 import TechnicalView from './components/TechnicalView.vue';
@@ -17,7 +16,7 @@ import { carregarEstadoPreenchimento, salvarEstadoPreenchimento, carregarInstrum
 const usuarioLogado = ref<UsuarioContexto | null>(carregarUsuarioAtivo());
 const instrumento = ref<InstrumentoAvaliativo>(carregarInstrumentoAtivo());
 
-const visaoAtual = ref<'catalogo' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
+const visaoAtual = ref<'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
 const menuAbertoMobile = ref(false);
 
 const estado = reactive<EstadoPreenchimento>(carregarEstadoPreenchimento(instrumento.value.id, ''));
@@ -32,7 +31,7 @@ function reiniciarTeste() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'catalogo' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' {
+function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' {
   if (!u) return 'responder';
   const papel = u.papelAtivo || u.papel;
   if (papel === 'CPA' || papel === 'ADMIN') return 'instrumentos';
@@ -58,8 +57,6 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
   salvarUsuarioAtivo(usuario, usuario.token);
   // Se a visão atual não for permitida para o novo papel, redireciona
   if (visaoAtual.value === 'instrumentos' && usuario.papelAtivo !== 'CPA' && usuario.papelAtivo !== 'ADMIN') {
-    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
-  } else if (visaoAtual.value === 'catalogo' && !temPermissao(usuario, 'CATALOGO_GERENCIAR')) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
   } else if (visaoAtual.value === 'docente' && !temPermissao(usuario, 'DOCENTE_MANIFESTAR')) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
@@ -105,13 +102,8 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
       />
 
       <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8">
-        <!-- 2. Catálogo de Públicos e Alvos Avaliados (Instituição, Setores, Docentes, Alunos) -->
-        <PublicosAlvosView
-          v-if="visaoAtual === 'catalogo'"
-        />
-
         <ResponderAvaliacoesView
-          v-else-if="visaoAtual === 'responder'"
+          v-if="visaoAtual === 'responder'"
           :key="`${usuarioLogado.cpf}:${usuarioLogado.papelAtivo || usuarioLogado.papel}`"
         />
 

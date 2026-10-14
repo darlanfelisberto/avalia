@@ -294,7 +294,6 @@ public class AuthService {
                         "INSTRUMENTO_EDITAR",
                         "INSTRUMENTO_EXCLUIR",
                         "INSTRUMENTO_VISUALIZAR",
-                        "CATALOGO_GERENCIAR",
                         "AVALIACAO_RESPONDER",
                         "DOCENTE_MANIFESTAR",
                         "GESTAO_ENCAMINHAR",
