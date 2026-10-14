@@ -54,17 +54,21 @@ public class SincronizacaoSigaaDao {
 
     private void sincronizarPessoas(Connection sig, Connection loc) throws SQLException {
         long inicio = System.currentTimeMillis();
-        String sqlOrigem = "SELECT id_pessoa, nome, nome_oficial, cpf_cnpj, email, telefone, celular, data_nascimento, sexo, data_cadastro " +
-                           "FROM comum.pessoa " +
-                           "WHERE id_pessoa IN (SELECT id_pessoa FROM rh.servidor) " +
-                           "   OR id_pessoa IN (SELECT id_pessoa FROM public.discente WHERE ano_ingresso >= 2020)";
+        String sqlOrigem = """
+            SELECT id_pessoa, nome, nome_oficial, cpf_cnpj, email, telefone, celular, data_nascimento, sexo, data_cadastro
+            FROM comum.pessoa
+            WHERE id_pessoa IN (SELECT id_pessoa FROM rh.servidor)
+            OR id_pessoa IN (SELECT id_pessoa FROM public.discente WHERE ano_ingresso >= 2020)
+            """;
 
-        String sqlDestino = "INSERT INTO academico.pessoa (id, nome, nome_social, cpf_cnpj, email, telefone, celular, data_nascimento, sexo, data_cadastro, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "nome = EXCLUDED.nome, nome_social = EXCLUDED.nome_social, cpf_cnpj = EXCLUDED.cpf_cnpj, " +
-                            "email = EXCLUDED.email, telefone = EXCLUDED.telefone, celular = EXCLUDED.celular, " +
-                            "data_nascimento = EXCLUDED.data_nascimento, sexo = EXCLUDED.sexo, atualizado_em = now()";
+        String sqlDestino = """
+            INSERT INTO academico.pessoa (id, nome, nome_social, cpf_cnpj, email, telefone, celular, data_nascimento, sexo, data_cadastro, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            nome = EXCLUDED.nome, nome_social = EXCLUDED.nome_social, cpf_cnpj = EXCLUDED.cpf_cnpj,
+            email = EXCLUDED.email, telefone = EXCLUDED.telefone, celular = EXCLUDED.celular,
+            data_nascimento = EXCLUDED.data_nascimento, sexo = EXCLUDED.sexo, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_pessoa"));
@@ -90,11 +94,13 @@ public class SincronizacaoSigaaDao {
         long inicio = System.currentTimeMillis();
         // Passo 1: Inserir todas as unidades com id_pai = null para garantir que todas as PKs existam
         String sqlOrigem = "SELECT id_unidade, codigo_unidade, nome, sigla, hierarquia, unidade_responsavel FROM comum.unidade";
-        String sqlPasso1 = "INSERT INTO academico.unidade (id, codigo, nome, sigla, path, atualizado_em) " +
-                           "VALUES (?, ?, ?, ?, ?::ltree, now()) " +
-                           "ON CONFLICT (id) DO UPDATE SET " +
-                           "codigo = EXCLUDED.codigo, nome = EXCLUDED.nome, sigla = EXCLUDED.sigla, " +
-                           "path = EXCLUDED.path, atualizado_em = now()";
+        String sqlPasso1 = """
+            INSERT INTO academico.unidade (id, codigo, nome, sigla, path, atualizado_em)
+            VALUES (?, ?, ?, ?, ?::ltree, now())
+            ON CONFLICT (id) DO UPDATE SET
+            codigo = EXCLUDED.codigo, nome = EXCLUDED.nome, sigla = EXCLUDED.sigla,
+            path = EXCLUDED.path, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlPasso1, (rs, ps) -> {
             int id = rs.getInt("id_unidade");
@@ -144,16 +150,18 @@ public class SincronizacaoSigaaDao {
         long inicio = System.currentTimeMillis();
         try (Statement st = loc.createStatement()) {
             st.executeUpdate("TRUNCATE TABLE academico.unidade_closure");
-            String sqlClosure = "INSERT INTO academico.unidade_closure (id_ancestral, id_descendente, profundidade) " +
-                    "SELECT " +
-                    "    subltree(u.path, idx, idx + 1)::text::integer AS id_ancestral, " +
-                    "    u.id AS id_descendente, " +
-                    "    (nlevel(u.path) - 1 - idx) AS profundidade " +
-                    "FROM academico.unidade u, " +
-                    "LATERAL generate_series(0, nlevel(u.path) - 1) AS idx " +
-                    "WHERE u.path IS NOT NULL " +
-                    "  AND subltree(u.path, idx, idx + 1)::text::integer IN (SELECT id FROM academico.unidade) " +
-                    "ON CONFLICT (id_ancestral, id_descendente) DO NOTHING";
+            String sqlClosure = """
+                INSERT INTO academico.unidade_closure (id_ancestral, id_descendente, profundidade)
+                SELECT
+                subltree(u.path, idx, idx + 1)::text::integer AS id_ancestral,
+                u.id AS id_descendente,
+                (nlevel(u.path) - 1 - idx) AS profundidade
+                FROM academico.unidade u,
+                LATERAL generate_series(0, nlevel(u.path) - 1) AS idx
+                WHERE u.path IS NOT NULL
+                AND subltree(u.path, idx, idx + 1)::text::integer IN (SELECT id FROM academico.unidade)
+                ON CONFLICT (id_ancestral, id_descendente) DO NOTHING
+                """;
             int count = st.executeUpdate(sqlClosure);
             loc.commit();
             gravarLog("unidade_closure", count, "SUCESSO", "Recalculada tabela closure de unidades (" + count + " pares em " + (System.currentTimeMillis() - inicio) + "ms)");
@@ -163,9 +171,11 @@ public class SincronizacaoSigaaDao {
     private void sincronizarCargos(Connection sig, Connection loc) throws SQLException {
         long inicio = System.currentTimeMillis();
         String sqlOrigem = "SELECT id, denominacao, sigla, inativo FROM rh.cargo";
-        String sqlDestino = "INSERT INTO academico.cargo (id, denominacao, sigla, inativo) " +
-                            "VALUES (?, ?, ?, ?) " +
-                            "ON CONFLICT (id) DO UPDATE SET denominacao = EXCLUDED.denominacao, sigla = EXCLUDED.sigla, inativo = EXCLUDED.inativo";
+        String sqlDestino = """
+            INSERT INTO academico.cargo (id, denominacao, sigla, inativo)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET denominacao = EXCLUDED.denominacao, sigla = EXCLUDED.sigla, inativo = EXCLUDED.inativo
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id"));
@@ -178,14 +188,18 @@ public class SincronizacaoSigaaDao {
 
     private void sincronizarServidores(Connection sig, Connection loc) throws SQLException {
         long inicio = System.currentTimeMillis();
-        String sqlOrigem = "SELECT id_servidor, id_pessoa, siape, id_cargo, id_unidade_lotacao, id_unidade_exercicio, " +
-                           "admissao, data_desligamento FROM rh.servidor";
-        String sqlDestino = "INSERT INTO academico.servidor (id, id_pessoa, siape, id_cargo, id_unidade_lotacao, id_unidade_exercicio, admissao, data_desligamento, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "id_pessoa = EXCLUDED.id_pessoa, siape = EXCLUDED.siape, id_cargo = EXCLUDED.id_cargo, " +
-                            "id_unidade_lotacao = EXCLUDED.id_unidade_lotacao, id_unidade_exercicio = EXCLUDED.id_unidade_exercicio, " +
-                            "admissao = EXCLUDED.admissao, data_desligamento = EXCLUDED.data_desligamento, atualizado_em = now()";
+        String sqlOrigem = """
+            SELECT id_servidor, id_pessoa, siape, id_cargo, id_unidade_lotacao, id_unidade_exercicio,
+            admissao, data_desligamento FROM rh.servidor
+            """;
+        String sqlDestino = """
+            INSERT INTO academico.servidor (id, id_pessoa, siape, id_cargo, id_unidade_lotacao, id_unidade_exercicio, admissao, data_desligamento, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            id_pessoa = EXCLUDED.id_pessoa, siape = EXCLUDED.siape, id_cargo = EXCLUDED.id_cargo,
+            id_unidade_lotacao = EXCLUDED.id_unidade_lotacao, id_unidade_exercicio = EXCLUDED.id_unidade_exercicio,
+            admissao = EXCLUDED.admissao, data_desligamento = EXCLUDED.data_desligamento, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_servidor"));
@@ -203,11 +217,13 @@ public class SincronizacaoSigaaDao {
     private void sincronizarDesignacoes(Connection sig, Connection loc) throws SQLException {
         long inicio = System.currentTimeMillis();
         String sqlOrigem = "SELECT id_designacao, id_servidor, id_unidade, observacoes, inicio, fim FROM rh.designacao";
-        String sqlDestino = "INSERT INTO academico.designacao (id, id_servidor, id_unidade, funcao, chefia, data_inicio, data_fim, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, TRUE, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "id_servidor = EXCLUDED.id_servidor, id_unidade = EXCLUDED.id_unidade, funcao = EXCLUDED.funcao, " +
-                            "data_inicio = EXCLUDED.data_inicio, data_fim = EXCLUDED.data_fim, atualizado_em = now()";
+        String sqlDestino = """
+            INSERT INTO academico.designacao (id, id_servidor, id_unidade, funcao, chefia, data_inicio, data_fim, atualizado_em)
+            VALUES (?, ?, ?, ?, TRUE, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            id_servidor = EXCLUDED.id_servidor, id_unidade = EXCLUDED.id_unidade, funcao = EXCLUDED.funcao,
+            data_inicio = EXCLUDED.data_inicio, data_fim = EXCLUDED.data_fim, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_designacao"));
@@ -223,11 +239,13 @@ public class SincronizacaoSigaaDao {
     private void sincronizarCursos(Connection sig, Connection loc) throws SQLException {
         long inicio = System.currentTimeMillis();
         String sqlOrigem = "SELECT id_curso, codigo, nome, nivel, id_unidade, ativo FROM public.curso";
-        String sqlDestino = "INSERT INTO academico.curso (id, codigo, nome, nivel, id_unidade, ativo, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "codigo = EXCLUDED.codigo, nome = EXCLUDED.nome, nivel = EXCLUDED.nivel, " +
-                            "id_unidade = EXCLUDED.id_unidade, ativo = EXCLUDED.ativo, atualizado_em = now()";
+        String sqlDestino = """
+            INSERT INTO academico.curso (id, codigo, nome, nivel, id_unidade, ativo, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            codigo = EXCLUDED.codigo, nome = EXCLUDED.nome, nivel = EXCLUDED.nivel,
+            id_unidade = EXCLUDED.id_unidade, ativo = EXCLUDED.ativo, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_curso"));
@@ -242,13 +260,17 @@ public class SincronizacaoSigaaDao {
 
     private void sincronizarAlunos(Connection sig, Connection loc) throws SQLException {
         long inicio = System.currentTimeMillis();
-        String sqlOrigem = "SELECT id_discente, id_pessoa, matricula, id_curso, nivel, ano_ingresso, periodo_ingresso " +
-                           "FROM public.discente WHERE ano_ingresso >= 2020";
-        String sqlDestino = "INSERT INTO academico.aluno (id, id_pessoa, matricula, id_curso, nivel, ano_ingresso, periodo_ingresso, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "id_pessoa = EXCLUDED.id_pessoa, matricula = EXCLUDED.matricula, id_curso = EXCLUDED.id_curso, " +
-                            "nivel = EXCLUDED.nivel, ano_ingresso = EXCLUDED.ano_ingresso, periodo_ingresso = EXCLUDED.periodo_ingresso, atualizado_em = now()";
+        String sqlOrigem = """
+            SELECT id_discente, id_pessoa, matricula, id_curso, nivel, ano_ingresso, periodo_ingresso
+            FROM public.discente WHERE ano_ingresso >= 2020
+            """;
+        String sqlDestino = """
+            INSERT INTO academico.aluno (id, id_pessoa, matricula, id_curso, nivel, ano_ingresso, periodo_ingresso, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            id_pessoa = EXCLUDED.id_pessoa, matricula = EXCLUDED.matricula, id_curso = EXCLUDED.id_curso,
+            nivel = EXCLUDED.nivel, ano_ingresso = EXCLUDED.ano_ingresso, periodo_ingresso = EXCLUDED.periodo_ingresso, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_discente"));
@@ -264,16 +286,20 @@ public class SincronizacaoSigaaDao {
 
     private void sincronizarComponentesCurriculares(Connection sig, Connection loc) throws SQLException {
         long inicio = System.currentTimeMillis();
-        String sqlOrigem = "SELECT cc.id_disciplina, cc.codigo, ccd.nome, cc.id_unidade, cc.nivel, " +
-                           "ccd.ch_total, ccd.ch_teorico, ccd.ch_pratico, ccd.ementa " +
-                           "FROM ensino.componente_curricular cc " +
-                           "JOIN ensino.componente_curricular_detalhes ccd ON ccd.id_componente_detalhes = cc.id_detalhe";
-        String sqlDestino = "INSERT INTO academico.componente_curricular (id, codigo, nome, id_unidade, nivel, ch_total, ch_teorica, ch_pratica, ementa, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "codigo = EXCLUDED.codigo, nome = EXCLUDED.nome, id_unidade = EXCLUDED.id_unidade, " +
-                            "nivel = EXCLUDED.nivel, ch_total = EXCLUDED.ch_total, ch_teorica = EXCLUDED.ch_teorica, " +
-                            "ch_pratica = EXCLUDED.ch_pratica, ementa = EXCLUDED.ementa, atualizado_em = now()";
+        String sqlOrigem = """
+            SELECT cc.id_disciplina, cc.codigo, ccd.nome, cc.id_unidade, cc.nivel,
+            ccd.ch_total, ccd.ch_teorico, ccd.ch_pratico, ccd.ementa
+            FROM ensino.componente_curricular cc
+            JOIN ensino.componente_curricular_detalhes ccd ON ccd.id_componente_detalhes = cc.id_detalhe
+            """;
+        String sqlDestino = """
+            INSERT INTO academico.componente_curricular (id, codigo, nome, id_unidade, nivel, ch_total, ch_teorica, ch_pratica, ementa, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            codigo = EXCLUDED.codigo, nome = EXCLUDED.nome, id_unidade = EXCLUDED.id_unidade,
+            nivel = EXCLUDED.nivel, ch_total = EXCLUDED.ch_total, ch_teorica = EXCLUDED.ch_teorica,
+            ch_pratica = EXCLUDED.ch_pratica, ementa = EXCLUDED.ementa, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_disciplina"));
@@ -292,11 +318,13 @@ public class SincronizacaoSigaaDao {
     private void sincronizarCoordenacaoCurso(Connection sig, Connection loc) throws SQLException {
         long inicio = System.currentTimeMillis();
         String sqlOrigem = "SELECT id_coordenacao_curso, id_servidor, id_curso, data_inicio_mandato, data_fim_mandato, ativo FROM ensino.coordenacao_curso";
-        String sqlDestino = "INSERT INTO academico.coordenacao_curso (id, id_servidor, id_curso, data_inicio, data_fim, ativo, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "id_servidor = EXCLUDED.id_servidor, id_curso = EXCLUDED.id_curso, data_inicio = EXCLUDED.data_inicio, " +
-                            "data_fim = EXCLUDED.data_fim, ativo = EXCLUDED.ativo, atualizado_em = now()";
+        String sqlDestino = """
+            INSERT INTO academico.coordenacao_curso (id, id_servidor, id_curso, data_inicio, data_fim, ativo, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            id_servidor = EXCLUDED.id_servidor, id_curso = EXCLUDED.id_curso, data_inicio = EXCLUDED.data_inicio,
+            data_fim = EXCLUDED.data_fim, ativo = EXCLUDED.ativo, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_coordenacao_curso"));
@@ -312,18 +340,22 @@ public class SincronizacaoSigaaDao {
     private void sincronizarTurmas(Connection sig, Connection loc, int ano, Integer periodo) throws SQLException {
         long inicio = System.currentTimeMillis();
         String filtroPeriodo = (periodo != null) ? " AND t.periodo = " + periodo : "";
-        String sqlOrigem = "SELECT t.id_turma, t.id_disciplina, t.codigo, t.ano, t.periodo, t.capacidade_aluno, st.descricao AS situacao " +
-                           "FROM ensino.turma t " +
-                           "LEFT JOIN ensino.situacao_turma st ON st.id_situacao_turma = t.id_situacao_turma " +
-                           "WHERE t.ano >= " + ano + filtroPeriodo + " " +
-                           "  AND t.id_disciplina IS NOT NULL AND t.id_disciplina > 0 " +
-                           "  AND t.id_disciplina IN (SELECT id_disciplina FROM ensino.componente_curricular)";
-        String sqlDestino = "INSERT INTO academico.turma (id, id_componente_curricular, codigo_turma, ano, periodo, capacidade, situacao, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "id_componente_curricular = EXCLUDED.id_componente_curricular, codigo_turma = EXCLUDED.codigo_turma, " +
-                            "ano = EXCLUDED.ano, periodo = EXCLUDED.periodo, capacidade = EXCLUDED.capacidade, " +
-                            "situacao = EXCLUDED.situacao, atualizado_em = now()";
+        String sqlOrigem = """
+            SELECT t.id_turma, t.id_disciplina, t.codigo, t.ano, t.periodo, t.capacidade_aluno, st.descricao AS situacao
+            FROM ensino.turma t
+            LEFT JOIN ensino.situacao_turma st ON st.id_situacao_turma = t.id_situacao_turma
+            WHERE t.ano >= %d%s
+              AND t.id_disciplina IS NOT NULL AND t.id_disciplina > 0
+              AND t.id_disciplina IN (SELECT id_disciplina FROM ensino.componente_curricular)
+            """.formatted(ano, filtroPeriodo);
+        String sqlDestino = """
+            INSERT INTO academico.turma (id, id_componente_curricular, codigo_turma, ano, periodo, capacidade, situacao, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            id_componente_curricular = EXCLUDED.id_componente_curricular, codigo_turma = EXCLUDED.codigo_turma,
+            ano = EXCLUDED.ano, periodo = EXCLUDED.periodo, capacidade = EXCLUDED.capacidade,
+            situacao = EXCLUDED.situacao, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_turma"));
@@ -340,18 +372,22 @@ public class SincronizacaoSigaaDao {
     private void sincronizarDocenteTurma(Connection sig, Connection loc, int ano, Integer periodo) throws SQLException {
         long inicio = System.currentTimeMillis();
         String filtroPeriodo = (periodo != null) ? " AND t.periodo = " + periodo : "";
-        String sqlOrigem = "SELECT dt.id_docente_turma, dt.id_docente, dt.id_turma, dt.ch_dedicada_periodo " +
-                           "FROM ensino.docente_turma dt " +
-                           "JOIN ensino.turma t ON t.id_turma = dt.id_turma " +
-                           "WHERE t.ano >= " + ano + filtroPeriodo + " " +
-                           "  AND t.id_disciplina IS NOT NULL AND t.id_disciplina > 0 " +
-                           "  AND t.id_disciplina IN (SELECT id_disciplina FROM ensino.componente_curricular) " +
-                           "  AND (dt.id_docente IS NULL OR dt.id_docente IN (SELECT id_servidor FROM rh.servidor))";
-        String sqlDestino = "INSERT INTO academico.docente_turma (id, id_servidor, id_turma, ch_dedicada, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "id_servidor = EXCLUDED.id_servidor, id_turma = EXCLUDED.id_turma, " +
-                            "ch_dedicada = EXCLUDED.ch_dedicada, atualizado_em = now()";
+        String sqlOrigem = """
+            SELECT dt.id_docente_turma, dt.id_docente, dt.id_turma, dt.ch_dedicada_periodo
+            FROM ensino.docente_turma dt
+            JOIN ensino.turma t ON t.id_turma = dt.id_turma
+            WHERE t.ano >= %d%s
+              AND t.id_disciplina IS NOT NULL AND t.id_disciplina > 0
+              AND t.id_disciplina IN (SELECT id_disciplina FROM ensino.componente_curricular)
+              AND (dt.id_docente IS NULL OR dt.id_docente IN (SELECT id_servidor FROM rh.servidor))
+            """.formatted(ano, filtroPeriodo);
+        String sqlDestino = """
+            INSERT INTO academico.docente_turma (id, id_servidor, id_turma, ch_dedicada, atualizado_em)
+            VALUES (?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            id_servidor = EXCLUDED.id_servidor, id_turma = EXCLUDED.id_turma,
+            ch_dedicada = EXCLUDED.ch_dedicada, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_docente_turma"));
@@ -365,18 +401,22 @@ public class SincronizacaoSigaaDao {
     private void sincronizarMatriculas(Connection sig, Connection loc, int ano, Integer periodo) throws SQLException {
         long inicio = System.currentTimeMillis();
         String filtroPeriodo = (periodo != null) ? " AND t.periodo = " + periodo : "";
-        String sqlOrigem = "SELECT mc.id_matricula_componente, mc.id_discente, mc.id_turma, mc.media_final, mc.numero_faltas, mc.ano, mc.periodo, mc.data_cadastro " +
-                           "FROM ensino.matricula_componente mc " +
-                           "JOIN ensino.turma t ON t.id_turma = mc.id_turma " +
-                           "WHERE t.ano >= " + ano + filtroPeriodo + " " +
-                           "  AND t.id_disciplina IS NOT NULL AND t.id_disciplina > 0 " +
-                           "  AND t.id_disciplina IN (SELECT id_disciplina FROM ensino.componente_curricular) " +
-                           "  AND (mc.id_discente IS NULL OR mc.id_discente IN (SELECT id_discente FROM public.discente WHERE ano_ingresso >= 2020))";
-        String sqlDestino = "INSERT INTO academico.matricula (id, id_aluno, id_turma, media_final, numero_faltas, ano, periodo, data_matricula, atualizado_em) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, now()) " +
-                            "ON CONFLICT (id) DO UPDATE SET " +
-                            "id_aluno = EXCLUDED.id_aluno, id_turma = EXCLUDED.id_turma, media_final = EXCLUDED.media_final, " +
-                            "numero_faltas = EXCLUDED.numero_faltas, ano = EXCLUDED.ano, periodo = EXCLUDED.periodo, atualizado_em = now()";
+        String sqlOrigem = """
+            SELECT mc.id_matricula_componente, mc.id_discente, mc.id_turma, mc.media_final, mc.numero_faltas, mc.ano, mc.periodo, mc.data_cadastro
+            FROM ensino.matricula_componente mc
+            JOIN ensino.turma t ON t.id_turma = mc.id_turma
+            WHERE t.ano >= %d%s
+              AND t.id_disciplina IS NOT NULL AND t.id_disciplina > 0
+              AND t.id_disciplina IN (SELECT id_disciplina FROM ensino.componente_curricular)
+              AND (mc.id_discente IS NULL OR mc.id_discente IN (SELECT id_discente FROM public.discente WHERE ano_ingresso >= 2020))
+            """.formatted(ano, filtroPeriodo);
+        String sqlDestino = """
+            INSERT INTO academico.matricula (id, id_aluno, id_turma, media_final, numero_faltas, ano, periodo, data_matricula, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, now())
+            ON CONFLICT (id) DO UPDATE SET
+            id_aluno = EXCLUDED.id_aluno, id_turma = EXCLUDED.id_turma, media_final = EXCLUDED.media_final,
+            numero_faltas = EXCLUDED.numero_faltas, ano = EXCLUDED.ano, periodo = EXCLUDED.periodo, atualizado_em = now()
+            """;
 
         int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_matricula_componente"));
@@ -440,8 +480,10 @@ public class SincronizacaoSigaaDao {
     public void gravarLog(String entidade, int total, String status, String mensagem) {
         try (Connection loc = localDataSource.getConnection();
              PreparedStatement ps = loc.prepareStatement(
-                     "INSERT INTO academico.etl_log (entidade, inicio, fim, registros_importados, status, mensagem) " +
-                     "VALUES (?, now(), now(), ?, ?, ?)")) {
+                     """
+                         INSERT INTO academico.etl_log (entidade, inicio, fim, registros_importados, status, mensagem)
+                         VALUES (?, now(), now(), ?, ?, ?)
+                         """)) {
             ps.setString(1, entidade);
             ps.setInt(2, total);
             ps.setString(3, status);
@@ -474,8 +516,10 @@ public class SincronizacaoSigaaDao {
         List<EtlLogDTO> lista = new ArrayList<>();
         try (Connection loc = localDataSource.getConnection();
              PreparedStatement ps = loc.prepareStatement(
-                     "SELECT id, entidade, inicio, fim, registros_importados, status, mensagem " +
-                     "FROM academico.etl_log ORDER BY id DESC LIMIT ?")) {
+                     """
+                         SELECT id, entidade, inicio, fim, registros_importados, status, mensagem
+                         FROM academico.etl_log ORDER BY id DESC LIMIT ?
+                         """)) {
             ps.setInt(1, limite);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

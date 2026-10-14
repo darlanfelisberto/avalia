@@ -57,12 +57,15 @@ public class AvaliacaoDao {
     }
 
     public boolean existeInstrumento(String titulo, String ciclo, UUID tipoId, UUID ignorarId) {
-        String jpql = "select count(i) from InstrumentoAvaliativo i " +
-                "where i.titulo = :titulo and i.cicloReferencia = :ciclo and i.tipoEntidadeAvaliada.id = :tipo" +
-                (ignorarId == null ? "" : " and i.id <> :ignorar");
-        var query = em.createQuery(jpql, Long.class)
-                .setParameter("titulo", titulo).setParameter("ciclo", ciclo).setParameter("tipo", tipoId);
-        if (ignorarId != null) query.setParameter("ignorar", ignorarId);
+        var query = em.createQuery("""
+            select count(i) from InstrumentoAvaliativo i
+            where i.titulo = :titulo and i.cicloReferencia = :ciclo and i.tipoEntidadeAvaliada.id = :tipo
+              and (:ignorarId is null or i.id <> :ignorarId)
+            """, Long.class)
+                .setParameter("titulo", titulo)
+                .setParameter("ciclo", ciclo)
+                .setParameter("tipo", tipoId)
+                .setParameter("ignorarId", ignorarId);
         return query.getSingleResult() > 0;
     }
 
@@ -78,22 +81,26 @@ public class AvaliacaoDao {
 
     /** O UPSERT mantém a identidade do respondente estável sob envios concorrentes. */
     public UUID buscarOuCriarRespondente(String cpf, String nome, String codigoTipo) {
-        String id = (String) nativeQuery("insert into avaliacao.entidade " +
-                        "(tipo_entidade_id, referencia_externa, rotulo) " +
-                        "select tipo_entidade_id, ?1, ?2 from avaliacao.tipo_entidade where codigo = ?3 " +
-                        "on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo " +
-                        "returning cast(entidade_id as text)")
+        String id = (String) nativeQuery("""
+            insert into avaliacao.entidade
+            (tipo_entidade_id, referencia_externa, rotulo)
+            select tipo_entidade_id, ?1, ?2 from avaliacao.tipo_entidade where codigo = ?3
+            on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo
+            returning cast(entidade_id as text)
+            """)
                 .setParameter(1, cpf).setParameter(2, nome).setParameter(3, codigoTipo).getSingleResult();
         return UUID.fromString(id);
     }
 
     public List<Object[]> questoesParaResposta(UUID instrumentoId) {
-        return rows("select cast(sq.sessao_questao_id as text), q.tipo, " +
-                        "cast(q.conjunto_opcao_id as text), sq.obrigatoria " +
-                        "from avaliacao.sessao_questao sq " +
-                        "join avaliacao.instrumento_sessao s on s.instrumento_sessao_id = sq.instrumento_sessao_id " +
-                        "join avaliacao.questao q on q.questao_id = sq.questao_id " +
-                        "where s.instrumento_avaliativo_id = cast(?1 as uuid) and s.tipo = 'SESSAO'",
+        return rows("""
+            select cast(sq.sessao_questao_id as text), q.tipo,
+            cast(q.conjunto_opcao_id as text), sq.obrigatoria
+            from avaliacao.sessao_questao sq
+            join avaliacao.instrumento_sessao s on s.instrumento_sessao_id = sq.instrumento_sessao_id
+            join avaliacao.questao q on q.questao_id = sq.questao_id
+            where s.instrumento_avaliativo_id = cast(?1 as uuid) and s.tipo = 'SESSAO'
+            """,
                 instrumentoId.toString());
     }
 

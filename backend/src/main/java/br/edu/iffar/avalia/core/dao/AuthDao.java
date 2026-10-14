@@ -46,8 +46,10 @@ public class AuthDao {
     public PessoaAcademica buscarPessoaPorCpf(String cpf) {
         @SuppressWarnings("unchecked")
         List<PessoaAcademica> pessoas = em.createNativeQuery(
-                        "select p.* from academico.pessoa p " +
-                        "where regexp_replace(p.cpf_cnpj, '[^0-9]', '', 'g') = ?1 limit 1", PessoaAcademica.class)
+                        """
+                            select p.* from academico.pessoa p
+                            where regexp_replace(p.cpf_cnpj, '[^0-9]', '', 'g') = ?1 limit 1
+                            """, PessoaAcademica.class)
                 .setParameter(1, cpf).getResultList();
         return pessoas.isEmpty() ? null : pessoas.get(0);
     }
@@ -57,18 +59,24 @@ public class AuthDao {
     }
 
     public boolean existeDocenteTurma(int pessoaId) {
-        return contar("select count(*) from academico.docente_turma dt " +
-                "join academico.servidor s on s.id = dt.id_servidor where s.id_pessoa = ?1", pessoaId);
+        return contar("""
+            select count(*) from academico.docente_turma dt
+            join academico.servidor s on s.id = dt.id_servidor where s.id_pessoa = ?1
+            """, pessoaId);
     }
 
     public boolean existeChefia(int pessoaId) {
-        return contar("select count(*) from academico.designacao d " +
-                "join academico.servidor s on s.id = d.id_servidor where s.id_pessoa = ?1 and d.chefia = true", pessoaId);
+        return contar("""
+            select count(*) from academico.designacao d
+            join academico.servidor s on s.id = d.id_servidor where s.id_pessoa = ?1 and d.chefia = true
+            """, pessoaId);
     }
 
     public boolean existeCoordenacao(int pessoaId) {
-        return contar("select count(*) from academico.coordenacao_curso c " +
-                "join academico.servidor s on s.id = c.id_servidor where s.id_pessoa = ?1 and c.ativo = true", pessoaId);
+        return contar("""
+            select count(*) from academico.coordenacao_curso c
+            join academico.servidor s on s.id = c.id_servidor where s.id_pessoa = ?1 and c.ativo = true
+            """, pessoaId);
     }
 
     public boolean existeServidor(int pessoaId) {
@@ -76,14 +84,18 @@ public class AuthDao {
     }
 
     public String campusServidor(int pessoaId) {
-        return primeiraString("select u.nome from academico.servidor s " +
-                "join academico.unidade u on u.id = s.id_unidade_lotacao where s.id_pessoa = ?1 limit 1", pessoaId);
+        return primeiraString("""
+            select u.nome from academico.servidor s
+            join academico.unidade u on u.id = s.id_unidade_lotacao where s.id_pessoa = ?1 limit 1
+            """, pessoaId);
     }
 
     public String campusAluno(int pessoaId) {
-        return primeiraString("select u.nome from academico.aluno a " +
-                "join academico.curso c on c.id = a.id_curso " +
-                "join academico.unidade u on u.id = c.id_unidade where a.id_pessoa = ?1 limit 1", pessoaId);
+        return primeiraString("""
+            select u.nome from academico.aluno a
+            join academico.curso c on c.id = a.id_curso
+            join academico.unidade u on u.id = c.id_unidade where a.id_pessoa = ?1 limit 1
+            """, pessoaId);
     }
 
     private boolean contar(String sql, int pessoaId) {
