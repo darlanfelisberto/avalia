@@ -5,7 +5,6 @@ export interface AvaliacaoDisponivel {
   instrumentoId: string;
   titulo: string;
   descricao?: string | null;
-  modulo: string;
   alvoId: string;
   alvoNome: string;
   alvoTipoCodigo?: string;

@@ -19,12 +19,12 @@ const alvosMarcados = ref<string[]>([]);
 const filaAlvos = ref<AvaliacaoDisponivel[]>([]);
 
 const grupos = computed(() => {
-  const mapa = new Map<string, { chave: string; instrumentoId: string; titulo: string; descricao?: string | null; modulo: string; contextoNome?: string | null; alvos: AvaliacaoDisponivel[] }>();
+  const mapa = new Map<string, { chave: string; instrumentoId: string; titulo: string; descricao?: string | null; contextoNome?: string | null; alvos: AvaliacaoDisponivel[] }>();
   for (const item of disponiveis.value) {
     const chave = `${item.instrumentoId}:${item.contextoId || 'geral'}`;
     let grupo = mapa.get(chave);
     if (!grupo) {
-      grupo = { chave, instrumentoId: item.instrumentoId, titulo: item.titulo, descricao: item.descricao, modulo: item.modulo, contextoNome: item.contextoNome, alvos: [] };
+      grupo = { chave, instrumentoId: item.instrumentoId, titulo: item.titulo, descricao: item.descricao, contextoNome: item.contextoNome, alvos: [] };
       mapa.set(chave, grupo);
     }
     grupo.alvos.push(item);
@@ -190,7 +190,7 @@ function voltarASelecao() {
         <div>
           <h3 class="font-bold text-slate-900">{{ grupo.titulo }}</h3>
           <p v-if="grupo.descricao" class="text-sm text-slate-600 mt-1">{{ grupo.descricao }}</p>
-          <p class="text-xs text-slate-500 mt-1">{{ grupo.modulo }}<span v-if="grupo.contextoNome"> · Turma: {{ grupo.contextoNome }}</span></p>
+          <p v-if="grupo.contextoNome" class="text-xs text-slate-500 mt-1">Turma: {{ grupo.contextoNome }}</p>
           <p class="text-xs text-slate-500">{{ grupo.alvos.filter(a => !a.respondido).length }} alvo(s) disponíveis</p>
         </div>
         <button type="button" :disabled="carregando || grupo.alvos.every(a => a.respondido)" @click="selecionarGrupo(grupo.chave)"

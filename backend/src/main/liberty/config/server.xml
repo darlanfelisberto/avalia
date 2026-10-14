@@ -44,15 +44,16 @@
     <dataSource id="AvaliaDataSource" jndiName="jdbc/avaliaDS">
         <jdbcDriver libraryRef="postgresqlLib"/>
         <properties.postgresql serverName="${APP_DB_IP}" portNumber="${APP_DB_PORT}"
-                                databaseName="avalia"
-                                user="${APP_DB_USER}" password="${APP_DB_PASSWORD}"/>
+                                databaseName="${APP_DB_DATABASE}"
+                                user="${APP_DB_USER}" password="${APP_DB_PASSWORD}"
+                                stringType="unspecified"/>
     </dataSource>
 
     <!-- DataSource gerenciado do SIGAA (Base Remota para Integração - Contém schemas comum, rh, ensino e public) -->
     <dataSource id="SigaaDataSource" jndiName="jdbc/sigaaDS">
         <jdbcDriver libraryRef="postgresqlLib"/>
         <properties.postgresql serverName="${APP_DB_SIG_IP}" portNumber="${APP_DB_SIG_PORT}"
-                                databaseName="sigaa"
+                                databaseName="${APP_DB_SIG_DATABASE}"
                                 user="${APP_DB_SIG_USER}" password="${APP_DB_SIG_PASSWORD}"/>
     </dataSource>
 

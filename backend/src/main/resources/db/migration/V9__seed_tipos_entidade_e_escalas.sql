@@ -1,5 +1,5 @@
 -- Migração V9: seed do schema "avaliacao" (tipos de entidade e conjuntos de opções padrão).
--- Executa apenas se o schema avaliacao já tiver sido criado (ver V8_cria_entidades_de_avaliacao_ou_alvos).
+-- Executa após a criação do schema na migração V8.
 DO $$
 BEGIN
     IF to_regclass('avaliacao.tipo_entidade') IS NOT NULL THEN

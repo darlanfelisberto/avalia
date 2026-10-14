@@ -1,6 +1,5 @@
 export type TipoQuestao = 'ESCALA' | 'ESCOLHA_UNICA' | 'MULTIPLA_ESCOLHA' | 'TEXTO_LIVRE';
 
-export type ModuloAvaliacao = 'ADPD' | 'SINAES' | 'APRENDIZAGEM';
 
 export interface OpcaoResposta {
   id: string;
@@ -83,7 +82,6 @@ export interface InstrumentoAvaliativo {
   instrumentoId?: string;
   titulo: string;
   subtitulo: string;
-  modulo: ModuloAvaliacao;
   tipoAlvo: TipoAlvoAvaliado;
   tipoPublico: TipoPublicoAvaliador;
   publicosPermitidos?: TipoPublicoAvaliador[];

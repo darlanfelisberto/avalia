@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ConjuntoOpcao, ModuloInstrumento, PaginaAv, QuestaoAv, SessaoAv, TipoQuestaoAv } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcao, PaginaAv, QuestaoAv, SessaoAv, TipoQuestaoAv } from '../types/instrumentoAvaliacao';
 
 const paginas = defineModel<PaginaAv[]>('paginas', { required: true });
 const sessoes = defineModel<SessaoAv[]>('sessoes', { required: true });
 
 const props = defineProps<{
   conjuntos: ConjuntoOpcao[];
-  modulo: ModuloInstrumento;
   somenteLeitura?: boolean;
 }>();
 
@@ -20,7 +19,6 @@ const TIPOS: { valor: TipoQuestaoAv; rotulo: string }[] = [
   { valor: 'DESCRITIVA', rotulo: 'Resposta descritiva' }
 ];
 
-const mostrarPeso = computed(() => props.modulo === 'APRENDIZAGEM');
 const mapaConjuntos = computed(() => new Map(props.conjuntos.map(c => [c.id, c])));
 
 function mover<T>(lista: T[], i: number, delta: number) {
@@ -117,7 +115,7 @@ const btnIcone = 'text-[11px] px-1.5 py-0.5 rounded border border-slate-200 text
               </select>
               <input v-model="q.assunto" :disabled="somenteLeitura" placeholder="Assunto (opcional)"
                 :class="[input, q.tipo === 'DESCRITIVA' ? 'sm:col-span-5' : 'sm:col-span-3']" />
-              <input v-if="mostrarPeso" v-model.number="q.peso" :disabled="somenteLeitura" type="number" step="0.5" min="0" placeholder="Peso" :class="[input, 'sm:col-span-2']" />
+              <input v-model.number="q.peso" :disabled="somenteLeitura" type="number" step="0.5" min="0" placeholder="Peso (opcional)" :class="[input, 'sm:col-span-2']" />
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2 pl-8">

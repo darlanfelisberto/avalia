@@ -4,7 +4,6 @@ export const instrumentoADPDMock: InstrumentoAvaliativo = {
   id: '00000000-0000-0000-0003-000000000001',
   titulo: 'Avaliação Docente pelo Discente (ADPD)',
   subtitulo: 'Instituto Federal Farroupilha - Resolução CONSUP nº 104/2013',
-  modulo: 'ADPD',
   tipoAlvo: 'DOCENTE',
   tipoPublico: 'DISCENTES',
   publicosPermitidos: ['DISCENTES'],

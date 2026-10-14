@@ -10,7 +10,6 @@ public final class RespostaAvaliacaoDTO {
         public String instrumentoId;
         public String titulo;
         public String descricao;
-        public String modulo;
         public String alvoId;
         public String alvoNome;
         public String alvoTipoCodigo;

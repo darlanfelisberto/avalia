@@ -47,9 +47,9 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
         </div>
         <div>
           <div class="font-bold text-white text-base tracking-tight flex items-center gap-1.5">
-            <span>IFFar AVALIA</span>
+            <span>AVALIA</span>
           </div>
-          <p class="text-[11px] text-emerald-400 font-medium">Autoavaliação Institucional</p>
+          <p class="text-[11px] text-emerald-400 font-medium">Avaliações Institucionais</p>
         </div>
       </div>
 
@@ -71,9 +71,7 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
         </div>
         <div class="space-y-1">
           <!-- Instrumentos de Avaliação (schema avaliacao) -->
-          <button
-            v-if="podeGerenciarInstrumentos"
-            type="button"
+          <button v-if="podeGerenciarInstrumentos" type="button"
             @click="() => { emit('mudarVisao', 'instrumentos'); emit('fecharMenuMobile'); }"
             :class="[
               'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left group cursor-pointer',
@@ -87,7 +85,6 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               <div>Cadastro de Instrumentos</div>
               <div class="text-[10px] opacity-75 font-normal">Instrumentos, páginas, sessões e questões</div>
             </div>
-            <span v-if="visaoAtual === 'instrumentos'" class="w-1.5 h-1.5 rounded-full bg-white"></span>
           </button>
 
         </div>
@@ -116,10 +113,6 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               <div>Responder Avaliação</div>
               <div class="text-[10px] opacity-75 font-normal">Instrumentos disponíveis para seu perfil</div>
             </div>
-            <span
-              v-if="visaoAtual === 'responder'"
-              class="w-1.5 h-1.5 rounded-full bg-white"
-            ></span>
           </button>
 
           <!-- Item: Manifestação Docente (RF-AD07) -->
@@ -139,10 +132,6 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               <div>Manifestação Docente</div>
               <div class="text-[10px] opacity-75 font-normal">Plano de Desenvolvimento (RF-AD07)</div>
             </div>
-            <span
-              v-if="visaoAtual === 'docente'"
-              class="w-1.5 h-1.5 rounded-full bg-white"
-            ></span>
           </button>
         </div>
       </div>
@@ -170,10 +159,6 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               <div>Gestão & Plano de Ação</div>
               <div class="text-[10px] opacity-75 font-normal">Fechamento do Ciclo (RF14)</div>
             </div>
-            <span
-              v-if="visaoAtual === 'gestao'"
-              class="w-1.5 h-1.5 rounded-full bg-white"
-            ></span>
           </button>
 
           <!-- Item: Sincronização SIGAA / SIGRH -->
@@ -193,10 +178,6 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               <div>Sincronização SIGAA</div>
               <div class="text-[10px] opacity-75 font-normal">Carga Acadêmica & RH (SIGAA)</div>
             </div>
-            <span
-              v-if="visaoAtual === 'sincronizacao'"
-              class="w-1.5 h-1.5 rounded-full bg-white"
-            ></span>
           </button>
 
           <!-- Item: Auditoria & API REST -->
@@ -216,10 +197,6 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               <div>Auditoria & API REST</div>
               <div class="text-[10px] opacity-75 font-normal">Payloads e Conectividade</div>
             </div>
-            <span
-              v-if="visaoAtual === 'tecnica'"
-              class="w-1.5 h-1.5 rounded-full bg-white"
-            ></span>
           </button>
         </div>
       </div>

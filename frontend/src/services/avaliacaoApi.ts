@@ -35,8 +35,7 @@ async function chamar<T>(url: string, init?: RequestInit): Promise<Resultado<T>>
 export const avaliacaoApi = {
   tiposEntidade: () => chamar<TipoEntidade[]>(`${BASE}/tipos-entidade`),
   conjuntos: () => chamar<ConjuntoOpcao[]>(`${BASE}/conjuntos-opcao`),
-  salvarConjunto: (c: ConjuntoOpcao) =>
-    chamar<ConjuntoOpcao>(`${BASE}/conjuntos-opcao`, { method: 'POST', body: JSON.stringify(c) }),
+  salvarConjunto: (c: ConjuntoOpcao) => chamar<ConjuntoOpcao>(`${BASE}/conjuntos-opcao`, { method: 'POST', body: JSON.stringify(c) }),
   listar: () => chamar<InstrumentoAv[]>(`${BASE}/instrumentos`),
   buscar: (id: string) => chamar<InstrumentoAv>(`${BASE}/instrumentos/${id}`),
   salvar: (i: InstrumentoAv, usuario?: string) =>

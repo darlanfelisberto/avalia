@@ -21,20 +21,19 @@ public class FlywayMigrationService {
     public void init(@Observes @Initialized(ApplicationScoped.class) Object init) {
         LOGGER.info("Iniciando verificação e aplicação de migrações Flyway no banco 'avalia'...");
         try {
-            if (dataSource != null) {
-                Flyway flyway = Flyway.configure()
-                        .dataSource(dataSource)
-                        .locations("classpath:db/migration")
-                        .baselineOnMigrate(true)
-                        .load();
+            if (dataSource == null) throw new IllegalStateException("DataSource 'jdbc/avaliaDS' indisponível.");
+            Flyway flyway = Flyway.configure()
+                    .dataSource(dataSource)
+                    .locations("classpath:db/migration")
+                    .baselineOnMigrate(true)
+                    .outOfOrder(true)
+                    .load();
 
-                flyway.migrate();
-                LOGGER.info("Migrações Flyway executadas com sucesso!");
-            } else {
-                LOGGER.warning("DataSource 'jdbc/avaliaDS' nulo na inicialização do Flyway.");
-            }
+            flyway.migrate();
+            LOGGER.info("Migrações Flyway executadas com sucesso!");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Erro ao executar migrações Flyway", e);
+            throw new IllegalStateException("Não foi possível preparar o schema do AVALIA.", e);
         }
     }
 }

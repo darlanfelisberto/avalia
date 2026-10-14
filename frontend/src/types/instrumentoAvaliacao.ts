@@ -1,4 +1,3 @@
-export type ModuloInstrumento = 'AUTOAVALIACAO' | 'ADPD' | 'APRENDIZAGEM';
 export type StatusInstrumento = 'RASCUNHO' | 'PUBLICADO' | 'ENCERRADO' | 'CONSOLIDADO';
 export type TipoQuestaoAv = 'ESCOLHA_UNICA' | 'MULTIPLA_ESCOLHA' | 'ESCALA' | 'DESCRITIVA';
 
@@ -61,7 +60,6 @@ export interface InstrumentoAv {
   /** Tipos de entidade avaliados; em instrumentos legados, omitido significa o tipo principal. */
   tiposEntidadeAlvoIds?: string[];
   tiposEntidadeAlvoNomes?: string[];
-  modulo: ModuloInstrumento;
   titulo: string;
   descricao?: string | null;
   cicloReferencia: string;

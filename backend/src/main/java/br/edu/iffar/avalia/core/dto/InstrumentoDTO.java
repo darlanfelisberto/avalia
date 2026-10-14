@@ -1,6 +1,5 @@
 package br.edu.iffar.avalia.core.dto;
 
-import br.edu.iffar.avalia.core.model.ModuloAvaliacao;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -9,7 +8,6 @@ public class InstrumentoDTO {
     private UUID instrumentoId;
     private String titulo;
     private String subtitulo;
-    private ModuloAvaliacao modulo;
     private String anoCiclo;
     private String periodoLetivo;
     private String dataInicio;
@@ -42,8 +40,6 @@ public class InstrumentoDTO {
     public String getSubtitulo() { return subtitulo; }
     public void setSubtitulo(String subtitulo) { this.subtitulo = subtitulo; }
 
-    public ModuloAvaliacao getModulo() { return modulo; }
-    public void setModulo(ModuloAvaliacao modulo) { this.modulo = modulo; }
 
     public String getAnoCiclo() { return anoCiclo; }
     public void setAnoCiclo(String anoCiclo) { this.anoCiclo = anoCiclo; }

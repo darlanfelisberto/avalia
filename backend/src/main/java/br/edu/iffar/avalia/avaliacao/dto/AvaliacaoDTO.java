@@ -69,8 +69,6 @@ public final class AvaliacaoDTO {
         public String tipoEntidadeAvaliadaNome;
         public List<String> tiposEntidadeAlvoIds = new ArrayList<>();
         public List<String> tiposEntidadeAlvoNomes = new ArrayList<>();
-        /** AUTOAVALIACAO, ADPD ou APRENDIZAGEM */
-        public String modulo;
         public String titulo;
         public String descricao;
         public String cicloReferencia;

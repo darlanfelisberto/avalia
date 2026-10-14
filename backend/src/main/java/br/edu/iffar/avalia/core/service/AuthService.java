@@ -2,10 +2,12 @@ package br.edu.iffar.avalia.core.service;
 
 import br.edu.iffar.avalia.core.dto.AuthResponseDTO;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
+import br.edu.iffar.avalia.core.dao.AuthDao;
+import br.edu.iffar.avalia.core.model.AuthSessao;
 import br.edu.iffar.avalia.core.model.UsuarioPermissao;
+import br.edu.iffar.avalia.academico.model.PessoaAcademica;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.util.*;
@@ -16,8 +18,8 @@ import java.security.NoSuchAlgorithmException;
 @ApplicationScoped
 public class AuthService {
 
-    @PersistenceContext(unitName = "avaliaPU")
-    private EntityManager em;
+    @Inject
+    private AuthDao dao;
 
     public String normalizarCpf(String cpf) {
         if (cpf == null) return "";
@@ -48,14 +50,8 @@ public class AuthService {
         }
 
         // 1. Consulta inicial na tabela de permissões do Avalia
-        @SuppressWarnings("unchecked")
-        List<UsuarioPermissao> permissaoList = em.createQuery(
-                "SELECT u FROM UsuarioPermissao u WHERE u.cpf = :cpf AND u.ativo = TRUE", UsuarioPermissao.class)
-                .setParameter("cpf", cpfLimpo)
-                .getResultList();
-
-        if (!permissaoList.isEmpty()) {
-            UsuarioPermissao up = permissaoList.get(0);
+        UsuarioPermissao up = dao.buscarUsuarioAtivo(cpfLimpo);
+        if (up != null) {
             UsuarioDTO dto = montarUsuarioDTO(up);
             String token = UUID.randomUUID().toString();
             registrarSessao(token, dto);
@@ -63,53 +59,43 @@ public class AuthService {
         }
 
         // 2. Consulta de fallback no espelho acadêmico (academico.pessoa)
-        try {
-            @SuppressWarnings("unchecked")
-            List<Object[]> pessoas = em.createNativeQuery(
-                    "SELECT p.id, p.nome, p.email, p.cpf_cnpj FROM academico.pessoa p WHERE regexp_replace(p.cpf_cnpj, '[^0-9]', '', 'g') = ?1 LIMIT 1")
-                    .setParameter(1, cpfLimpo)
-                    .getResultList();
+        PessoaAcademica pessoa = dao.buscarPessoaPorCpf(cpfLimpo);
+        if (pessoa != null) {
+            Integer pessoaId = pessoa.getId();
+            String nome = pessoa.getNome();
+            String email = pessoa.getEmail();
 
-            if (!pessoas.isEmpty()) {
-                Object[] row = pessoas.get(0);
-                Integer pessoaId = ((Number) row[0]).intValue();
-                String nome = (String) row[1];
-                String email = (String) row[2];
+            // Identificar papéis e vínculos institucionais
+            List<String> papeis = identificarPapeisAcademicos(pessoaId);
+            String campus = identificarCampusPessoa(pessoaId);
 
-                // Identificar papéis e vínculos institucionais
-                List<String> papeis = identificarPapeisAcademicos(pessoaId);
-                String campus = identificarCampusPessoa(pessoaId);
+            String papelPrincipal = definirPapelPrincipal(papeis);
+            List<String> permissoes = obterPermissoesPadrao(papelPrincipal);
 
-                String papelPrincipal = definirPapelPrincipal(papeis);
-                List<String> permissoes = obterPermissoesPadrao(papelPrincipal);
+            // Cadastrar automaticamente em usuario_permissao para persistência
+            UsuarioPermissao novo = new UsuarioPermissao(
+                    cpfLimpo,
+                    nome,
+                    papelPrincipal,
+                    campus != null ? campus : "Reitoria",
+                    String.join(",", permissoes)
+            );
+            novo.setEmail(email);
+            dao.persistirUsuario(novo);
 
-                // Cadastrar automaticamente em usuario_permissao para persistência
-                UsuarioPermissao novo = new UsuarioPermissao(
-                        cpfLimpo,
-                        nome,
-                        papelPrincipal,
-                        campus != null ? campus : "Reitoria",
-                        String.join(",", permissoes)
-                );
-                novo.setEmail(email);
-                em.persist(novo);
+            UsuarioDTO dto = new UsuarioDTO();
+            dto.setCpf(cpfLimpo);
+            dto.setCpfFormatado(formatarCpf(cpfLimpo));
+            dto.setNome(nome);
+            dto.setEmail(email);
+            dto.setCampus(novo.getCampus());
+            dto.setPapelAtivo(papelPrincipal);
+            dto.setPapeis(papeis);
+            dto.setPermissoes(permissoes);
 
-                UsuarioDTO dto = new UsuarioDTO();
-                dto.setCpf(cpfLimpo);
-                dto.setCpfFormatado(formatarCpf(cpfLimpo));
-                dto.setNome(nome);
-                dto.setEmail(email);
-                dto.setCampus(novo.getCampus());
-                dto.setPapelAtivo(papelPrincipal);
-                dto.setPapeis(papeis);
-                dto.setPermissoes(permissoes);
-
-                String token = UUID.randomUUID().toString();
-                registrarSessao(token, dto);
-                return new AuthResponseDTO(true, token, "Login realizado com sucesso.", dto);
-            }
-        } catch (Exception e) {
-            // Se as tabelas de academico não estiverem disponíveis, continua
+            String token = UUID.randomUUID().toString();
+            registrarSessao(token, dto);
+            return new AuthResponseDTO(true, token, "Login realizado com sucesso.", dto);
         }
 
         return new AuthResponseDTO(false, null, "CPF não localizado no cadastro institucional do IFFar.", null);
@@ -125,12 +111,7 @@ public class AuthService {
     }
 
     private void registrarSessao(String token, UsuarioDTO usuario) {
-        em.createNativeQuery("insert into auth_sessao (token_hash, cpf, papeis, expira_em) " +
-                        "values (?1, ?2, ?3, now() + interval '12 hours')")
-                .setParameter(1, hashToken(token))
-                .setParameter(2, usuario.getCpf())
-                .setParameter(3, String.join(",", usuario.getPapeis()))
-                .executeUpdate();
+        dao.registrarSessao(hashToken(token), usuario.getCpf(), String.join(",", usuario.getPapeis()));
     }
 
     public UsuarioDTO validarSessao(String authorization, String papelAtivo) {
@@ -138,29 +119,21 @@ public class AuthService {
             throw new SecurityException("Sessão não informada.");
         String token = authorization.substring(7).trim();
         if (token.isEmpty()) throw new SecurityException("Sessão não informada.");
-        @SuppressWarnings("unchecked")
-        List<Object[]> sessoes = em.createNativeQuery("select u.cpf, s.papeis from auth_sessao s " +
-                        "join usuario_permissao u on u.cpf = s.cpf and u.ativo = true " +
-                        "where s.token_hash = ?1 and s.expira_em > now()")
-                .setParameter(1, hashToken(token)).getResultList();
-        if (sessoes.isEmpty()) throw new SecurityException("Sessão expirada. Entre novamente.");
-        Object[] sessao = sessoes.get(0);
-        String cpf = (String) sessao[0];
-        List<String> papeis = Arrays.asList(((String) sessao[1]).split(","));
+        AuthSessao sessao = dao.buscarSessaoValida(hashToken(token));
+        if (sessao == null) throw new SecurityException("Sessão expirada. Entre novamente.");
+        String cpf = sessao.getCpf();
+        List<String> papeis = Arrays.asList(sessao.getPapeis().split(","));
         String papel = papelAtivo == null || papelAtivo.isBlank() ? papeis.get(0) : papelAtivo;
         if (!papeis.contains(papel)) throw new SecurityException("Perfil não autorizado para esta sessão.");
-        UsuarioPermissao up = em.createQuery("select u from UsuarioPermissao u where u.cpf = :cpf", UsuarioPermissao.class)
-                .setParameter("cpf", cpf).getSingleResult();
+        UsuarioPermissao up = dao.buscarUsuarioAtivo(cpf);
+        if (up == null) throw new SecurityException("Sessão expirada. Entre novamente.");
         UsuarioDTO usuario = montarUsuarioDTO(up);
         usuario.setPapelAtivo(papel);
         return usuario;
     }
 
     public List<UsuarioDTO> listarUsuariosDemonstracao() {
-        @SuppressWarnings("unchecked")
-        List<UsuarioPermissao> lista = em.createQuery(
-                "SELECT u FROM UsuarioPermissao u WHERE u.ativo = TRUE ORDER BY u.papel ASC, u.nome ASC", UsuarioPermissao.class)
-                .getResultList();
+        List<UsuarioPermissao> lista = dao.listarUsuariosAtivos();
 
         List<UsuarioDTO> resultado = new ArrayList<>();
         for (UsuarioPermissao up : lista) {
@@ -196,83 +169,18 @@ public class AuthService {
 
     private List<String> identificarPapeisAcademicos(Integer pessoaId) {
         Set<String> papeis = new LinkedHashSet<>();
-        try {
-            // Checar se é aluno
-            Number countAluno = (Number) em.createNativeQuery(
-                    "SELECT COUNT(*) FROM academico.aluno WHERE id_pessoa = ?1")
-                    .setParameter(1, pessoaId)
-                    .getSingleResult();
-            if (countAluno != null && countAluno.intValue() > 0) {
-                papeis.add("DISCENTE");
-            }
-
-            // Checar se é docente em turmas
-            Number countDocTurma = (Number) em.createNativeQuery(
-                    "SELECT COUNT(*) FROM academico.docente_turma dt " +
-                    "JOIN academico.servidor s ON s.id = dt.id_servidor WHERE s.id_pessoa = ?1")
-                    .setParameter(1, pessoaId)
-                    .getSingleResult();
-            if (countDocTurma != null && countDocTurma.intValue() > 0) {
-                papeis.add("DOCENTE");
-            }
-
-            // Checar se tem chefia ou coordenação de curso
-            Number countChefia = (Number) em.createNativeQuery(
-                    "SELECT COUNT(*) FROM academico.designacao d " +
-                    "JOIN academico.servidor s ON s.id = d.id_servidor WHERE s.id_pessoa = ?1 AND d.chefia = TRUE")
-                    .setParameter(1, pessoaId)
-                    .getSingleResult();
-            Number countCoord = (Number) em.createNativeQuery(
-                    "SELECT COUNT(*) FROM academico.coordenacao_curso c " +
-                    "JOIN academico.servidor s ON s.id = c.id_servidor WHERE s.id_pessoa = ?1 AND c.ativo = TRUE")
-                    .setParameter(1, pessoaId)
-                    .getSingleResult();
-            if ((countChefia != null && countChefia.intValue() > 0) || (countCoord != null && countCoord.intValue() > 0)) {
-                papeis.add("GESTAO");
-            }
-
-            // Checar se é servidor geral (TAE) caso não seja docente
-            Number countServidor = (Number) em.createNativeQuery(
-                    "SELECT COUNT(*) FROM academico.servidor WHERE id_pessoa = ?1")
-                    .setParameter(1, pessoaId)
-                    .getSingleResult();
-            if (countServidor != null && countServidor.intValue() > 0 && !papeis.contains("DOCENTE")) {
-                papeis.add("TAE");
-            }
-        } catch (Exception ignored) {}
-
-        if (papeis.isEmpty()) {
-            papeis.add("DISCENTE");
-        }
+        if (dao.existeAluno(pessoaId)) papeis.add("DISCENTE");
+        if (dao.existeDocenteTurma(pessoaId)) papeis.add("DOCENTE");
+        if (dao.existeChefia(pessoaId) || dao.existeCoordenacao(pessoaId)) papeis.add("GESTAO");
+        if (dao.existeServidor(pessoaId) && !papeis.contains("DOCENTE")) papeis.add("TAE");
+        if (papeis.isEmpty()) papeis.add("DISCENTE");
         return new ArrayList<>(papeis);
     }
 
     private String identificarCampusPessoa(Integer pessoaId) {
-        try {
-            @SuppressWarnings("unchecked")
-            List<Object> campusList = em.createNativeQuery(
-                    "SELECT u.nome FROM academico.servidor s " +
-                    "JOIN academico.unidade u ON u.id = s.id_unidade_lotacao " +
-                    "WHERE s.id_pessoa = ?1 LIMIT 1")
-                    .setParameter(1, pessoaId)
-                    .getResultList();
-            if (!campusList.isEmpty() && campusList.get(0) != null) {
-                return campusList.get(0).toString();
-            }
-
-            @SuppressWarnings("unchecked")
-            List<Object> campusAluno = em.createNativeQuery(
-                    "SELECT u.nome FROM academico.aluno a " +
-                    "JOIN academico.curso c ON c.id = a.id_curso " +
-                    "JOIN academico.unidade u ON u.id = c.id_unidade " +
-                    "WHERE a.id_pessoa = ?1 LIMIT 1")
-                    .setParameter(1, pessoaId)
-                    .getResultList();
-            if (!campusAluno.isEmpty() && campusAluno.get(0) != null) {
-                return campusAluno.get(0).toString();
-            }
-        } catch (Exception ignored) {}
-        return "Reitoria";
+        String campus = dao.campusServidor(pessoaId);
+        if (campus == null) campus = dao.campusAluno(pessoaId);
+        return campus == null ? "Reitoria" : campus;
     }
 
     private String definirPapelPrincipal(List<String> papeis) {

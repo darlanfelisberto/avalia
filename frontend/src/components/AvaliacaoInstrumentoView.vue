@@ -1,17 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import type { ConjuntoOpcao, InstrumentoAv, ModuloInstrumento, TipoEntidade } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcao, InstrumentoAv, TipoEntidade } from '../types/instrumentoAvaliacao';
 import { avaliacaoApi } from '../services/avaliacaoApi';
 import { carregarUsuarioAtivo } from '../services/storage';
 import AvaliacaoEstruturaEditor from './AvaliacaoEstruturaEditor.vue';
 import AvaliacaoConjuntoModal from './AvaliacaoConjuntoModal.vue';
 import InstrumentoPreview from './InstrumentoPreview.vue';
 
-const MODULOS: { valor: ModuloInstrumento; rotulo: string }[] = [
-  { valor: 'ADPD', rotulo: 'Avaliação Docente pelo Discente (ADPD)' },
-  { valor: 'AUTOAVALIACAO', rotulo: 'Autoavaliação Institucional (SINAES / CPA)' },
-  { valor: 'APRENDIZAGEM', rotulo: 'Avaliação de Aprendizagem (provas / enquetes)' }
-];
 const VINCULOS = [
   { valor: '', rotulo: 'Sem vínculo exigido (qualquer pessoa do público)' },
   { valor: 'MATRICULADO_EM', rotulo: 'Matriculado no que é avaliado' },
@@ -34,9 +29,9 @@ const sucesso = ref<string | null>(null);
 const tiposAvaliaveis = computed(() => tipos.value.filter(t => t.podeSerAvaliada));
 const tiposRespondentes = computed(() => {
   const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId)?.codigo;
-  return tipos.value.filter(t => t.podeResponder && ['ALUNO', 'DOCENTE', 'SERVIDOR'].includes(t.codigo)
-    && (contexto === 'DOCENTE' ? t.codigo === 'ALUNO'
-      : contexto === 'TURMA' ? ['ALUNO', 'DOCENTE'].includes(t.codigo) : true));
+  if(contexto =='')
+    return ;
+  return tipos.value.filter(t => t.podeResponder);
 });
 const tiposAlvoDisponiveis = computed(() => {
   const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId);
@@ -60,7 +55,6 @@ function novoInstrumento(): InstrumentoAv {
   return {
     tipoEntidadeAvaliadaId: '',
     tiposEntidadeAlvoIds: [],
-    modulo: 'ADPD',
     titulo: '',
     descricao: '',
     cicloReferencia: `${hoje.getFullYear()}/${hoje.getMonth() < 6 ? 1 : 2}`,
@@ -272,14 +266,14 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
       <table v-else class="w-full text-xs">
         <thead class="bg-slate-50 text-[10px] uppercase text-slate-500">
           <tr>
-            <th class="text-left p-3">Título</th><th class="text-left p-3">Módulo / Ciclo</th><th class="text-left p-3">Avalia</th>
+            <th class="text-left p-3">Título</th><th class="text-left p-3">Ciclo</th><th class="text-left p-3">Avalia</th>
             <th class="text-left p-3">Período</th><th class="text-center p-3">Questões</th><th class="text-left p-3">Status</th><th></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="i in instrumentos" :key="i.id" class="border-t border-slate-100 hover:bg-slate-50/60">
             <td class="p-3 font-semibold text-slate-900">{{ i.titulo }}</td>
-            <td class="p-3 text-slate-600">{{ i.modulo }} · {{ i.cicloReferencia }}</td>
+            <td class="p-3 text-slate-600">{{ i.cicloReferencia }}</td>
             <td class="p-3 text-slate-600">{{ i.tiposEntidadeAlvoNomes?.join(', ') || i.tipoEntidadeAvaliadaNome }}</td>
             <td class="p-3 text-slate-600">{{ fmtData(i.inicioAplicacao) }} – {{ fmtData(i.fimAplicacao) }}</td>
             <td class="p-3 text-center">{{ i.totalQuestoes }}</td>
@@ -329,11 +323,6 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
           </label>
           <label class="md:col-span-2 space-y-1.5 text-xs font-bold text-slate-700">Descrição
             <textarea v-model="form.descricao" rows="2" :class="input" placeholder="Orientações exibidas ao respondente"></textarea>
-          </label>
-          <label class="space-y-1.5 text-xs font-bold text-slate-700">Módulo
-            <select v-model="form.modulo" :disabled="somenteLeitura" :class="input">
-              <option v-for="m in MODULOS" :key="m.valor" :value="m.valor">{{ m.rotulo }}</option>
-            </select>
           </label>
           <label class="space-y-1.5 text-xs font-bold text-slate-700">Ciclo de referência
             <input v-model="form.cicloReferencia" :class="input" placeholder="2026/1" />
@@ -400,7 +389,6 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
         v-model:paginas="form.paginas"
         v-model:sessoes="form.sessoes"
         :conjuntos="conjuntos"
-        :modulo="form.modulo"
         :somente-leitura="somenteLeitura"
         @novo-conjunto="modalConjunto = true"
       />
