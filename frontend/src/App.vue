@@ -9,6 +9,7 @@ import TeacherFeedbackView from './components/TeacherFeedbackView.vue';
 import ManagementActionPlanView from './components/ManagementActionPlanView.vue';
 import TechnicalView from './components/TechnicalView.vue';
 import SincronizacaoView from './components/SincronizacaoView.vue';
+import AvaliacaoInstrumentoView from './components/AvaliacaoInstrumentoView.vue';
 import LoginView from './components/LoginView.vue';
 
 import type { RespostaItem, EstadoPreenchimento, InstrumentoAvaliativo, UsuarioContexto } from './types/avaliacao';
@@ -19,7 +20,7 @@ const usuarioLogado = ref<UsuarioContexto | null>(carregarUsuarioAtivo());
 const instrumento = ref<InstrumentoAvaliativo>(carregarInstrumentoAtivo());
 
 // Visão inicial definida como "Cadastro de Questionário" (ou ajustada de acordo com o papel)
-const visaoAtual = ref<'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao'>('builder');
+const visaoAtual = ref<'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'>('builder');
 const menuAbertoMobile = ref(false);
 
 onMounted(async () => {
@@ -160,7 +161,7 @@ function testarNoRespondente() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' {
+function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' {
   if (!u) return 'discente';
   const papel = u.papelAtivo || u.papel;
   if (papel === 'CPA' || papel === 'ADMIN') return 'builder';
@@ -185,7 +186,7 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
   usuarioLogado.value = usuario;
   salvarUsuarioAtivo(usuario, usuario.token);
   // Se a visão atual não for permitida para o novo papel, redireciona
-  if (visaoAtual.value === 'builder' && !temPermissao(usuario, 'INSTRUMENTO_CRIAR') && !temPermissao(usuario, 'INSTRUMENTO_VISUALIZAR')) {
+  if ((visaoAtual.value === 'builder' || visaoAtual.value === 'instrumentos') && !temPermissao(usuario, 'INSTRUMENTO_CRIAR') && !temPermissao(usuario, 'INSTRUMENTO_VISUALIZAR')) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
   } else if (visaoAtual.value === 'catalogo' && !temPermissao(usuario, 'CATALOGO_GERENCIAR')) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
@@ -278,6 +279,11 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
           :estado="estado"
           :instrumento="instrumento"
           @reiniciarTeste="reiniciarTeste"
+        />
+
+        <!-- Instrumentos de Avaliação (schema avaliacao): questionário, páginas, sessões e questões -->
+        <AvaliacaoInstrumentoView
+          v-else-if="visaoAtual === 'instrumentos'"
         />
 
         <!-- 6. Sincronização & Integração SIGAA / SIGRH -->

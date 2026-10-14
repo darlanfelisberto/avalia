@@ -4,7 +4,7 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { salvarUsuarioAtivo } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao';
+  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
   statusSalvamento: 'salvo' | 'salvando' | 'erro';
   ultimaSalvaHora: string;
   respostasConcluidas: number;
@@ -38,6 +38,12 @@ const tituloVisao = computed(() => {
         titulo: 'Cadastro de Questionário',
         categoria: 'Gestão de Instrumentos',
         codigo: 'RF01 a RF05'
+      };
+    case 'instrumentos':
+      return {
+        titulo: 'Instrumentos de Avaliação',
+        categoria: 'Gestão de Instrumentos',
+        codigo: 'Schema avaliacao'
       };
     case 'catalogo':
       return {

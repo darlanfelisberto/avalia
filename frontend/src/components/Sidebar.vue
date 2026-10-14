@@ -4,13 +4,13 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { temPermissao } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao';
+  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
   menuAbertoMobile: boolean;
   usuario: UsuarioContexto | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'mudarVisao', visao: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao'): void;
+  (e: 'mudarVisao', visao: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'): void;
   (e: 'fecharMenuMobile'): void;
   (e: 'logout'): void;
 }>();
@@ -91,6 +91,26 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               v-if="visaoAtual === 'builder'"
               class="w-1.5 h-1.5 rounded-full bg-white"
             ></span>
+          </button>
+
+          <!-- Instrumentos de Avaliação (schema avaliacao) -->
+          <button
+            v-if="podeBuilder"
+            type="button"
+            @click="() => { emit('mudarVisao', 'instrumentos'); emit('fecharMenuMobile'); }"
+            :class="[
+              'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left group cursor-pointer',
+              visaoAtual === 'instrumentos'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            ]"
+          >
+            <span class="text-base">🧾</span>
+            <div class="flex-1">
+              <div>Instrumentos de Avaliação</div>
+              <div class="text-[10px] opacity-75 font-normal">Questionário, sessões e questões</div>
+            </div>
+            <span v-if="visaoAtual === 'instrumentos'" class="w-1.5 h-1.5 rounded-full bg-white"></span>
           </button>
 
           <!-- Públicos e Alvos Avaliados -->
