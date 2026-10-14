@@ -4,11 +4,7 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { salvarUsuarioAtivo } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
-  statusSalvamento: 'salvo' | 'salvando' | 'erro';
-  ultimaSalvaHora: string;
-  respostasConcluidas: number;
-  totalQuestoesObrigatorias: number;
+  visaoAtual: 'catalogo' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
   usuario: UsuarioContexto | null;
 }>();
 
@@ -33,15 +29,9 @@ function alternarPapelAtivo(e: Event) {
 
 const tituloVisao = computed(() => {
   switch (props.visaoAtual) {
-    case 'builder':
-      return {
-        titulo: 'Cadastro de Questionário',
-        categoria: 'Gestão de Instrumentos',
-        codigo: 'RF01 a RF05'
-      };
     case 'instrumentos':
       return {
-        titulo: 'Instrumentos de Avaliação',
+        titulo: 'Cadastro de Instrumentos',
         categoria: 'Gestão de Instrumentos',
         codigo: 'Schema avaliacao'
       };
@@ -50,12 +40,6 @@ const tituloVisao = computed(() => {
         titulo: 'Catálogo de Públicos e Alvos Avaliados',
         categoria: 'Gestão de Instrumentos',
         codigo: 'Núcleo Parametrizável'
-      };
-    case 'discente':
-      return {
-        titulo: 'Avaliação Docente pelo Discente (ADPD)',
-        categoria: 'Preenchimento do Estudante',
-        codigo: 'Resolução CONSUP nº 104/2013'
       };
     case 'responder':
       return { titulo: 'Responder Avaliações', categoria: 'Aplicação e Respostas', codigo: '' };
@@ -82,10 +66,6 @@ const tituloVisao = computed(() => {
   }
 });
 
-const percentual = computed(() => {
-  if (props.totalQuestoesObrigatorias === 0) return 0;
-  return Math.min(100, Math.round((props.respostasConcluidas / props.totalQuestoesObrigatorias) * 100));
-});
 </script>
 
 <template>
@@ -164,34 +144,6 @@ const percentual = computed(() => {
           </button>
         </div>
 
-        <!-- Indicador de Auto-Save e Progresso -->
-        <div class="flex flex-col items-end">
-          <div class="flex items-center gap-1.5 text-xs">
-            <span v-if="statusSalvamento === 'salvando'" class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-            <span v-else-if="statusSalvamento === 'salvo'" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span v-else class="inline-block w-2 h-2 rounded-full bg-rose-500"></span>
-
-            <span class="font-medium text-slate-700 text-[11px] md:text-xs">
-              {{ statusSalvamento === 'salvando' ? 'Salvando...' : 'Salvo' }}
-            </span>
-          </div>
-          <span class="text-[10px] text-slate-400" v-if="ultimaSalvaHora">
-            às {{ ultimaSalvaHora }}
-          </span>
-        </div>
-
-        <div v-if="visaoAtual === 'discente'" class="border-l border-slate-200 pl-4 hidden md:block min-w-32">
-          <div class="flex justify-between text-xs mb-1 font-medium text-slate-600">
-            <span>Progresso</span>
-            <span>{{ percentual }}%</span>
-          </div>
-          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-            <div
-              class="bg-emerald-600 h-2 rounded-full transition-all duration-300"
-              :style="{ width: `${percentual}%` }"
-            ></div>
-          </div>
-        </div>
       </div>
     </div>
   </header>

@@ -4,18 +4,18 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { temPermissao } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
+  visaoAtual: 'catalogo' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
   menuAbertoMobile: boolean;
   usuario: UsuarioContexto | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'mudarVisao', visao: 'builder' | 'catalogo' | 'discente' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'): void;
+  (e: 'mudarVisao', visao: 'catalogo' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'): void;
   (e: 'fecharMenuMobile'): void;
   (e: 'logout'): void;
 }>();
 
-const podeBuilder = computed(() => (props.usuario?.papelAtivo === 'CPA' || props.usuario?.papelAtivo === 'ADMIN' || (!props.usuario?.papelAtivo && (props.usuario?.papel === 'CPA' || props.usuario?.papel === 'ADMIN')))
+const podeGerenciarInstrumentos = computed(() => (props.usuario?.papelAtivo === 'CPA' || props.usuario?.papelAtivo === 'ADMIN' || (!props.usuario?.papelAtivo && (props.usuario?.papel === 'CPA' || props.usuario?.papel === 'ADMIN')))
   && temPermissao(props.usuario, 'INSTRUMENTO_VISUALIZAR'));
 const podeCatalogo = computed(() => temPermissao(props.usuario, 'CATALOGO_GERENCIAR'));
 const podeDiscente = computed(() => temPermissao(props.usuario, 'AVALIACAO_RESPONDER'));
@@ -66,37 +66,14 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
     <!-- Navegação / Itens de Menu -->
     <nav class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
       <!-- Grupo 1: Gestão de Instrumentos -->
-      <div v-if="podeBuilder || podeCatalogo">
+      <div v-if="podeGerenciarInstrumentos || podeCatalogo">
         <div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
           Gestão de Instrumentos
         </div>
         <div class="space-y-1">
-          <!-- Cadastro de Questionário -->
-          <button
-            v-if="podeBuilder"
-            type="button"
-            @click="() => { emit('mudarVisao', 'builder'); emit('fecharMenuMobile'); }"
-            :class="[
-              'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left group cursor-pointer',
-              visaoAtual === 'builder'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            ]"
-          >
-            <span class="text-base">📝</span>
-            <div class="flex-1">
-              <div>Cadastro de Questionário</div>
-              <div class="text-[10px] opacity-75 font-normal">Construtor de Instrumentos (RF01-RF05)</div>
-            </div>
-            <span
-              v-if="visaoAtual === 'builder'"
-              class="w-1.5 h-1.5 rounded-full bg-white"
-            ></span>
-          </button>
-
           <!-- Instrumentos de Avaliação (schema avaliacao) -->
           <button
-            v-if="podeBuilder"
+            v-if="podeGerenciarInstrumentos"
             type="button"
             @click="() => { emit('mudarVisao', 'instrumentos'); emit('fecharMenuMobile'); }"
             :class="[
@@ -108,8 +85,8 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
           >
             <span class="text-base">🧾</span>
             <div class="flex-1">
-              <div>Instrumentos de Avaliação</div>
-              <div class="text-[10px] opacity-75 font-normal">Questionário, sessões e questões</div>
+              <div>Cadastro de Instrumentos</div>
+              <div class="text-[10px] opacity-75 font-normal">Instrumentos, páginas, sessões e questões</div>
             </div>
             <span v-if="visaoAtual === 'instrumentos'" class="w-1.5 h-1.5 rounded-full bg-white"></span>
           </button>

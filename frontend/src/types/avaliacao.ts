@@ -141,18 +141,9 @@ export interface InstrumentoAvaliativo {
   componentesMatriculados: ComponenteCurricular[];
 }
 
-export interface RespostaItem {
-  questaoId: string;
-  componenteId?: string; // Opcional se for autoavaliação discente geral
-  valorEscala?: number;
-  opcaoId?: string;
-  opcoesMultiplas?: string[];
-  textoLivre?: string;
-}
-
 export interface EstadoPreenchimento {
   instrumentoId: string;
-  respostas: Record<string, RespostaItem>; // chave composta: `${questaoId}_${componenteId || 'geral'}`
+  respostas: Record<string, unknown>;
   componenteAtivoId: string;
   etapaAtual: 'autoavaliacao' | 'docentes' | 'finalizacao';
   ultimaModificacao: string;

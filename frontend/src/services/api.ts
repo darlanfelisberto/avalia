@@ -1,64 +1,3 @@
-import type { InstrumentoAvaliativo, TipoPublico } from '../types/avaliacao';
-import { salvarInstrumento, carregarInstrumentoAtivo } from './storage';
-
-const API_BASE = '/api/instrumentos';
-
-export async function listarInstrumentosApi(criadorId?: string): Promise<InstrumentoAvaliativo[]> {
-  try {
-    const url = criadorId ? `${API_BASE}?criadorId=${encodeURIComponent(criadorId)}` : API_BASE;
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        return data;
-      }
-    }
-  } catch (e) {
-    console.warn('API Liberty offline, usando fallback local', e);
-  }
-  return [carregarInstrumentoAtivo()];
-}
-
-export async function buscarInstrumentoApi(id: string): Promise<InstrumentoAvaliativo> {
-  try {
-    const res = await fetch(`${API_BASE}/${id}`);
-    if (res.ok) {
-      const data = await res.json();
-      salvarInstrumento(data); // atualiza cache local
-      return data;
-    }
-  } catch (e) {
-    console.warn('API Liberty offline, usando fallback local', e);
-  }
-  return carregarInstrumentoAtivo();
-}
-
-export async function salvarInstrumentoApi(instrumento: InstrumentoAvaliativo): Promise<{ sucesso: boolean; instrumento: InstrumentoAvaliativo; erro?: string }> {
-  // Salva no cache local primeiro para garantia offline
-  salvarInstrumento(instrumento);
-
-  try {
-    const res = await fetch(API_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(instrumento)
-    });
-
-    if (res.ok) {
-      const salvo = await res.json();
-      salvarInstrumento(salvo);
-      return { sucesso: true, instrumento: salvo };
-    } else {
-      const errText = await res.text();
-      console.error('Erro na resposta da API:', res.status, errText);
-      return { sucesso: false, instrumento, erro: `HTTP ${res.status}: ${errText}` };
-    }
-  } catch (e: any) {
-    console.warn('Falha na chamada REST com Open Liberty, mantido no storage local', e);
-    return { sucesso: false, instrumento, erro: e?.message || 'Falha de conexão com o servidor' };
-  }
-}
-
 // --- Catálogo de Alvos e Públicos ---
 
 export async function listarAlvosApi(tipo?: string): Promise<any[]> {
@@ -116,37 +55,6 @@ export async function salvarPublicoApi(publico: any): Promise<any> {
     console.warn('Erro ao salvar público na API', e);
   }
   return publico;
-}
-
-export async function listarTiposPublicoApi(): Promise<TipoPublico[]> {
-  try {
-    const res = await fetch('/api/catalogo/tipos-publico');
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
-      }
-    }
-  } catch (e) {
-    console.warn('Erro ao buscar tipos de público da API, utilizando fallback local', e);
-  }
-  return [];
-}
-
-export async function salvarTipoPublicoApi(tipoPublico: TipoPublico): Promise<TipoPublico> {
-  try {
-    const res = await fetch('/api/catalogo/tipos-publico', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tipoPublico)
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (e) {
-    console.warn('Erro ao salvar tipo de público na API', e);
-  }
-  return tipoPublico;
 }
 
 // --- Integração Acadêmica SIGAA ---

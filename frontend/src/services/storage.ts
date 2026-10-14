@@ -80,14 +80,6 @@ export function carregarEncaminhamentosGestao(): EncaminhamentoGestao[] {
   }
 }
 
-export function salvarInstrumento(instrumento: InstrumentoAvaliativo): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_INSTRUMENTO, JSON.stringify(instrumento));
-  } catch (e) {
-    console.error('Erro ao salvar instrumento', e);
-  }
-}
-
 export function carregarInstrumentoAtivo(): InstrumentoAvaliativo {
   try {
     const salvo = localStorage.getItem(STORAGE_KEY_INSTRUMENTO);
@@ -97,11 +89,6 @@ export function carregarInstrumentoAtivo(): InstrumentoAvaliativo {
   } catch (e) {
     console.warn('Erro ao carregar instrumento salvo, usando padrão', e);
   }
-  return JSON.parse(JSON.stringify(instrumentoADPDMock));
-}
-
-export function resetarInstrumentoParaPadrao(): InstrumentoAvaliativo {
-  localStorage.removeItem(STORAGE_KEY_INSTRUMENTO);
   return JSON.parse(JSON.stringify(instrumentoADPDMock));
 }
 
