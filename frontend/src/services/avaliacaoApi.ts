@@ -1,4 +1,5 @@
 import type { ConjuntoOpcao, InstrumentoAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import { carregarTokenAtivo, carregarUsuarioAtivo } from './storage';
 
 const BASE = '/api/avaliacao';
 
@@ -10,9 +11,16 @@ export interface Resultado<T> {
 
 async function chamar<T>(url: string, init?: RequestInit): Promise<Resultado<T>> {
   try {
+    const usuario = carregarUsuarioAtivo();
+    const token = carregarTokenAtivo();
     const res = await fetch(url, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) }
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(usuario ? { 'X-Papel-Ativo': usuario.papelAtivo || usuario.papel } : {}),
+        ...(init?.headers || {})
+      }
     });
     if (!res.ok) {
       return { ok: false, erro: (await res.text()) || `HTTP ${res.status}` };

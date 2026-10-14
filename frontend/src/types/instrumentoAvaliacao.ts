@@ -31,6 +31,7 @@ export interface RespondenteAv {
 
 export interface QuestaoAv {
   questaoId?: string;
+  sessaoQuestaoId?: string;
   enunciado: string;
   tipo: TipoQuestaoAv;
   assunto?: string | null;
@@ -51,7 +52,6 @@ export interface PaginaAv {
   id?: string;
   titulo: string;
   descricao?: string | null;
-  sessoes: SessaoAv[];
 }
 
 export interface InstrumentoAv {
@@ -71,4 +71,5 @@ export interface InstrumentoAv {
   totalQuestoes?: number;
   respondentes: RespondenteAv[];
   paginas: PaginaAv[];
+  sessoes: SessaoAv[];
 }

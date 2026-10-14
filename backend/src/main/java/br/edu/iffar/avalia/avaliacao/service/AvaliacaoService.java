@@ -143,7 +143,6 @@ public class AvaliacaoService {
             i.respondentes.add(resp);
         }
 
-        Map<String, Pagina> paginas = new LinkedHashMap<>();
         Map<String, Sessao> sessoes = new LinkedHashMap<>();
         for (Object[] x : rows("select cast(instrumento_sessao_id as text), cast(instrumento_sessao_pai_id as text), tipo, titulo, descricao, ordem " +
                 "from avaliacao.instrumento_sessao where instrumento_avaliativo_id = cast(?1 as uuid) order by ordem", id)) {
@@ -153,7 +152,7 @@ public class AvaliacaoService {
                 p.titulo = (String) x[3];
                 p.descricao = (String) x[4];
                 p.ordem = ((Number) x[5]).intValue();
-                paginas.put(p.id, p);
+                i.paginas.add(p);
             } else {
                 Sessao s = new Sessao();
                 s.id = (String) x[0];
@@ -161,12 +160,11 @@ public class AvaliacaoService {
                 s.descricao = (String) x[4];
                 s.ordem = ((Number) x[5]).intValue();
                 sessoes.put(s.id, s);
-                Pagina pai = paginas.get((String) x[1]);
-                if (pai != null) pai.sessoes.add(s);
+                i.sessoes.add(s);
             }
         }
         for (Object[] x : rows("select cast(sq.instrumento_sessao_id as text), cast(q.questao_id as text), q.enunciado, q.tipo, q.assunto, " +
-                "cast(q.conjunto_opcao_id as text), sq.obrigatoria, sq.peso, sq.ordem " +
+                "cast(q.conjunto_opcao_id as text), sq.obrigatoria, sq.peso, sq.ordem, cast(sq.sessao_questao_id as text) " +
                 "from avaliacao.sessao_questao sq " +
                 "join avaliacao.questao q on q.questao_id = sq.questao_id " +
                 "join avaliacao.instrumento_sessao s on s.instrumento_sessao_id = sq.instrumento_sessao_id " +
@@ -182,10 +180,10 @@ public class AvaliacaoService {
             q.obrigatoria = (Boolean) x[6];
             q.peso = x[7] == null ? null : ((Number) x[7]).doubleValue();
             q.ordem = ((Number) x[8]).intValue();
+            q.sessaoQuestaoId = (String) x[9];
             s.questoes.add(q);
             i.totalQuestoes++;
         }
-        i.paginas = new ArrayList<>(paginas.values());
         return i;
     }
 
@@ -228,7 +226,7 @@ public class AvaliacaoService {
         // Respondentes e estrutura só podem mudar enquanto o instrumento é rascunho
         if (rascunho) {
             substituirRespondentes(id, dto.respondentes);
-            substituirEstrutura(id, dto.paginas, usuario);
+            substituirEstrutura(id, dto.paginas, dto.sessoes, usuario);
         }
         return buscarInstrumento(id);
     }
@@ -241,6 +239,16 @@ public class AvaliacaoService {
         if (i.respondentes.isEmpty()) throw new IllegalArgumentException("Defina ao menos um público respondente antes de publicar.");
         exec("update avaliacao.instrumento_avaliativo set status = 'PUBLICADO', atualizado_em = now() " +
                 "where instrumento_avaliativo_id = cast(?1 as uuid)", id);
+        if (count("select count(*) from avaliacao.instrumento_entidade_avaliada where instrumento_avaliativo_id = cast(?1 as uuid)", id) == 0) {
+            exec("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
+                    "values (cast(?1 as uuid), ?2, ?3) on conflict (tipo_entidade_id, referencia_externa) do nothing",
+                    i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
+            exec("insert into avaliacao.instrumento_entidade_avaliada " +
+                            "(instrumento_avaliativo_id, tipo_entidade_avaliada_id, entidade_id) " +
+                            "select cast(?1 as uuid), cast(?2 as uuid), e.entidade_id from avaliacao.entidade e " +
+                            "where e.tipo_entidade_id = cast(?2 as uuid) and e.referencia_externa = ?3",
+                    id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
+        }
         return buscarInstrumento(id);
     }
 
@@ -265,9 +273,9 @@ public class AvaliacaoService {
         }
     }
 
-    private void substituirEstrutura(String id, List<Pagina> paginas, String usuario) {
+    private void substituirEstrutura(String id, List<Pagina> paginas, List<Sessao> sessoes, String usuario) {
         List<String> anteriores = idsQuestoes(id);
-        // on delete cascade remove sessões filhas e sessao_questao
+        // on delete cascade remove as associações com questões
         exec("delete from avaliacao.instrumento_sessao where instrumento_avaliativo_id = cast(?1 as uuid)", id);
 
         int ordemPagina = 1;
@@ -276,19 +284,19 @@ public class AvaliacaoService {
             exec("insert into avaliacao.instrumento_sessao (instrumento_sessao_id, instrumento_avaliativo_id, tipo, titulo, descricao, ordem) " +
                     "values (cast(?1 as uuid), cast(?2 as uuid), 'PAGINA', ?3, cast(?4 as text), ?5)",
                     paginaId, id, p.titulo.trim(), p.descricao, ordemPagina++);
-            int ordemSessao = 1;
-            for (Sessao s : p.sessoes) {
-                String sessaoId = UUID.randomUUID().toString();
-                exec("insert into avaliacao.instrumento_sessao (instrumento_sessao_id, instrumento_avaliativo_id, instrumento_sessao_pai_id, tipo, titulo, descricao, ordem) " +
-                        "values (cast(?1 as uuid), cast(?2 as uuid), cast(?3 as uuid), 'SESSAO', ?4, cast(?5 as text), ?6)",
-                        sessaoId, id, paginaId, s.titulo.trim(), s.descricao, ordemSessao++);
-                int ordemQuestao = 1;
-                for (Questao q : s.questoes) {
-                    String questaoId = upsertQuestao(q, usuario);
-                    exec("insert into avaliacao.sessao_questao (instrumento_sessao_id, questao_id, ordem, obrigatoria, peso) " +
-                            "values (cast(?1 as uuid), cast(?2 as uuid), ?3, ?4, cast(?5 as numeric))",
-                            sessaoId, questaoId, ordemQuestao++, q.obrigatoria, q.peso);
-                }
+        }
+        int ordemSessao = 1;
+        for (Sessao s : sessoes) {
+            String sessaoId = UUID.randomUUID().toString();
+            exec("insert into avaliacao.instrumento_sessao (instrumento_sessao_id, instrumento_avaliativo_id, tipo, titulo, descricao, ordem) " +
+                            "values (cast(?1 as uuid), cast(?2 as uuid), 'SESSAO', ?3, cast(?4 as text), ?5)",
+                    sessaoId, id, s.titulo.trim(), s.descricao, ordemSessao++);
+            int ordemQuestao = 1;
+            for (Questao q : s.questoes) {
+                String questaoId = upsertQuestao(q, usuario);
+                exec("insert into avaliacao.sessao_questao (instrumento_sessao_id, questao_id, ordem, obrigatoria, peso) " +
+                                "values (cast(?1 as uuid), cast(?2 as uuid), ?3, ?4, cast(?5 as numeric))",
+                        sessaoId, questaoId, ordemQuestao++, q.obrigatoria, q.peso);
             }
         }
         removerQuestoesOrfas(anteriores);
@@ -338,6 +346,7 @@ public class AvaliacaoService {
         }
         if (d.respondentes == null) d.respondentes = new ArrayList<>();
         if (d.paginas == null) d.paginas = new ArrayList<>();
+        if (d.sessoes == null) d.sessoes = new ArrayList<>();
 
         Set<String> vistos = new HashSet<>();
         for (Respondente r : d.respondentes) {
@@ -346,16 +355,15 @@ public class AvaliacaoService {
         }
         for (Pagina p : d.paginas) {
             if (blank(p.titulo)) throw new IllegalArgumentException("Toda página precisa de um título.");
-            if (p.sessoes == null) p.sessoes = new ArrayList<>();
-            for (Sessao s : p.sessoes) {
-                if (blank(s.titulo)) throw new IllegalArgumentException("Toda sessão precisa de um título.");
-                if (s.questoes == null) s.questoes = new ArrayList<>();
-                for (Questao q : s.questoes) {
-                    if (blank(q.enunciado)) throw new IllegalArgumentException("Toda questão precisa de um enunciado (sessão \"" + s.titulo + "\").");
-                    if (q.tipo == null || !TIPOS_QUESTAO.contains(q.tipo)) throw new IllegalArgumentException("Tipo de questão inválido.");
-                    if (!"DESCRITIVA".equals(q.tipo) && blank(q.conjuntoOpcaoId)) {
-                        throw new IllegalArgumentException("A questão \"" + q.enunciado + "\" precisa de um conjunto de opções.");
-                    }
+        }
+        for (Sessao s : d.sessoes) {
+            if (blank(s.titulo)) throw new IllegalArgumentException("Toda sessão precisa de um título.");
+            if (s.questoes == null) s.questoes = new ArrayList<>();
+            for (Questao q : s.questoes) {
+                if (blank(q.enunciado)) throw new IllegalArgumentException("Toda questão precisa de um enunciado (sessão \"" + s.titulo + "\").");
+                if (q.tipo == null || !TIPOS_QUESTAO.contains(q.tipo)) throw new IllegalArgumentException("Tipo de questão inválido.");
+                if (!"DESCRITIVA".equals(q.tipo) && blank(q.conjuntoOpcaoId)) {
+                    throw new IllegalArgumentException("A questão \"" + q.enunciado + "\" precisa de um conjunto de opções.");
                 }
             }
         }

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import type { ConjuntoOpcao, ModuloInstrumento, PaginaAv, QuestaoAv, SessaoAv, TipoQuestaoAv } from '../types/instrumentoAvaliacao';
 
 const paginas = defineModel<PaginaAv[]>('paginas', { required: true });
+const sessoes = defineModel<SessaoAv[]>('sessoes', { required: true });
 
 const props = defineProps<{
   conjuntos: ConjuntoOpcao[];
@@ -32,7 +33,11 @@ const novaQuestao = (): QuestaoAv => ({ enunciado: '', tipo: 'ESCALA', conjuntoO
 const novaSessao = (): SessaoAv => ({ titulo: '', descricao: '', questoes: [novaQuestao()] });
 
 function addPagina() {
-  paginas.value.push({ titulo: `Página ${paginas.value.length + 1}`, descricao: '', sessoes: [novaSessao()] });
+  paginas.value.push({ titulo: `Página ${paginas.value.length + 1}`, descricao: '' });
+}
+
+function addSessao() {
+  sessoes.value.push({ ...novaSessao(), titulo: `Sessão ${sessoes.value.length + 1}` });
 }
 
 function aoMudarTipo(q: QuestaoAv) {
@@ -49,22 +54,21 @@ const btnIcone = 'text-[11px] px-1.5 py-0.5 rounded border border-slate-200 text
     <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3">
       <div>
         <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">3. Estrutura do Questionário</h3>
-        <p class="text-xs text-slate-500 mt-0.5">Páginas contêm sessões; sessões agrupam as questões.</p>
+        <p class="text-xs text-slate-500 mt-0.5">Páginas e sessões são tipos independentes do instrumento; sessões agrupam as questões.</p>
       </div>
-      <button v-if="!somenteLeitura" type="button" @click="addPagina"
-        class="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl">
-        + Nova página
-      </button>
+      <div v-if="!somenteLeitura" class="flex gap-2">
+        <button type="button" @click="addPagina" class="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl">+ Nova página</button>
+        <button type="button" @click="addSessao" class="text-xs font-bold bg-purple-700 hover:bg-purple-800 text-white px-3.5 py-2 rounded-xl">+ Nova sessão</button>
+      </div>
     </div>
 
     <p v-if="somenteLeitura" class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-3">
       Instrumento já publicado: a estrutura está bloqueada para edição. Apenas os dados gerais podem ser ajustados.
     </p>
-    <p v-if="paginas.length === 0" class="text-xs text-center text-slate-400 py-6">
-      Nenhuma página ainda. Clique em “Nova página” para começar.
-    </p>
-
-    <section v-for="(pag, pi) in paginas" :key="pi" class="border border-slate-200 rounded-xl overflow-hidden">
+    <section class="space-y-2">
+      <h4 class="text-xs font-bold uppercase text-slate-500">Páginas</h4>
+      <p v-if="paginas.length === 0" class="text-xs text-slate-400 py-2">Nenhuma página cadastrada.</p>
+      <article v-for="(pag, pi) in paginas" :key="pi" class="border border-slate-200 rounded-xl overflow-hidden">
       <header class="bg-slate-50 px-4 py-3 flex flex-wrap items-center gap-2 border-b border-slate-200">
         <span class="text-[10px] font-bold uppercase bg-slate-800 text-white px-2 py-0.5 rounded-full">Página {{ pi + 1 }}</span>
         <input v-model="pag.titulo" :disabled="somenteLeitura" placeholder="Título da página" :class="[input, 'flex-1 min-w-48 font-semibold']" />
@@ -74,16 +78,21 @@ const btnIcone = 'text-[11px] px-1.5 py-0.5 rounded border border-slate-200 text
           <button type="button" :class="btnIcone" class="text-rose-600!" @click="paginas.splice(pi, 1)">Remover</button>
         </template>
       </header>
+      <textarea v-model="pag.descricao" :disabled="somenteLeitura" rows="2" placeholder="Descrição da página (opcional)" :class="[input, 'm-4 w-[calc(100%-2rem)]']" />
+      </article>
+    </section>
 
-      <div class="p-4 space-y-4">
-        <div v-for="(ses, si) in pag.sessoes" :key="si" class="border border-purple-200 bg-purple-50/40 rounded-xl p-3.5 space-y-3">
+    <section class="space-y-3">
+      <h4 class="text-xs font-bold uppercase text-slate-500">Sessões e questões</h4>
+      <p v-if="sessoes.length === 0" class="text-xs text-slate-400 py-2">Nenhuma sessão cadastrada.</p>
+      <div v-for="(ses, si) in sessoes" :key="si" class="border border-purple-200 bg-purple-50/40 rounded-xl p-3.5 space-y-3">
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-[10px] font-bold uppercase bg-purple-700 text-white px-2 py-0.5 rounded-full">Sessão {{ si + 1 }}</span>
             <input v-model="ses.titulo" :disabled="somenteLeitura" placeholder="Título da sessão (ex.: Didática)" :class="[input, 'flex-1 min-w-48 font-semibold']" />
             <template v-if="!somenteLeitura">
-              <button type="button" :class="btnIcone" :disabled="si === 0" @click="mover(pag.sessoes, si, -1)">↑</button>
-              <button type="button" :class="btnIcone" :disabled="si === pag.sessoes.length - 1" @click="mover(pag.sessoes, si, 1)">↓</button>
-              <button type="button" :class="btnIcone" class="text-rose-600!" @click="pag.sessoes.splice(si, 1)">Remover</button>
+              <button type="button" :class="btnIcone" :disabled="si === 0" @click="mover(sessoes, si, -1)">↑</button>
+              <button type="button" :class="btnIcone" :disabled="si === sessoes.length - 1" @click="mover(sessoes, si, 1)">↓</button>
+              <button type="button" :class="btnIcone" class="text-rose-600!" @click="sessoes.splice(si, 1)">Remover</button>
             </template>
           </div>
           <input v-model="ses.descricao" :disabled="somenteLeitura" placeholder="Descrição / instruções da sessão (opcional)" :class="input" />
@@ -134,12 +143,6 @@ const btnIcone = 'text-[11px] px-1.5 py-0.5 rounded border border-slate-200 text
               + Novo conjunto de opções
             </button>
           </div>
-        </div>
-
-        <button v-if="!somenteLeitura" type="button" class="text-[11px] font-bold text-purple-700 border border-dashed border-purple-300 rounded-lg px-3 py-2 w-full hover:bg-purple-50"
-          @click="pag.sessoes.push(novaSessao())">
-          + Nova sessão nesta página
-        </button>
       </div>
     </section>
   </div>

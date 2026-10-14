@@ -4,18 +4,19 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { temPermissao } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
+  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
   menuAbertoMobile: boolean;
   usuario: UsuarioContexto | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'mudarVisao', visao: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'): void;
+  (e: 'mudarVisao', visao: 'builder' | 'catalogo' | 'discente' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'): void;
   (e: 'fecharMenuMobile'): void;
   (e: 'logout'): void;
 }>();
 
-const podeBuilder = computed(() => temPermissao(props.usuario, 'INSTRUMENTO_CRIAR') || temPermissao(props.usuario, 'INSTRUMENTO_VISUALIZAR'));
+const podeBuilder = computed(() => (props.usuario?.papelAtivo === 'CPA' || props.usuario?.papelAtivo === 'ADMIN' || (!props.usuario?.papelAtivo && (props.usuario?.papel === 'CPA' || props.usuario?.papel === 'ADMIN')))
+  && temPermissao(props.usuario, 'INSTRUMENTO_VISUALIZAR'));
 const podeCatalogo = computed(() => temPermissao(props.usuario, 'CATALOGO_GERENCIAR'));
 const podeDiscente = computed(() => temPermissao(props.usuario, 'AVALIACAO_RESPONDER'));
 const podeDocente = computed(() => temPermissao(props.usuario, 'DOCENTE_MANIFESTAR'));
@@ -144,14 +145,14 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
           Aplicação e Respostas
         </div>
         <div class="space-y-1">
-          <!-- Item: Estudante Responder -->
+          <!-- Avaliações disponíveis para o perfil ativo -->
           <button
             v-if="podeDiscente"
             type="button"
-            @click="() => { emit('mudarVisao', 'discente'); emit('fecharMenuMobile'); }"
+            @click="() => { emit('mudarVisao', 'responder'); emit('fecharMenuMobile'); }"
             :class="[
               'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer',
-              visaoAtual === 'discente'
+              visaoAtual === 'responder'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             ]"
@@ -159,10 +160,10 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
             <span class="text-base">🎓</span>
             <div class="flex-1">
               <div>Responder Avaliação</div>
-              <div class="text-[10px] opacity-75 font-normal">Visão do Estudante (ADPD)</div>
+              <div class="text-[10px] opacity-75 font-normal">Instrumentos disponíveis para seu perfil</div>
             </div>
             <span
-              v-if="visaoAtual === 'discente'"
+              v-if="visaoAtual === 'responder'"
               class="w-1.5 h-1.5 rounded-full bg-white"
             ></span>
           </button>

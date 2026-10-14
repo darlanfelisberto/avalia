@@ -4,7 +4,7 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { salvarUsuarioAtivo } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
+  visaoAtual: 'builder' | 'catalogo' | 'discente' | 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
   statusSalvamento: 'salvo' | 'salvando' | 'erro';
   ultimaSalvaHora: string;
   respostasConcluidas: number;
@@ -57,6 +57,8 @@ const tituloVisao = computed(() => {
         categoria: 'Preenchimento do Estudante',
         codigo: 'Resolução CONSUP nº 104/2013'
       };
+    case 'responder':
+      return { titulo: 'Responder Avaliações', categoria: 'Aplicação e Respostas', codigo: '' };
     case 'docente':
       return {
         titulo: 'Manifestação e Plano de Desenvolvimento Docente',

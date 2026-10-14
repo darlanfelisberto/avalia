@@ -9,6 +9,9 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
 import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 @ApplicationScoped
 public class AuthService {
@@ -55,6 +58,7 @@ public class AuthService {
             UsuarioPermissao up = permissaoList.get(0);
             UsuarioDTO dto = montarUsuarioDTO(up);
             String token = UUID.randomUUID().toString();
+            registrarSessao(token, dto);
             return new AuthResponseDTO(true, token, "Login realizado com sucesso.", dto);
         }
 
@@ -101,6 +105,7 @@ public class AuthService {
                 dto.setPermissoes(permissoes);
 
                 String token = UUID.randomUUID().toString();
+                registrarSessao(token, dto);
                 return new AuthResponseDTO(true, token, "Login realizado com sucesso.", dto);
             }
         } catch (Exception e) {
@@ -108,6 +113,47 @@ public class AuthService {
         }
 
         return new AuthResponseDTO(false, null, "CPF não localizado no cadastro institucional do IFFar.", null);
+    }
+
+    private String hashToken(String token) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(token.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private void registrarSessao(String token, UsuarioDTO usuario) {
+        em.createNativeQuery("insert into auth_sessao (token_hash, cpf, papeis, expira_em) " +
+                        "values (?1, ?2, ?3, now() + interval '12 hours')")
+                .setParameter(1, hashToken(token))
+                .setParameter(2, usuario.getCpf())
+                .setParameter(3, String.join(",", usuario.getPapeis()))
+                .executeUpdate();
+    }
+
+    public UsuarioDTO validarSessao(String authorization, String papelAtivo) {
+        if (authorization == null || !authorization.startsWith("Bearer "))
+            throw new SecurityException("Sessão não informada.");
+        String token = authorization.substring(7).trim();
+        if (token.isEmpty()) throw new SecurityException("Sessão não informada.");
+        @SuppressWarnings("unchecked")
+        List<Object[]> sessoes = em.createNativeQuery("select u.cpf, s.papeis from auth_sessao s " +
+                        "join usuario_permissao u on u.cpf = s.cpf and u.ativo = true " +
+                        "where s.token_hash = ?1 and s.expira_em > now()")
+                .setParameter(1, hashToken(token)).getResultList();
+        if (sessoes.isEmpty()) throw new SecurityException("Sessão expirada. Entre novamente.");
+        Object[] sessao = sessoes.get(0);
+        String cpf = (String) sessao[0];
+        List<String> papeis = Arrays.asList(((String) sessao[1]).split(","));
+        String papel = papelAtivo == null || papelAtivo.isBlank() ? papeis.get(0) : papelAtivo;
+        if (!papeis.contains(papel)) throw new SecurityException("Perfil não autorizado para esta sessão.");
+        UsuarioPermissao up = em.createQuery("select u from UsuarioPermissao u where u.cpf = :cpf", UsuarioPermissao.class)
+                .setParameter("cpf", cpf).getSingleResult();
+        UsuarioDTO usuario = montarUsuarioDTO(up);
+        usuario.setPapelAtivo(papel);
+        return usuario;
     }
 
     public List<UsuarioDTO> listarUsuariosDemonstracao() {

@@ -112,6 +112,10 @@ export function resetarInstrumentoParaPadrao(): InstrumentoAvaliativo {
 const STORAGE_KEY_USUARIO = 'iffar_avalia_usuario_ativo';
 const STORAGE_KEY_TOKEN = 'iffar_avalia_token';
 
+export function carregarTokenAtivo(): string | null {
+  return localStorage.getItem(STORAGE_KEY_TOKEN);
+}
+
 
 export function carregarUsuarioAtivo(): import('../types/avaliacao').UsuarioContexto | null {
   try {

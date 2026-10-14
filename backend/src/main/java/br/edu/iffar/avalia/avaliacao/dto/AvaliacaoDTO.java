@@ -3,7 +3,7 @@ package br.edu.iffar.avalia.avaliacao.dto;
 import java.util.ArrayList;
 import java.util.List;
 
-/** DTOs do schema "avaliacao" (instrumento > página > sessão > questão). Datas em ISO-8601 (UTC). */
+/** DTOs do schema "avaliacao" (páginas e sessões do instrumento; questões nas sessões). Datas em ISO-8601 (UTC). */
 public final class AvaliacaoDTO {
 
     private AvaliacaoDTO() {}
@@ -37,6 +37,7 @@ public final class AvaliacaoDTO {
 
     public static class Questao {
         public String questaoId;
+        public String sessaoQuestaoId;
         public String enunciado;
         /** ESCOLHA_UNICA, MULTIPLA_ESCOLHA, ESCALA ou DESCRITIVA */
         public String tipo;
@@ -60,7 +61,6 @@ public final class AvaliacaoDTO {
         public String titulo;
         public String descricao;
         public int ordem;
-        public List<Sessao> sessoes = new ArrayList<>();
     }
 
     public static class Instrumento {
@@ -83,5 +83,6 @@ public final class AvaliacaoDTO {
         public int totalQuestoes;
         public List<Respondente> respondentes = new ArrayList<>();
         public List<Pagina> paginas = new ArrayList<>();
+        public List<Sessao> sessoes = new ArrayList<>();
     }
 }

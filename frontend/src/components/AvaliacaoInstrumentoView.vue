@@ -55,8 +55,15 @@ function novoInstrumento(): InstrumentoAv {
     anonimo: true,
     permiteEdicao: true,
     respondentes: [],
-    paginas: []
+    paginas: [],
+    sessoes: []
   };
+}
+
+function normalizarRespondentes(respondentes?: InstrumentoAv['respondentes']) {
+  // O banco persiste o vínculo sem exigência como NULL. O select usa string vazia
+  // para essa opção, então convertemos o valor ao carregar o instrumento.
+  return (respondentes || []).map(r => ({ ...r, tipoVinculo: r.tipoVinculo ?? '' }));
 }
 
 const form = reactive<InstrumentoAv>(novoInstrumento());
@@ -95,13 +102,18 @@ async function editar(id: string) {
   }
   Object.assign(form, res.dados, {
     inicioAplicacao: isoParaLocal(res.dados.inicioAplicacao),
-    fimAplicacao: isoParaLocal(res.dados.fimAplicacao)
+    fimAplicacao: isoParaLocal(res.dados.fimAplicacao),
+    respondentes: normalizarRespondentes(res.dados.respondentes)
   });
   modo.value = 'form';
 }
 
 function aplicar(i: InstrumentoAv) {
-  Object.assign(form, i, { inicioAplicacao: isoParaLocal(i.inicioAplicacao), fimAplicacao: isoParaLocal(i.fimAplicacao) });
+  Object.assign(form, i, {
+    inicioAplicacao: isoParaLocal(i.inicioAplicacao),
+    fimAplicacao: isoParaLocal(i.fimAplicacao),
+    respondentes: normalizarRespondentes(i.respondentes)
+  });
 }
 
 async function salvar(): Promise<boolean> {
@@ -307,6 +319,7 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
       <!-- 3. Estrutura -->
       <AvaliacaoEstruturaEditor
         v-model:paginas="form.paginas"
+        v-model:sessoes="form.sessoes"
         :conjuntos="conjuntos"
         :modulo="form.modulo"
         :somente-leitura="somenteLeitura"
