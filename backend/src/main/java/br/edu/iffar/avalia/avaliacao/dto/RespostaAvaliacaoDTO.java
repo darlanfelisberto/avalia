@@ -13,6 +13,9 @@ public final class RespostaAvaliacaoDTO {
         public String modulo;
         public String alvoId;
         public String alvoNome;
+        public String alvoTipoCodigo;
+        public String contextoId;
+        public String contextoNome;
         public boolean respondido;
     }
 
@@ -24,6 +27,7 @@ public final class RespostaAvaliacaoDTO {
 
     public static class Envio {
         public String alvoId;
+        public String contextoId;
         public List<Item> respostas = new ArrayList<>();
     }
 }

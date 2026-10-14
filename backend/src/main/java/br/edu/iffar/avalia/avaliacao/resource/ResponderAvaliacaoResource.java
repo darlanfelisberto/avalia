@@ -28,9 +28,21 @@ public class ResponderAvaliacaoResource {
     @Path("/{instrumentoId}/{alvoId}")
     public Response buscar(@PathParam("instrumentoId") String instrumentoId,
                            @PathParam("alvoId") String alvoId,
+                           @QueryParam("contextoId") String contextoId,
                            @HeaderParam("Authorization") String token,
                            @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> Response.ok(service.buscar(usuario(token, papel), instrumentoId, alvoId)).build());
+        return executar(() -> Response.ok(service.buscar(usuario(token, papel), instrumentoId, alvoId, contextoId)).build());
+    }
+
+    @GET
+    @Path("/{instrumentoId}/{alvoId}/conjuntos-opcao")
+    public Response conjuntos(@PathParam("instrumentoId") String instrumentoId,
+                             @PathParam("alvoId") String alvoId,
+                             @QueryParam("contextoId") String contextoId,
+                             @HeaderParam("Authorization") String token,
+                             @HeaderParam("X-Papel-Ativo") String papel) {
+        return executar(() -> Response.ok(service.listarConjuntos(usuario(token, papel),
+                instrumentoId, alvoId, contextoId)).build());
     }
 
     @POST

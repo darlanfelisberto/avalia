@@ -42,6 +42,129 @@ public class AvaliacaoService {
         return out;
     }
 
+    /** Atualiza os espelhos avaliativos a partir dos dados acadêmicos já sincronizados. */
+    public void sincronizarEntidadesAcademicas() {
+        em.createNativeQuery("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
+                "select te.tipo_entidade_id, 'academico:aluno:' || a.id, coalesce(nullif(p.nome_social, ''), p.nome) || ' · ' || coalesce(a.matricula, a.id::text) " +
+                "from academico.aluno a join academico.pessoa p on p.id = a.id_pessoa " +
+                "cross join avaliacao.tipo_entidade te where te.codigo = 'ALUNO' " +
+                "on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
+                "select te.tipo_entidade_id, 'academico:docente:' || s.id, coalesce(nullif(p.nome_social, ''), p.nome) " +
+                "from (select distinct id_servidor from academico.docente_turma where id_servidor is not null) dt " +
+                "join academico.servidor s on s.id = dt.id_servidor join academico.pessoa p on p.id = s.id_pessoa " +
+                "cross join avaliacao.tipo_entidade te where te.codigo = 'DOCENTE' " +
+                "on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
+                "select te.tipo_entidade_id, 'academico:turma:' || t.id, left(concat_ws(' · ', t.codigo_turma, cc.nome, t.ano || '/' || t.periodo), 300) " +
+                "from academico.turma t join academico.componente_curricular cc on cc.id = t.id_componente_curricular " +
+                "cross join avaliacao.tipo_entidade te where te.codigo = 'TURMA' " +
+                "on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
+                "select te.tipo_entidade_id, 'academico:unidade:' || u.id, coalesce(nullif(u.sigla, ''), u.nome) " +
+                "from academico.unidade u cross join avaliacao.tipo_entidade te " +
+                "where (te.codigo = 'CAMPUS' and lower(concat_ws(' ', u.nome, u.sigla, u.tipo, u.categoria)) like '%campus%') " +
+                "or (te.codigo = 'SETOR' and lower(concat_ws(' ', u.nome, u.sigla, u.tipo, u.categoria)) not like '%campus%') " +
+                "on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
+                "select te.tipo_entidade_id, p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome) " +
+                "from academico.aluno a join academico.pessoa p on p.id = a.id_pessoa " +
+                "cross join avaliacao.tipo_entidade te where te.codigo = 'ALUNO' and p.cpf_cnpj is not null " +
+                "on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
+                "select te.tipo_entidade_id, p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome) " +
+                "from academico.servidor s join academico.pessoa p on p.id = s.id_pessoa " +
+                "cross join avaliacao.tipo_entidade te where te.codigo = 'SERVIDOR' and p.cpf_cnpj is not null " +
+                "on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
+                "select te.tipo_entidade_id, p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome) " +
+                "from academico.docente_turma dt join academico.servidor s on s.id = dt.id_servidor " +
+                "join academico.pessoa p on p.id = s.id_pessoa cross join avaliacao.tipo_entidade te " +
+                "where te.codigo = 'DOCENTE' and p.cpf_cnpj is not null " +
+                "on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true").executeUpdate();
+        em.createNativeQuery("delete from avaliacao.entidade_vinculo v using avaliacao.entidade er, avaliacao.tipo_entidade tr " +
+                "where v.entidade_origem_id = er.entidade_id and er.tipo_entidade_id = tr.tipo_entidade_id " +
+                "and tr.codigo in ('ALUNO','DOCENTE','SERVIDOR') and v.tipo_vinculo in ('MATRICULADO_EM','LECIONA','PERTENCE_A') " +
+                "and er.referencia_externa not like 'academico:%'").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade_vinculo (entidade_origem_id, entidade_destino_id, tipo_vinculo) " +
+                "select er.entidade_id, turma.entidade_id, 'MATRICULADO_EM' from academico.matricula m " +
+                "join academico.aluno a on a.id = m.id_aluno join academico.pessoa p on p.id = a.id_pessoa " +
+                "join avaliacao.entidade er on er.referencia_externa = p.cpf_cnpj " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = er.tipo_entidade_id and tr.codigo = 'ALUNO' " +
+                "join avaliacao.entidade turma on turma.referencia_externa = 'academico:turma:' || m.id_turma " +
+                "on conflict (entidade_origem_id, entidade_destino_id, tipo_vinculo) do nothing").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade_vinculo (entidade_origem_id, entidade_destino_id, tipo_vinculo) " +
+                "select er.entidade_id, turma.entidade_id, 'LECIONA' from academico.docente_turma dt " +
+                "join academico.servidor s on s.id = dt.id_servidor join academico.pessoa p on p.id = s.id_pessoa " +
+                "join avaliacao.entidade er on er.referencia_externa = p.cpf_cnpj " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = er.tipo_entidade_id and tr.codigo = 'DOCENTE' " +
+                "join avaliacao.entidade turma on turma.referencia_externa = 'academico:turma:' || dt.id_turma " +
+                "on conflict (entidade_origem_id, entidade_destino_id, tipo_vinculo) do nothing").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade_vinculo (entidade_origem_id, entidade_destino_id, tipo_vinculo) " +
+                "select distinct er.entidade_id, unit.entidade_id, 'PERTENCE_A' from academico.servidor s " +
+                "join academico.pessoa p on p.id = s.id_pessoa join avaliacao.entidade er on er.referencia_externa = p.cpf_cnpj " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = er.tipo_entidade_id and tr.codigo = 'SERVIDOR' " +
+                "join avaliacao.entidade unit on unit.referencia_externa in ('academico:unidade:' || s.id_unidade_lotacao, 'academico:unidade:' || s.id_unidade_exercicio) " +
+                "join avaliacao.tipo_entidade tu on tu.tipo_entidade_id = unit.tipo_entidade_id and tu.codigo in ('CAMPUS','SETOR') " +
+                "where s.id_unidade_lotacao is not null or s.id_unidade_exercicio is not null " +
+                "on conflict (entidade_origem_id, entidade_destino_id, tipo_vinculo) do nothing").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade_vinculo (entidade_origem_id, entidade_destino_id, tipo_vinculo) " +
+                "select distinct er.entidade_id, campus.entidade_id, 'PERTENCE_A' from academico.servidor s " +
+                "join academico.pessoa p on p.id = s.id_pessoa join avaliacao.entidade er on er.referencia_externa = p.cpf_cnpj " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = er.tipo_entidade_id and tr.codigo = 'SERVIDOR' " +
+                "join academico.unidade_closure uc on uc.id_descendente in (s.id_unidade_lotacao, s.id_unidade_exercicio) " +
+                "join avaliacao.entidade campus on campus.referencia_externa = 'academico:unidade:' || uc.id_ancestral " +
+                "join avaliacao.tipo_entidade tc on tc.tipo_entidade_id = campus.tipo_entidade_id and tc.codigo = 'CAMPUS' " +
+                "where p.cpf_cnpj is not null " +
+                "on conflict (entidade_origem_id, entidade_destino_id, tipo_vinculo) do nothing").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade_vinculo (entidade_origem_id, entidade_destino_id, tipo_vinculo) " +
+                "select distinct er.entidade_id, unit.entidade_id, 'PERTENCE_A' from academico.servidor s " +
+                "join academico.pessoa p on p.id = s.id_pessoa join avaliacao.entidade er on er.referencia_externa = p.cpf_cnpj " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = er.tipo_entidade_id and tr.codigo = 'DOCENTE' " +
+                "join avaliacao.entidade unit on unit.referencia_externa in ('academico:unidade:' || s.id_unidade_lotacao, 'academico:unidade:' || s.id_unidade_exercicio) " +
+                "join avaliacao.tipo_entidade tu on tu.tipo_entidade_id = unit.tipo_entidade_id and tu.codigo in ('CAMPUS','SETOR') " +
+                "where s.id_unidade_lotacao is not null or s.id_unidade_exercicio is not null " +
+                "on conflict (entidade_origem_id, entidade_destino_id, tipo_vinculo) do nothing").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade_vinculo (entidade_origem_id, entidade_destino_id, tipo_vinculo) " +
+                "select distinct er.entidade_id, campus.entidade_id, 'PERTENCE_A' from academico.servidor s " +
+                "join academico.pessoa p on p.id = s.id_pessoa join avaliacao.entidade er on er.referencia_externa = p.cpf_cnpj " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = er.tipo_entidade_id and tr.codigo = 'DOCENTE' " +
+                "join academico.unidade_closure uc on uc.id_descendente in (s.id_unidade_lotacao, s.id_unidade_exercicio) " +
+                "join avaliacao.entidade campus on campus.referencia_externa = 'academico:unidade:' || uc.id_ancestral " +
+                "join avaliacao.tipo_entidade tc on tc.tipo_entidade_id = campus.tipo_entidade_id and tc.codigo = 'CAMPUS' " +
+                "where p.cpf_cnpj is not null " +
+                "on conflict (entidade_origem_id, entidade_destino_id, tipo_vinculo) do nothing").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade_vinculo (entidade_origem_id, entidade_destino_id, tipo_vinculo) " +
+                "select distinct er.entidade_id, campus.entidade_id, 'PERTENCE_A' from academico.aluno a " +
+                "join academico.pessoa p on p.id = a.id_pessoa join academico.curso c on c.id = a.id_curso " +
+                "join academico.unidade_closure uc on uc.id_descendente = c.id_unidade " +
+                "join avaliacao.entidade er on er.referencia_externa = p.cpf_cnpj " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = er.tipo_entidade_id and tr.codigo = 'ALUNO' " +
+                "join avaliacao.entidade campus on campus.referencia_externa = 'academico:unidade:' || uc.id_ancestral " +
+                "join avaliacao.tipo_entidade tc on tc.tipo_entidade_id = campus.tipo_entidade_id and tc.codigo = 'CAMPUS' " +
+                "where p.cpf_cnpj is not null " +
+                "on conflict (entidade_origem_id, entidade_destino_id, tipo_vinculo) do nothing").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.entidade_vinculo (entidade_origem_id, entidade_destino_id, tipo_vinculo) " +
+                "select distinct er.entidade_id, setor.entidade_id, 'PERTENCE_A' from academico.aluno a " +
+                "join academico.pessoa p on p.id = a.id_pessoa join academico.curso c on c.id = a.id_curso " +
+                "join avaliacao.entidade er on er.referencia_externa = p.cpf_cnpj " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = er.tipo_entidade_id and tr.codigo = 'ALUNO' " +
+                "join avaliacao.entidade setor on setor.referencia_externa = 'academico:unidade:' || c.id_unidade " +
+                "join avaliacao.tipo_entidade ts on ts.tipo_entidade_id = setor.tipo_entidade_id and ts.codigo = 'SETOR' " +
+                "where p.cpf_cnpj is not null " +
+                "on conflict (entidade_origem_id, entidade_destino_id, tipo_vinculo) do nothing").executeUpdate();
+        em.createNativeQuery("insert into avaliacao.instrumento_entidade_avaliada (instrumento_avaliativo_id, tipo_entidade_alvo_id, entidade_id) " +
+                "select i.instrumento_avaliativo_id, ita.tipo_entidade_alvo_id, e.entidade_id " +
+                "from avaliacao.instrumento_avaliativo i join avaliacao.instrumento_tipo_alvo ita " +
+                "on ita.instrumento_avaliativo_id = i.instrumento_avaliativo_id " +
+                "join avaliacao.tipo_entidade te on te.tipo_entidade_id = ita.tipo_entidade_alvo_id " +
+                "join avaliacao.entidade e on e.tipo_entidade_id = te.tipo_entidade_id " +
+                "where i.status = 'PUBLICADO' and ((te.codigo = 'ALUNO' and e.referencia_externa like 'academico:aluno:%') " +
+                "or (te.codigo = 'DOCENTE' and e.referencia_externa like 'academico:docente:%') " +
+                "or (te.codigo in ('CAMPUS','SETOR') and e.referencia_externa like 'academico:unidade:%')) " +
+                "on conflict (instrumento_avaliativo_id, entidade_id) do nothing").executeUpdate();
+    }
+
     public List<ConjuntoOpcao> listarConjuntos() {
         Map<String, ConjuntoOpcao> mapa = new LinkedHashMap<>();
         for (Object[] r : rows("select cast(conjunto_opcao_id as text), nome from avaliacao.conjunto_opcao order by nome")) {
@@ -104,6 +227,13 @@ public class AvaliacaoService {
             i.fimAplicacao = (String) r[6];
             i.tipoEntidadeAvaliadaNome = (String) r[7];
             i.totalQuestoes = ((Number) r[8]).intValue();
+            for (Object[] x : rows("select cast(ita.tipo_entidade_alvo_id as text), te.nome " +
+                    "from avaliacao.instrumento_tipo_alvo ita join avaliacao.tipo_entidade te " +
+                    "on te.tipo_entidade_id = ita.tipo_entidade_alvo_id " +
+                    "where ita.instrumento_avaliativo_id = cast(?1 as uuid) order by te.nome", i.id)) {
+                i.tiposEntidadeAlvoIds.add((String) x[0]);
+                i.tiposEntidadeAlvoNomes.add((String) x[1]);
+            }
             out.add(i);
         }
         return out;
@@ -134,6 +264,18 @@ public class AvaliacaoService {
         i.status = (String) r[11];
         i.criadoPor = (String) r[12];
         i.atualizadoEm = (String) r[13];
+
+        for (Object[] x : rows("select cast(ita.tipo_entidade_alvo_id as text), te.nome " +
+                "from avaliacao.instrumento_tipo_alvo ita join avaliacao.tipo_entidade te " +
+                "on te.tipo_entidade_id = ita.tipo_entidade_alvo_id " +
+                "where ita.instrumento_avaliativo_id = cast(?1 as uuid) order by te.nome", id)) {
+            i.tiposEntidadeAlvoIds.add((String) x[0]);
+            i.tiposEntidadeAlvoNomes.add((String) x[1]);
+        }
+        if (i.tiposEntidadeAlvoIds.isEmpty()) {
+            i.tiposEntidadeAlvoIds.add(i.tipoEntidadeAvaliadaId);
+            i.tiposEntidadeAlvoNomes.add(i.tipoEntidadeAvaliadaNome);
+        }
 
         for (Object[] x : rows("select cast(tipo_entidade_respondente_id as text), tipo_vinculo " +
                 "from avaliacao.instrumento_respondente where instrumento_avaliativo_id = cast(?1 as uuid)", id)) {
@@ -188,7 +330,7 @@ public class AvaliacaoService {
     }
 
     public Instrumento salvarInstrumento(Instrumento dto, String usuario) {
-        validar(dto);
+        if (dto == null) throw new IllegalArgumentException("Dados do instrumento não informados.");
         String id = blank(dto.id) ? null : dto.id;
         String status = "RASCUNHO";
 
@@ -197,13 +339,14 @@ public class AvaliacaoService {
             if (atual.isEmpty()) throw new IllegalArgumentException("Instrumento não encontrado.");
             status = (String) atual.get(0)[0];
         }
+        boolean rascunho = "RASCUNHO".equals(status);
+        validar(dto, rascunho);
         if (count("select count(*) from avaliacao.instrumento_avaliativo where modulo = ?1 and ciclo_referencia = ?2 " +
                 "and titulo = ?3 and (cast(?4 as text) is null or instrumento_avaliativo_id <> cast(?4 as uuid))",
                 dto.modulo, dto.cicloReferencia.trim(), dto.titulo.trim(), id) > 0) {
             throw new IllegalArgumentException("Já existe um instrumento com este módulo, ciclo e título.");
         }
 
-        boolean rascunho = "RASCUNHO".equals(status);
         if (id == null) {
             id = UUID.randomUUID().toString();
             exec("insert into avaliacao.instrumento_avaliativo (instrumento_avaliativo_id, tipo_entidade_avaliada_id, modulo, titulo, descricao, " +
@@ -211,6 +354,7 @@ public class AvaliacaoService {
                             "values (cast(?1 as uuid), cast(?2 as uuid), ?3, ?4, cast(?5 as text), ?6, cast(?7 as timestamptz), cast(?8 as timestamptz), ?9, ?10, ?11)",
                     id, dto.tipoEntidadeAvaliadaId, dto.modulo, dto.titulo.trim(), dto.descricao, dto.cicloReferencia.trim(),
                     dto.inicioAplicacao, dto.fimAplicacao, dto.anonimo, dto.permiteEdicao, usuario);
+            substituirTiposAlvo(id, dto);
         } else {
             exec("update avaliacao.instrumento_avaliativo set titulo = ?2, descricao = cast(?3 as text), ciclo_referencia = ?4, " +
                             "inicio_aplicacao = cast(?5 as timestamptz), fim_aplicacao = cast(?6 as timestamptz), anonimo = ?7, " +
@@ -220,6 +364,7 @@ public class AvaliacaoService {
             if (rascunho) {
                 exec("update avaliacao.instrumento_avaliativo set modulo = ?2, tipo_entidade_avaliada_id = cast(?3 as uuid) " +
                         "where instrumento_avaliativo_id = cast(?1 as uuid)", id, dto.modulo, dto.tipoEntidadeAvaliadaId);
+                substituirTiposAlvo(id, dto);
             }
         }
 
@@ -239,16 +384,29 @@ public class AvaliacaoService {
         if (i.respondentes.isEmpty()) throw new IllegalArgumentException("Defina ao menos um público respondente antes de publicar.");
         exec("update avaliacao.instrumento_avaliativo set status = 'PUBLICADO', atualizado_em = now() " +
                 "where instrumento_avaliativo_id = cast(?1 as uuid)", id);
-        if (count("select count(*) from avaliacao.instrumento_entidade_avaliada where instrumento_avaliativo_id = cast(?1 as uuid)", id) == 0) {
+        String tipoContextoCodigo = (String) em.createNativeQuery("select codigo from avaliacao.tipo_entidade where tipo_entidade_id = cast(?1 as uuid)")
+                .setParameter(1, i.tipoEntidadeAvaliadaId).getSingleResult();
+        if ("INSTITUICAO".equals(tipoContextoCodigo) && i.tiposEntidadeAlvoIds.contains(i.tipoEntidadeAvaliadaId)) {
             exec("insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo) " +
                     "values (cast(?1 as uuid), ?2, ?3) on conflict (tipo_entidade_id, referencia_externa) do nothing",
                     i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
             exec("insert into avaliacao.instrumento_entidade_avaliada " +
-                            "(instrumento_avaliativo_id, tipo_entidade_avaliada_id, entidade_id) " +
+                            "(instrumento_avaliativo_id, tipo_entidade_alvo_id, entidade_id) " +
                             "select cast(?1 as uuid), cast(?2 as uuid), e.entidade_id from avaliacao.entidade e " +
-                            "where e.tipo_entidade_id = cast(?2 as uuid) and e.referencia_externa = ?3",
+                    "where e.tipo_entidade_id = cast(?2 as uuid) and e.referencia_externa = ?3 " +
+                    "on conflict (instrumento_avaliativo_id, entidade_id) do nothing",
                     id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
         }
+        exec("insert into avaliacao.instrumento_entidade_avaliada (instrumento_avaliativo_id, tipo_entidade_alvo_id, entidade_id) " +
+                        "select i.instrumento_avaliativo_id, ita.tipo_entidade_alvo_id, e.entidade_id " +
+                        "from avaliacao.instrumento_avaliativo i join avaliacao.instrumento_tipo_alvo ita " +
+                        "on ita.instrumento_avaliativo_id = i.instrumento_avaliativo_id " +
+                        "join avaliacao.tipo_entidade te on te.tipo_entidade_id = ita.tipo_entidade_alvo_id " +
+                        "join avaliacao.entidade e on e.tipo_entidade_id = ita.tipo_entidade_alvo_id " +
+                        "where i.instrumento_avaliativo_id = cast(?1 as uuid) " +
+                        "and (e.referencia_externa like 'academico:%' " +
+                        "or (te.codigo = 'INSTITUICAO' and e.referencia_externa = 'instrumento:' || i.instrumento_avaliativo_id)) " +
+                        "on conflict (instrumento_avaliativo_id, entidade_id) do nothing", id);
         return buscarInstrumento(id);
     }
 
@@ -270,6 +428,16 @@ public class AvaliacaoService {
             exec("insert into avaliacao.instrumento_respondente (instrumento_avaliativo_id, tipo_entidade_respondente_id, tipo_vinculo) " +
                             "values (cast(?1 as uuid), cast(?2 as uuid), cast(?3 as text))",
                     id, r.tipoEntidadeId, blank(r.tipoVinculo) ? null : r.tipoVinculo.trim());
+        }
+    }
+
+    private void substituirTiposAlvo(String id, Instrumento dto) {
+        List<String> tiposAlvo = dto.tiposEntidadeAlvoIds == null || dto.tiposEntidadeAlvoIds.isEmpty()
+                ? List.of(dto.tipoEntidadeAvaliadaId) : dto.tiposEntidadeAlvoIds;
+        exec("delete from avaliacao.instrumento_tipo_alvo where instrumento_avaliativo_id = cast(?1 as uuid)", id);
+        for (String tipoId : new LinkedHashSet<>(tiposAlvo)) {
+            exec("insert into avaliacao.instrumento_tipo_alvo (instrumento_avaliativo_id, tipo_entidade_alvo_id) " +
+                    "values (cast(?1 as uuid), cast(?2 as uuid))", id, tipoId);
         }
     }
 
@@ -334,12 +502,15 @@ public class AvaliacaoService {
         }
     }
 
-    private void validar(Instrumento d) {
+    private void validar(Instrumento d, boolean validarRespondentes) {
         if (d == null) throw new IllegalArgumentException("Dados do instrumento não informados.");
         if (blank(d.titulo)) throw new IllegalArgumentException("Informe o título do instrumento.");
         if (blank(d.cicloReferencia)) throw new IllegalArgumentException("Informe o ciclo de referência (ex.: 2026/1).");
         if (d.modulo == null || !MODULOS.contains(d.modulo)) throw new IllegalArgumentException("Módulo inválido.");
         if (blank(d.tipoEntidadeAvaliadaId)) throw new IllegalArgumentException("Informe o que será avaliado.");
+        if (d.tiposEntidadeAlvoIds == null || d.tiposEntidadeAlvoIds.isEmpty()) {
+            d.tiposEntidadeAlvoIds = new ArrayList<>(List.of(d.tipoEntidadeAvaliadaId));
+        }
         if (blank(d.inicioAplicacao) || blank(d.fimAplicacao)) throw new IllegalArgumentException("Informe o período de aplicação.");
         if (!OffsetDateTime.parse(d.fimAplicacao).isAfter(OffsetDateTime.parse(d.inicioAplicacao))) {
             throw new IllegalArgumentException("O término da aplicação deve ser posterior ao início.");
@@ -349,9 +520,45 @@ public class AvaliacaoService {
         if (d.sessoes == null) d.sessoes = new ArrayList<>();
 
         Set<String> vistos = new HashSet<>();
-        for (Respondente r : d.respondentes) {
+        Set<String> tiposAlvoVistos = new HashSet<>();
+        for (String tipoAlvo : d.tiposEntidadeAlvoIds) {
+            if (blank(tipoAlvo)) throw new IllegalArgumentException("Tipo de alvo sem identificação.");
+            if (!tiposAlvoVistos.add(tipoAlvo)) throw new IllegalArgumentException("Tipo de alvo repetido.");
+            if (count("select count(*) from avaliacao.tipo_entidade where tipo_entidade_id = cast(?1 as uuid) and pode_ser_avaliada", tipoAlvo) != 1)
+                throw new IllegalArgumentException("Tipo de alvo inválido.");
+        }
+        String contextoCodigo = (String) em.createNativeQuery("select codigo from avaliacao.tipo_entidade where tipo_entidade_id = cast(?1 as uuid)")
+                .setParameter(1, d.tipoEntidadeAvaliadaId).getSingleResult();
+        if ("TURMA".equals(contextoCodigo)) {
+            Set<String> codigos = new HashSet<>();
+            for (String tipoId : d.tiposEntidadeAlvoIds) {
+                codigos.add((String) em.createNativeQuery("select codigo from avaliacao.tipo_entidade where tipo_entidade_id = cast(?1 as uuid)")
+                        .setParameter(1, tipoId).getSingleResult());
+            }
+            if (codigos.isEmpty() || !Set.of("DOCENTE", "ALUNO").containsAll(codigos))
+                throw new IllegalArgumentException("Uma avaliação de turma pode incluir docentes e alunos como alvos.");
+        } else if (d.tiposEntidadeAlvoIds.size() != 1 || !d.tiposEntidadeAlvoIds.contains(d.tipoEntidadeAvaliadaId)) {
+            throw new IllegalArgumentException("Selecione o próprio tipo avaliado como alvo.");
+        }
+        if (validarRespondentes) for (Respondente r : d.respondentes) {
             if (blank(r.tipoEntidadeId)) throw new IllegalArgumentException("Respondente sem tipo definido.");
             if (!vistos.add(r.tipoEntidadeId)) throw new IllegalArgumentException("Público respondente repetido.");
+            List<?> codigoRespondente = em.createNativeQuery("select codigo from avaliacao.tipo_entidade where tipo_entidade_id = cast(?1 as uuid) and pode_responder")
+                    .setParameter(1, r.tipoEntidadeId).getResultList();
+            if (codigoRespondente.isEmpty()) throw new IllegalArgumentException("Público respondente inválido.");
+            String vinculo = blank(r.tipoVinculo) ? null : r.tipoVinculo.trim();
+            String codigo = (String) codigoRespondente.get(0);
+            if (!Set.of("ALUNO", "DOCENTE", "SERVIDOR").contains(codigo))
+                throw new IllegalArgumentException("Este público ainda não possui perfil de acesso para responder.");
+            boolean vinculoValido = switch (contextoCodigo) {
+                case "INSTITUICAO" -> vinculo == null;
+                case "CAMPUS", "SETOR" -> vinculo == null || "PERTENCE_A".equals(vinculo);
+                case "TURMA" -> ("ALUNO".equals(codigo) && (vinculo == null || "MATRICULADO_EM".equals(vinculo)))
+                        || ("DOCENTE".equals(codigo) && (vinculo == null || "LECIONA".equals(vinculo)));
+                case "DOCENTE" -> "ALUNO".equals(codigo) && (vinculo == null || "MATRICULADO_EM".equals(vinculo));
+                default -> vinculo == null || Set.of("MATRICULADO_EM", "LECIONA", "PERTENCE_A").contains(vinculo);
+            };
+            if (!vinculoValido) throw new IllegalArgumentException("Vínculo incompatível com o público e o contexto avaliados.");
         }
         for (Pagina p : d.paginas) {
             if (blank(p.titulo)) throw new IllegalArgumentException("Toda página precisa de um título.");

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import type { ConjuntoOpcao, InstrumentoAv, QuestaoAv } from '../types/instrumentoAvaliacao';
-import { avaliacaoApi } from '../services/avaliacaoApi';
 import { responderApi, type AvaliacaoDisponivel, type RespostaEnvio } from '../services/responderApi';
 
 const disponiveis = ref<AvaliacaoDisponivel[]>([]);
@@ -15,6 +14,23 @@ const carregando = ref(false);
 const enviando = ref(false);
 const erro = ref('');
 const sucesso = ref('');
+const grupoSelecionado = ref<string | null>(null);
+const alvosMarcados = ref<string[]>([]);
+const filaAlvos = ref<AvaliacaoDisponivel[]>([]);
+
+const grupos = computed(() => {
+  const mapa = new Map<string, { chave: string; instrumentoId: string; titulo: string; descricao?: string | null; modulo: string; contextoNome?: string | null; alvos: AvaliacaoDisponivel[] }>();
+  for (const item of disponiveis.value) {
+    const chave = `${item.instrumentoId}:${item.contextoId || 'geral'}`;
+    let grupo = mapa.get(chave);
+    if (!grupo) {
+      grupo = { chave, instrumentoId: item.instrumentoId, titulo: item.titulo, descricao: item.descricao, modulo: item.modulo, contextoNome: item.contextoNome, alvos: [] };
+      mapa.set(chave, grupo);
+    }
+    grupo.alvos.push(item);
+  }
+  return [...mapa.values()];
+});
 
 function opcoes(q: QuestaoAv) {
   return conjuntos.value.find(c => c.id === q.conjuntoOpcaoId)?.opcoes || [];
@@ -24,10 +40,7 @@ async function carregar() {
   carregando.value = true;
   erro.value = '';
   try {
-    const [lista, catalogo] = await Promise.all([responderApi.listar(), avaliacaoApi.conjuntos()]);
-    disponiveis.value = lista;
-    if (catalogo.ok) conjuntos.value = catalogo.dados || [];
-    else erro.value = catalogo.erro || 'Não foi possível carregar as opções das questões.';
+    disponiveis.value = await responderApi.listar();
   } catch (e) {
     erro.value = e instanceof Error ? e.message : 'Não foi possível carregar as avaliações.';
   } finally {
@@ -37,12 +50,17 @@ async function carregar() {
 
 onMounted(carregar);
 
-async function abrir(item: AvaliacaoDisponivel) {
+async function abrir(item: AvaliacaoDisponivel, manterSucesso = false) {
   erro.value = '';
-  sucesso.value = '';
+  if (!manterSucesso) sucesso.value = '';
   carregando.value = true;
   try {
-    instrumento.value = await responderApi.buscar(item.instrumentoId, item.alvoId);
+    const [instrumentoCarregado, conjuntosCarregados] = await Promise.all([
+      responderApi.buscar(item.instrumentoId, item.alvoId, item.contextoId),
+      responderApi.conjuntos(item.instrumentoId, item.alvoId, item.contextoId)
+    ]);
+    instrumento.value = instrumentoCarregado;
+    conjuntos.value = conjuntosCarregados;
     selecionada.value = item;
     escolhas.value = {};
     multiplas.value = {};
@@ -84,17 +102,51 @@ async function enviar() {
   enviando.value = true;
   try {
     await responderApi.enviar(selecionada.value.instrumentoId, {
-      alvoId: selecionada.value.alvoId, respostas
+      alvoId: selecionada.value.alvoId, contextoId: selecionada.value.contextoId, respostas
     });
     instrumento.value = null;
     selecionada.value = null;
     sucesso.value = 'Avaliação enviada com sucesso.';
     await carregar();
+    const proximo = filaAlvos.value.shift();
+    if (proximo) await abrir(proximo, true);
+    else {
+      grupoSelecionado.value = null;
+      alvosMarcados.value = [];
+    }
   } catch (e) {
     erro.value = e instanceof Error ? e.message : 'Não foi possível enviar a avaliação.';
   } finally {
     enviando.value = false;
   }
+}
+
+function selecionarGrupo(chave: string) {
+  grupoSelecionado.value = chave;
+  alvosMarcados.value = [];
+  erro.value = sucesso.value = '';
+}
+
+function alternarAlvo(chave: string) {
+  const idx = alvosMarcados.value.indexOf(chave);
+  if (idx >= 0) alvosMarcados.value.splice(idx, 1);
+  else alvosMarcados.value.push(chave);
+}
+
+function responderAlvosSelecionados() {
+  const grupo = grupos.value.find(g => g.chave === grupoSelecionado.value);
+  if (!grupo) return;
+  const escolhidos = grupo.alvos.filter(a => alvosMarcados.value.includes(`${a.alvoId}:${a.contextoId || ''}`) && !a.respondido);
+  if (!escolhidos.length) return;
+  filaAlvos.value = escolhidos.slice(1);
+  void abrir(escolhidos[0]);
+}
+
+function voltarASelecao() {
+  instrumento.value = null;
+  selecionada.value = null;
+  filaAlvos.value = [];
+  erro.value = '';
 }
 </script>
 
@@ -110,30 +162,53 @@ async function enviar() {
     <p v-if="carregando" class="text-sm text-slate-500">Carregando avaliações…</p>
 
     <template v-if="!instrumento">
-      <p v-if="!carregando && disponiveis.length === 0" class="bg-white border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
+      <p v-if="!carregando && grupos.length === 0" class="bg-white border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
         Nenhuma avaliação disponível para seu perfil neste período.
       </p>
-      <div v-for="item in disponiveis" :key="`${item.instrumentoId}:${item.alvoId}`"
+      <div v-if="grupoSelecionado" class="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+        <button type="button" @click="grupoSelecionado = null; alvosMarcados = []" class="text-xs font-bold text-emerald-700 hover:underline">← Voltar às avaliações</button>
+        <div>
+          <h3 class="font-bold text-slate-900">{{ grupos.find(g => g.chave === grupoSelecionado)?.titulo }}</h3>
+          <p class="text-xs text-slate-500 mt-1">{{ grupos.find(g => g.chave === grupoSelecionado)?.contextoNome || 'Avaliação institucional' }} · selecione os alvos antes de responder.</p>
+        </div>
+        <label v-for="item in grupos.find(g => g.chave === grupoSelecionado)?.alvos" :key="`${item.alvoId}:${item.contextoId || ''}`"
+          class="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-sm">
+          <span class="flex items-center gap-2">
+            <input v-if="!item.respondido" type="checkbox" :checked="alvosMarcados.includes(`${item.alvoId}:${item.contextoId || ''}`)"
+              @change="alternarAlvo(`${item.alvoId}:${item.contextoId || ''}`)" />
+            <span>{{ item.alvoNome }}<span v-if="item.alvoTipoCodigo" class="text-xs text-slate-500"> · {{ item.alvoTipoCodigo }}</span></span>
+          </span>
+          <span v-if="item.respondido" class="text-xs font-bold text-emerald-700">Respondida</span>
+        </label>
+        <button type="button" :disabled="!alvosMarcados.length || carregando" @click="responderAlvosSelecionados"
+          class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
+          Responder aos alvos selecionados
+        </button>
+      </div>
+      <div v-else v-for="grupo in grupos" :key="grupo.chave"
         class="bg-white border border-slate-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h3 class="font-bold text-slate-900">{{ item.titulo }}</h3>
-          <p v-if="item.descricao" class="text-sm text-slate-600 mt-1">{{ item.descricao }}</p>
-          <p class="text-xs text-slate-500 mt-1">{{ item.modulo }} · {{ item.alvoNome }}</p>
+          <h3 class="font-bold text-slate-900">{{ grupo.titulo }}</h3>
+          <p v-if="grupo.descricao" class="text-sm text-slate-600 mt-1">{{ grupo.descricao }}</p>
+          <p class="text-xs text-slate-500 mt-1">{{ grupo.modulo }}<span v-if="grupo.contextoNome"> · Turma: {{ grupo.contextoNome }}</span></p>
+          <p class="text-xs text-slate-500">{{ grupo.alvos.filter(a => !a.respondido).length }} alvo(s) disponíveis</p>
         </div>
-        <span v-if="item.respondido" class="text-xs font-bold text-emerald-700">Respondida</span>
-        <button v-else type="button" :disabled="carregando" @click="abrir(item)"
+        <button type="button" :disabled="carregando || grupo.alvos.every(a => a.respondido)" @click="selecionarGrupo(grupo.chave)"
           class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
-          Responder
+          Selecionar alvos
         </button>
       </div>
     </template>
 
     <template v-else>
       <div class="bg-white border border-slate-200 rounded-xl p-5">
-        <button type="button" @click="instrumento = null; selecionada = null; erro = ''"
+        <button type="button" @click="voltarASelecao"
           class="text-xs font-bold text-emerald-700 hover:underline">← Voltar às avaliações</button>
         <h3 class="text-lg font-bold text-slate-900 mt-3">{{ instrumento.titulo }}</h3>
         <p v-if="instrumento.descricao" class="text-sm text-slate-600 mt-1">{{ instrumento.descricao }}</p>
+        <p v-if="selecionada" class="text-xs font-semibold text-emerald-800 mt-2">
+          Avaliando: {{ selecionada.alvoNome }}<span v-if="selecionada.contextoNome"> · Turma: {{ selecionada.contextoNome }}</span>
+        </p>
       </div>
       <section v-for="(pagina, pi) in instrumento.paginas || []" :key="pagina.id || pi"
         class="bg-slate-100 border border-slate-200 rounded-xl p-5">

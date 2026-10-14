@@ -32,7 +32,18 @@ const erro = ref<string | null>(null);
 const sucesso = ref<string | null>(null);
 
 const tiposAvaliaveis = computed(() => tipos.value.filter(t => t.podeSerAvaliada));
-const tiposRespondentes = computed(() => tipos.value.filter(t => t.podeResponder));
+const tiposRespondentes = computed(() => {
+  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId)?.codigo;
+  return tipos.value.filter(t => t.podeResponder && ['ALUNO', 'DOCENTE', 'SERVIDOR'].includes(t.codigo)
+    && (contexto === 'DOCENTE' ? t.codigo === 'ALUNO'
+      : contexto === 'TURMA' ? ['ALUNO', 'DOCENTE'].includes(t.codigo) : true));
+});
+const tiposAlvoDisponiveis = computed(() => {
+  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId);
+  return contexto?.codigo === 'TURMA'
+    ? tiposAvaliaveis.value.filter(t => ['DOCENTE', 'ALUNO'].includes(t.codigo))
+    : tiposAvaliaveis.value.filter(t => t.id === form.tipoEntidadeAvaliadaId);
+});
 
 // datas ISO <-> input datetime-local
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -48,6 +59,7 @@ function novoInstrumento(): InstrumentoAv {
   const fim = new Date(Date.now() + 30 * 86400000);
   return {
     tipoEntidadeAvaliadaId: '',
+    tiposEntidadeAlvoIds: [],
     modulo: 'ADPD',
     titulo: '',
     descricao: '',
@@ -66,6 +78,30 @@ function normalizarRespondentes(respondentes?: InstrumentoAv['respondentes']) {
   // O banco persiste o vínculo sem exigência como NULL. O select usa string vazia
   // para essa opção, então convertemos o valor ao carregar o instrumento.
   return (respondentes || []).map(r => ({ ...r, tipoVinculo: r.tipoVinculo ?? '' }));
+}
+
+function normalizarTiposAlvo(i: InstrumentoAv) {
+  return i.tiposEntidadeAlvoIds?.length ? [...i.tiposEntidadeAlvoIds] : (i.tipoEntidadeAvaliadaId ? [i.tipoEntidadeAvaliadaId] : []);
+}
+
+function contextoAlterado() {
+  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId);
+  form.tiposEntidadeAlvoIds = contexto?.codigo === 'TURMA'
+    ? tiposAlvoDisponiveis.value.map(t => t.id)
+    : (form.tipoEntidadeAvaliadaId ? [form.tipoEntidadeAvaliadaId] : []);
+  const tiposPermitidos = new Set(tiposRespondentes.value.map(t => t.id));
+  form.respondentes = form.respondentes.filter(r => tiposPermitidos.has(r.tipoEntidadeId));
+  for (const respondente of form.respondentes) {
+    const vinculos = vinculosParaRespondente(respondente.tipoEntidadeId).map(v => v.valor);
+    if (!vinculos.includes(respondente.tipoVinculo || '')) respondente.tipoVinculo = '';
+  }
+}
+
+function alternarTipoAlvo(tipoId: string) {
+  form.tiposEntidadeAlvoIds ||= [];
+  const idx = form.tiposEntidadeAlvoIds?.indexOf(tipoId) ?? -1;
+  if (idx >= 0) form.tiposEntidadeAlvoIds!.splice(idx, 1);
+  else form.tiposEntidadeAlvoIds!.push(tipoId);
 }
 
 const form = reactive<InstrumentoAv>(novoInstrumento());
@@ -105,7 +141,8 @@ async function editar(id: string) {
   Object.assign(form, res.dados, {
     inicioAplicacao: isoParaLocal(res.dados.inicioAplicacao),
     fimAplicacao: isoParaLocal(res.dados.fimAplicacao),
-    respondentes: normalizarRespondentes(res.dados.respondentes)
+    respondentes: normalizarRespondentes(res.dados.respondentes),
+    tiposEntidadeAlvoIds: normalizarTiposAlvo(res.dados)
   });
   modo.value = 'form';
 }
@@ -114,7 +151,8 @@ function aplicar(i: InstrumentoAv) {
   Object.assign(form, i, {
     inicioAplicacao: isoParaLocal(i.inicioAplicacao),
     fimAplicacao: isoParaLocal(i.fimAplicacao),
-    respondentes: normalizarRespondentes(i.respondentes)
+    respondentes: normalizarRespondentes(i.respondentes),
+    tiposEntidadeAlvoIds: normalizarTiposAlvo(i)
   });
 }
 
@@ -167,6 +205,22 @@ function alternarRespondente(tipoId: string) {
   const idx = form.respondentes.findIndex(r => r.tipoEntidadeId === tipoId);
   if (idx >= 0) form.respondentes.splice(idx, 1);
   else form.respondentes.push({ tipoEntidadeId: tipoId, tipoVinculo: '' });
+}
+
+function vinculosParaRespondente(tipoId: string) {
+  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId)?.codigo;
+  const respondente = tipos.value.find(t => t.id === tipoId)?.codigo;
+  if (contexto === 'DOCENTE')
+    return [{ valor: '', rotulo: 'Aluno matriculado em uma turma do docente' }];
+  if (contexto === 'TURMA') {
+    if (respondente === 'ALUNO') return VINCULOS.filter(v => ['', 'MATRICULADO_EM'].includes(v.valor));
+    if (respondente === 'DOCENTE') return VINCULOS.filter(v => ['', 'LECIONA'].includes(v.valor));
+    return VINCULOS.filter(v => !v.valor);
+  }
+  if (contexto === 'CAMPUS' || contexto === 'SETOR')
+    return VINCULOS.filter(v => ['', 'PERTENCE_A'].includes(v.valor));
+  if (contexto === 'INSTITUICAO') return VINCULOS.filter(v => !v.valor);
+  return VINCULOS;
 }
 
 function aoSalvarConjunto(c: ConjuntoOpcao) {
@@ -226,7 +280,7 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
           <tr v-for="i in instrumentos" :key="i.id" class="border-t border-slate-100 hover:bg-slate-50/60">
             <td class="p-3 font-semibold text-slate-900">{{ i.titulo }}</td>
             <td class="p-3 text-slate-600">{{ i.modulo }} · {{ i.cicloReferencia }}</td>
-            <td class="p-3 text-slate-600">{{ i.tipoEntidadeAvaliadaNome }}</td>
+            <td class="p-3 text-slate-600">{{ i.tiposEntidadeAlvoNomes?.join(', ') || i.tipoEntidadeAvaliadaNome }}</td>
             <td class="p-3 text-slate-600">{{ fmtData(i.inicioAplicacao) }} – {{ fmtData(i.fimAplicacao) }}</td>
             <td class="p-3 text-center">{{ i.totalQuestoes }}</td>
             <td class="p-3"><span :class="['px-2 py-0.5 rounded-full font-bold text-[10px]', corStatus[i.status || 'RASCUNHO']]">{{ i.status }}</span></td>
@@ -291,11 +345,23 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
             <input v-model="form.fimAplicacao" type="datetime-local" :class="input" />
           </label>
           <label class="md:col-span-2 space-y-1.5 text-xs font-bold text-slate-700">O que será avaliado
-            <select v-model="form.tipoEntidadeAvaliadaId" :disabled="somenteLeitura" :class="input">
+            <select v-model="form.tipoEntidadeAvaliadaId" :disabled="somenteLeitura" :class="input" @change="contextoAlterado">
               <option value="" disabled>Selecione…</option>
               <option v-for="t in tiposAvaliaveis" :key="t.id" :value="t.id">{{ t.nome }}</option>
             </select>
           </label>
+          <div v-if="tiposAlvoDisponiveis.length" class="md:col-span-2 space-y-2">
+            <p class="text-xs font-bold text-slate-700">Alvos deste instrumento</p>
+            <p v-if="tipos.find(t => t.id === form.tipoEntidadeAvaliadaId)?.codigo === 'TURMA'" class="text-xs text-slate-500">
+              Ao selecionar uma turma, o respondente poderá avaliar docentes que lecionam nela e alunos vinculados a ela.
+            </p>
+            <div class="flex flex-wrap gap-3">
+              <label v-for="t in tiposAlvoDisponiveis" :key="t.id" class="flex items-center gap-2 text-xs text-slate-700">
+                <input type="checkbox" :checked="form.tiposEntidadeAlvoIds?.includes(t.id)" :disabled="somenteLeitura"
+                  @change="alternarTipoAlvo(t.id)" /> {{ t.nome }}
+              </label>
+            </div>
+          </div>
           <div class="md:col-span-2 flex flex-wrap gap-6">
             <label class="flex items-center gap-2 text-xs font-medium text-slate-800 cursor-pointer">
               <input v-model="form.anonimo" type="checkbox" class="w-4 h-4" /> Respostas anônimas (não vincular o respondente à resposta)
@@ -320,8 +386,10 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
               <input type="checkbox" class="w-4 h-4" :checked="!!respondenteDe(t.id)" :disabled="somenteLeitura" @change="alternarRespondente(t.id)" />
               {{ t.nome }}
             </label>
-            <select v-if="respondenteDe(t.id)" v-model="respondenteDe(t.id)!.tipoVinculo" :disabled="somenteLeitura" :class="input">
-              <option v-for="v in VINCULOS" :key="v.valor" :value="v.valor">{{ v.rotulo }}</option>
+            <p v-if="respondenteDe(t.id) && tipos.find(item => item.id === form.tipoEntidadeAvaliadaId)?.codigo === 'DOCENTE'"
+              class="text-xs text-slate-600">Apenas alunos matriculados em uma turma do docente poderão responder.</p>
+            <select v-else-if="respondenteDe(t.id)" v-model="respondenteDe(t.id)!.tipoVinculo" :disabled="somenteLeitura" :class="input">
+              <option v-for="v in vinculosParaRespondente(t.id)" :key="v.valor" :value="v.valor">{{ v.rotulo }}</option>
             </select>
           </div>
         </div>

@@ -39,8 +39,9 @@ public class AvaliacaoResource {
 
     @GET
     @Path("/conjuntos-opcao")
-    public Response conjuntos() {
-        return executar(() -> Response.ok(service.listarConjuntos()).build());
+    public Response conjuntos(@HeaderParam("Authorization") String token,
+                             @HeaderParam("X-Papel-Ativo") String papel) {
+        return executar(() -> { exigirGestor(token, papel); return Response.ok(service.listarConjuntos()).build(); });
     }
 
     @POST

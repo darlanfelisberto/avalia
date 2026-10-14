@@ -58,6 +58,9 @@ export interface InstrumentoAv {
   id?: string;
   tipoEntidadeAvaliadaId: string;
   tipoEntidadeAvaliadaNome?: string;
+  /** Tipos de entidade avaliados; em instrumentos legados, omitido significa o tipo principal. */
+  tiposEntidadeAlvoIds?: string[];
+  tiposEntidadeAlvoNomes?: string[];
   modulo: ModuloInstrumento;
   titulo: string;
   descricao?: string | null;

@@ -1,6 +1,7 @@
 package br.edu.iffar.avalia.avaliacao.service;
 
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.Instrumento;
+import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcao;
 import br.edu.iffar.avalia.avaliacao.dto.RespostaAvaliacaoDTO.*;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,7 +37,7 @@ public class ResponderAvaliacaoService {
         String codigo = codigoRespondente(usuario);
         List<Disponivel> disponiveis = new ArrayList<>();
         List<Object[]> linhas = em.createNativeQuery("select cast(i.instrumento_avaliativo_id as text), i.titulo, i.descricao, i.modulo, " +
-                        "cast(alvo.entidade_id as text), alvo.rotulo, exists (" +
+                        "cast(alvo.entidade_id as text), alvo.rotulo, ta.codigo, null::text, null::text, exists (" +
                         "select 1 from avaliacao.participacao p join avaliacao.entidade er " +
                         "on er.entidade_id = p.entidade_respondente_id " +
                         "where p.instrumento_avaliativo_id = i.instrumento_avaliativo_id " +
@@ -48,8 +49,21 @@ public class ResponderAvaliacaoService {
                         "join avaliacao.tipo_entidade t on t.tipo_entidade_id = ir.tipo_entidade_respondente_id " +
                         "join avaliacao.instrumento_entidade_avaliada ia on ia.instrumento_avaliativo_id = i.instrumento_avaliativo_id " +
                         "join avaliacao.entidade alvo on alvo.entidade_id = ia.entidade_id " +
+                        "join avaliacao.tipo_entidade ta on ta.tipo_entidade_id = ia.tipo_entidade_alvo_id " +
                         "where i.status = 'PUBLICADO' and now() between i.inicio_aplicacao and i.fim_aplicacao " +
-                        "and t.codigo = ?1 and (ir.tipo_vinculo is null or exists (" +
+                        "and i.tipo_entidade_avaliada_id not in (select tipo_entidade_id from avaliacao.tipo_entidade where codigo in ('TURMA','DOCENTE')) " +
+                        "and (ta.codigo <> 'INSTITUICAO' or alvo.referencia_externa = 'instrumento:' || i.instrumento_avaliativo_id) " +
+                        "and t.codigo = ?1 and (ta.codigo not in ('CAMPUS','SETOR') or exists (" +
+                        "select 1 from academico.unidade alvo_unidade where alvo.referencia_externa = 'academico:unidade:' || alvo_unidade.id " +
+                        "and exists (select 1 from (" +
+                        "select s.id_unidade_lotacao id_unidade from academico.servidor s join academico.pessoa p on p.id = s.id_pessoa where p.cpf_cnpj = ?2 " +
+                        "union select s.id_unidade_exercicio from academico.servidor s join academico.pessoa p on p.id = s.id_pessoa where p.cpf_cnpj = ?2 " +
+                        "union select c.id_unidade from academico.aluno a join academico.pessoa p on p.id = a.id_pessoa " +
+                        "join academico.curso c on c.id = a.id_curso where p.cpf_cnpj = ?2) unidades_usuario " +
+                        "where unidades_usuario.id_unidade is not null and ((ta.codigo = 'SETOR' and unidades_usuario.id_unidade = alvo_unidade.id) " +
+                        "or (ta.codigo = 'CAMPUS' and exists (select 1 from academico.unidade_closure uc " +
+                        "where uc.id_ancestral = alvo_unidade.id and uc.id_descendente = unidades_usuario.id_unidade)))))) " +
+                        "and (ir.tipo_vinculo is null or ta.codigo in ('CAMPUS','SETOR') or exists (" +
                         "select 1 from avaliacao.entidade er join avaliacao.entidade_vinculo v " +
                         "on v.entidade_origem_id = er.entidade_id " +
                         "where er.tipo_entidade_id = t.tipo_entidade_id and er.referencia_externa = ?2 " +
@@ -64,29 +78,154 @@ public class ResponderAvaliacaoService {
             d.modulo = (String) linha[3];
             d.alvoId = (String) linha[4];
             d.alvoNome = (String) linha[5];
-            d.respondido = (Boolean) linha[6];
+            d.alvoTipoCodigo = (String) linha[6];
+            d.respondido = (Boolean) linha[9];
             disponiveis.add(d);
         }
+        disponiveis.addAll(listarAlvosDeTurma(usuario, codigo));
+        if ("ALUNO".equals(codigo)) disponiveis.addAll(listarDocentesDaTurma(usuario));
         return disponiveis;
     }
 
-    private Disponivel elegivel(UsuarioDTO usuario, String instrumentoId, String alvoId) {
+    @SuppressWarnings("unchecked")
+    private List<Disponivel> listarAlvosDeTurma(UsuarioDTO usuario, String codigo) {
+        List<Disponivel> out = new ArrayList<>();
+        List<Object[]> rows = em.createNativeQuery(
+                "select distinct cast(i.instrumento_avaliativo_id as text), i.titulo, i.descricao, i.modulo, " +
+                "cast(alvo.entidade_id as text), alvo.rotulo, ta.codigo, cast(turma.entidade_id as text), turma.rotulo, " +
+                "exists (select 1 from avaliacao.participacao p join avaliacao.entidade er " +
+                "on er.entidade_id = p.entidade_respondente_id where p.instrumento_avaliativo_id = i.instrumento_avaliativo_id " +
+                "and p.entidade_avaliada_id = alvo.entidade_id and p.entidade_contexto_id = turma.entidade_id " +
+                "and er.tipo_entidade_id = ir.tipo_entidade_respondente_id and er.referencia_externa = ?1) " +
+                "from avaliacao.instrumento_avaliativo i " +
+                "join avaliacao.instrumento_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id " +
+                "join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = ir.tipo_entidade_respondente_id " +
+                "join avaliacao.instrumento_tipo_alvo ita on ita.instrumento_avaliativo_id = i.instrumento_avaliativo_id " +
+                "join avaliacao.tipo_entidade ta on ta.tipo_entidade_id = ita.tipo_entidade_alvo_id " +
+                "join avaliacao.instrumento_entidade_avaliada ia on ia.instrumento_avaliativo_id = i.instrumento_avaliativo_id " +
+                "and ia.tipo_entidade_alvo_id = ita.tipo_entidade_alvo_id " +
+                "join avaliacao.entidade alvo on alvo.entidade_id = ia.entidade_id " +
+                "join avaliacao.entidade turma on turma.tipo_entidade_id = i.tipo_entidade_avaliada_id " +
+                "and turma.referencia_externa like 'academico:turma:%' " +
+                "join academico.turma tc on turma.referencia_externa = 'academico:turma:' || tc.id " +
+                "where i.status = 'PUBLICADO' and now() between i.inicio_aplicacao and i.fim_aplicacao " +
+                "and i.ciclo_referencia = tc.ano || '/' || tc.periodo " +
+                "and tr.codigo = ?2 and ta.codigo in ('DOCENTE','ALUNO') " +
+                "and ((?2 = 'ALUNO' and exists (select 1 from academico.matricula m join academico.aluno a on a.id = m.id_aluno " +
+                "join academico.pessoa p on p.id = a.id_pessoa where p.cpf_cnpj = ?1 " +
+                "and m.id_turma = tc.id)) " +
+                "or (?2 = 'DOCENTE' and exists (select 1 from academico.docente_turma dt join academico.servidor sd on sd.id = dt.id_servidor " +
+                "join academico.pessoa p on p.id = sd.id_pessoa where p.cpf_cnpj = ?1 and dt.id_turma = tc.id))) " +
+                "and ((ta.codigo = 'DOCENTE' and exists (select 1 from academico.docente_turma dt2 " +
+                "where dt2.id_turma = tc.id and alvo.referencia_externa = 'academico:docente:' || dt2.id_servidor)) " +
+                "or (ta.codigo = 'ALUNO' and exists (select 1 from academico.matricula m2 " +
+                "where m2.id_turma = tc.id and alvo.referencia_externa = 'academico:aluno:' || m2.id_aluno))) " +
+                "order by i.titulo, turma.rotulo, ta.codigo, alvo.rotulo")
+                .setParameter(1, usuario.getCpf()).setParameter(2, codigo).getResultList();
+        for (Object[] row : rows) {
+            Disponivel d = new Disponivel();
+            d.instrumentoId = (String) row[0];
+            d.titulo = (String) row[1];
+            d.descricao = (String) row[2];
+            d.modulo = (String) row[3];
+            d.alvoId = (String) row[4];
+            d.alvoNome = (String) row[5];
+            d.alvoTipoCodigo = (String) row[6];
+            d.contextoId = (String) row[7];
+            d.contextoNome = (String) row[8];
+            d.respondido = (Boolean) row[9];
+            out.add(d);
+        }
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Disponivel> listarDocentesDaTurma(UsuarioDTO usuario) {
+        List<Disponivel> out = new ArrayList<>();
+        List<Object[]> rows = em.createNativeQuery("""
+                select distinct cast(i.instrumento_avaliativo_id as text), i.titulo, i.descricao, i.modulo,
+                    cast(alvo.entidade_id as text), alvo.rotulo, ta.codigo,
+                    cast(turma.entidade_id as text), turma.rotulo,
+                    exists (
+                        select 1 from avaliacao.participacao p
+                        join avaliacao.entidade er on er.entidade_id = p.entidade_respondente_id
+                        where p.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+                          and p.entidade_avaliada_id = alvo.entidade_id
+                          and p.entidade_contexto_id = turma.entidade_id
+                          and er.tipo_entidade_id = ir.tipo_entidade_respondente_id
+                          and er.referencia_externa = ?1
+                    )
+                from avaliacao.instrumento_avaliativo i
+                join avaliacao.tipo_entidade contexto on contexto.tipo_entidade_id = i.tipo_entidade_avaliada_id
+                join avaliacao.instrumento_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+                join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = ir.tipo_entidade_respondente_id
+                join avaliacao.instrumento_entidade_avaliada ia on ia.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+                join avaliacao.entidade alvo on alvo.entidade_id = ia.entidade_id
+                join avaliacao.tipo_entidade ta on ta.tipo_entidade_id = ia.tipo_entidade_alvo_id
+                join academico.docente_turma dt on alvo.referencia_externa = 'academico:docente:' || dt.id_servidor
+                join academico.turma tc on tc.id = dt.id_turma
+                join avaliacao.entidade turma on turma.referencia_externa = 'academico:turma:' || tc.id
+                join avaliacao.tipo_entidade tt on tt.tipo_entidade_id = turma.tipo_entidade_id and tt.codigo = 'TURMA'
+                where i.status = 'PUBLICADO'
+                  and now() between i.inicio_aplicacao and i.fim_aplicacao
+                  and contexto.codigo = 'DOCENTE' and ta.codigo = 'DOCENTE' and tr.codigo = 'ALUNO'
+                  and i.ciclo_referencia = tc.ano || '/' || tc.periodo
+                  and exists (
+                      select 1 from academico.matricula m
+                      join academico.aluno a on a.id = m.id_aluno
+                      join academico.pessoa p on p.id = a.id_pessoa
+                      where m.id_turma = tc.id and p.cpf_cnpj = ?1
+                  )
+                order by i.titulo, turma.rotulo, alvo.rotulo
+                """)
+                .setParameter(1, usuario.getCpf()).getResultList();
+        for (Object[] row : rows) {
+            Disponivel d = new Disponivel();
+            d.instrumentoId = (String) row[0];
+            d.titulo = (String) row[1];
+            d.descricao = (String) row[2];
+            d.modulo = (String) row[3];
+            d.alvoId = (String) row[4];
+            d.alvoNome = (String) row[5];
+            d.alvoTipoCodigo = (String) row[6];
+            d.contextoId = (String) row[7];
+            d.contextoNome = (String) row[8];
+            d.respondido = (Boolean) row[9];
+            out.add(d);
+        }
+        return out;
+    }
+
+    private Disponivel elegivel(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
         UUID.fromString(instrumentoId);
         UUID.fromString(alvoId);
         return listar(usuario).stream()
-                .filter(d -> d.instrumentoId.equals(instrumentoId) && d.alvoId.equals(alvoId))
+                .filter(d -> d.instrumentoId.equals(instrumentoId) && d.alvoId.equals(alvoId)
+                        && Objects.equals(d.contextoId, contextoId))
                 .findFirst().orElseThrow(() -> new SecurityException("Avaliação indisponível para este perfil."));
     }
 
-    public Instrumento buscar(UsuarioDTO usuario, String instrumentoId, String alvoId) {
-        elegivel(usuario, instrumentoId, alvoId);
+    public Instrumento buscar(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
+        elegivel(usuario, instrumentoId, alvoId, contextoId);
         return instrumentos.buscarInstrumento(instrumentoId);
+    }
+
+    public List<ConjuntoOpcao> listarConjuntos(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
+        Instrumento instrumento = buscar(usuario, instrumentoId, alvoId, contextoId);
+        Set<String> ids = new HashSet<>();
+        instrumento.sessoes.forEach(s -> s.questoes.forEach(q -> {
+            if (q.conjuntoOpcaoId != null) ids.add(q.conjuntoOpcaoId);
+        }));
+        return instrumentos.listarConjuntos().stream()
+                .filter(c -> ids.contains(c.id))
+                .peek(c -> c.opcoes.forEach(o -> o.correta = false))
+                .toList();
     }
 
     @SuppressWarnings("unchecked")
     public void enviar(UsuarioDTO usuario, String instrumentoId, Envio envio) {
         if (envio == null || envio.alvoId == null) throw new IllegalArgumentException("Selecione a avaliação.");
-        Disponivel disponivel = elegivel(usuario, instrumentoId, envio.alvoId);
+        Disponivel disponivel = elegivel(usuario, instrumentoId, envio.alvoId, envio.contextoId);
         if (disponivel.respondido) throw new IllegalArgumentException("Você já respondeu esta avaliação.");
         if (envio.respostas == null) throw new IllegalArgumentException("Respostas não informadas.");
 
@@ -145,10 +284,10 @@ public class ResponderAvaliacaoService {
                 .setParameter(3, tipoCodigo).getSingleResult();
         String respostaId = UUID.randomUUID().toString();
         em.createNativeQuery("insert into avaliacao.resposta_instrumento " +
-                        "(resposta_instrumento_id, instrumento_avaliativo_id, entidade_avaliada_id, entidade_respondente_id) " +
-                        "values (cast(?1 as uuid), cast(?2 as uuid), cast(?3 as uuid), cast(?4 as uuid))")
+                        "(resposta_instrumento_id, instrumento_avaliativo_id, entidade_avaliada_id, entidade_respondente_id, entidade_contexto_id) " +
+                        "values (cast(?1 as uuid), cast(?2 as uuid), cast(?3 as uuid), cast(?4 as uuid), cast(?5 as uuid))")
                 .setParameter(1, respostaId).setParameter(2, instrumentoId)
-                .setParameter(3, envio.alvoId).setParameter(4, respondenteId).executeUpdate();
+                .setParameter(3, envio.alvoId).setParameter(4, respondenteId).setParameter(5, envio.contextoId).executeUpdate();
         for (Object[] questao : questoes) {
             Item item = respostas.get((String) questao[0]);
             if (item == null) continue;
@@ -161,10 +300,10 @@ public class ResponderAvaliacaoService {
             }
         }
         em.createNativeQuery("insert into avaliacao.participacao " +
-                        "(instrumento_avaliativo_id, entidade_avaliada_id, entidade_respondente_id) " +
-                        "values (cast(?1 as uuid), cast(?2 as uuid), cast(?3 as uuid))")
+                        "(instrumento_avaliativo_id, entidade_avaliada_id, entidade_respondente_id, entidade_contexto_id) " +
+                        "values (cast(?1 as uuid), cast(?2 as uuid), cast(?3 as uuid), cast(?4 as uuid))")
                 .setParameter(1, instrumentoId).setParameter(2, envio.alvoId)
-                .setParameter(3, respondenteId).executeUpdate();
+                .setParameter(3, respondenteId).setParameter(4, envio.contextoId).executeUpdate();
         em.createNativeQuery("update avaliacao.resposta_instrumento set status = 'ENVIADA', " +
                         "data_envio = current_date, entidade_respondente_id = " +
                         "case when (select anonimo from avaliacao.instrumento_avaliativo " +
