@@ -3,6 +3,7 @@ package br.edu.iffar.avalia.core.resource;
 import br.edu.iffar.avalia.core.model.AlvoAvaliado;
 import br.edu.iffar.avalia.core.model.PublicoAvaliador;
 import br.edu.iffar.avalia.core.model.TipoAlvoAvaliado;
+import br.edu.iffar.avalia.core.model.TipoPublico;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -229,5 +230,25 @@ public class CatalogoResource {
         }
         em.merge(publico);
         return Response.ok(publico).build();
+    }
+
+    // --- TIPOS DE PÚBLICO / ALVO AVALIADO ---
+
+    @GET
+    @Path("/tipos-publico")
+    public List<TipoPublico> listarTiposPublico() {
+        return em.createQuery("SELECT tp FROM TipoPublico tp WHERE tp.ativo = true ORDER BY tp.ordem ASC, tp.codigo ASC", TipoPublico.class)
+                .getResultList();
+    }
+
+    @POST
+    @Path("/tipos-publico")
+    @Transactional
+    public Response salvarTipoPublico(TipoPublico tipoPublico) {
+        if (tipoPublico.getCreatedAt() == null) {
+            tipoPublico.setCreatedAt(OffsetDateTime.now());
+        }
+        em.merge(tipoPublico);
+        return Response.ok(tipoPublico).build();
     }
 }

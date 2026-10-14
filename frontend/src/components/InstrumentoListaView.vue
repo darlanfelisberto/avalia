@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import type { InstrumentoAvaliativo, AlvoAvaliado } from '../types/avaliacao';
+import type { InstrumentoAvaliativo, AlvoAvaliado, TipoPublico } from '../types/avaliacao';
 
 const props = defineProps<{
   instrumentos: InstrumentoAvaliativo[];
   carregando: boolean;
   catalogoAlvos: AlvoAvaliado[];
+  tiposPublico?: TipoPublico[];
 }>();
 
 const emit = defineEmits<{
@@ -20,6 +21,12 @@ const paginaAtual = ref(1);
 const itensPorPagina = ref(6);
 
 function rotuloPorTipo(tipo?: string) {
+  if (tipo && props.tiposPublico && props.tiposPublico.length > 0) {
+    const encontrado = props.tiposPublico.find(t => t.codigo === tipo);
+    if (encontrado) {
+      return { singular: encontrado.singular, plural: encontrado.plural, icone: encontrado.icone };
+    }
+  }
   switch (tipo) {
     case 'CAMPUS': return { singular: 'Campus', plural: 'Campi', icone: '📍' };
     case 'DOCENTE': return { singular: 'Docente', plural: 'Docentes', icone: '👨‍🏫' };

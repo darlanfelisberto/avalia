@@ -1,12 +1,13 @@
-<script setup lang="ts">
+<script setup="" lang="ts">
 import { ref, reactive, watch, onMounted, computed } from 'vue';
 import type {
   InstrumentoAvaliativo,
   GrupoQuestoes,
   AlvoAvaliado,
-  TipoPublicoAvaliador
+  TipoPublicoAvaliador,
+  TipoPublico
 } from '../types/avaliacao';
-import { salvarInstrumentoApi, listarAlvosApi, listarInstrumentosApi } from '../services/api';
+import { salvarInstrumentoApi, listarAlvosApi, listarInstrumentosApi, listarTiposPublicoApi } from '../services/api';
 import { resetarInstrumentoParaPadrao, carregarUsuarioAtivo } from '../services/storage';
 import InstrumentoGruposEditor from './InstrumentoGruposEditor.vue';
 import InstrumentoListaView from './InstrumentoListaView.vue';
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 const modoVisualizacao = ref<'lista' | 'formulario'>('lista');
 
 const catalogoAlvos = ref<AlvoAvaliado[]>([]);
+const tiposPublico = ref<TipoPublico[]>([]);
 const meusQuestionarios = ref<InstrumentoAvaliativo[]>([]);
 const carregandoQuestionarios = ref(false);
 const usuarioLogado = ref(carregarUsuarioAtivo());
@@ -38,6 +40,7 @@ async function atualizarListagem() {
 
 onMounted(async () => {
   catalogoAlvos.value = await listarAlvosApi();
+  tiposPublico.value = await listarTiposPublicoApi();
   await atualizarListagem();
 });
 
@@ -54,32 +57,8 @@ function paraDatetimeLocal(dataStr?: string, horaPadrao: string = '08:00'): stri
 
 function normalizarInstrumento(inst: InstrumentoAvaliativo): InstrumentoAvaliativo {
   const copia = JSON.parse(JSON.stringify(inst || {}));
-  // if (!copia.tipoAlvo) copia.tipoAlvo = 'DOCENTE';
-  // if (!copia.tipoPublico) copia.tipoPublico = 'DISCENTES';
-  // if (!copia.publicosPermitidos || copia.publicosPermitidos.length === 0) {
-  //   copia.publicosPermitidos = [copia.tipoPublico || 'DISCENTES'];
-  // }
-  // if (copia.restringirVinculoCampus === undefined) {
-  //   copia.restringirVinculoCampus = true;
-  // }
-  // if (!copia.alvosEspecificosIds) {
-  //   copia.alvosEspecificosIds = copia.alvoEspecificoId ? [copia.alvoEspecificoId] : [];
-  // }
-  // if (!copia.criadorId) copia.criadorId = usuarioLogado.value?.id || 'usr-cpa-cain';
-  // if (!copia.criadorNome) copia.criadorNome = usuarioLogado.value?.nome || 'Comissão Própria de Avaliação (CPA)';
-  // if (!copia.gruposAutoavaliacaoDiscente) copia.gruposAutoavaliacaoDiscente = [];
-  // if (!copia.gruposAvaliacaoDocente) copia.gruposAvaliacaoDocente = [];
-  // if (!copia.componentesMatriculados) copia.componentesMatriculados = [];
-
   copia.dataInicio = paraDatetimeLocal(copia.dataInicio,'00:00');
-  
-
-  // if (copia.dataTermino) {
-    copia.dataTermino = paraDatetimeLocal(copia.dataTermino, '23:59');
-  // } else {
-  //   const daqui30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
-  //   copia.dataTermino = `${daqui30Dias}T23:59`;
-  // }
+  copia.dataTermino = paraDatetimeLocal(copia.dataTermino, '23:59');
 
   return copia;
 }
@@ -103,16 +82,16 @@ const rotuloTipoAlvo = computed(() => {
 });
 
 function rotuloPorTipo(tipo?: string) {
-  switch (tipo) {
-    case 'CAMPUS': return { singular: 'Campus', plural: 'Campi', icone: '📍', descricao: 'Avaliação da infraestrutura, gestão e serviços da unidade.' };
-    case 'DOCENTE': return { singular: 'Docente', plural: 'Docentes', icone: '👨‍🏫', descricao: 'Avaliação da prática didático-pedagógica e relação dialógica.' };
-    case 'SERVIDOR': return { singular: 'Servidor / TAE', plural: 'Servidores / TAEs', icone: '💼', descricao: 'Avaliação de desempenho ou atuação de servidor técnico-administrativo.' };
-    case 'TURMA': return { singular: 'Turma', plural: 'Turmas', icone: '👥', descricao: 'Avaliação de turma e componente curricular específico.' };
-    case 'CURSO': return { singular: 'Curso', plural: 'Cursos', icone: '📚', descricao: 'Avaliação do projeto pedagógico e infraestrutura do curso.' };
-    case 'SETOR': return { singular: 'Setor', plural: 'Setores', icone: '🛠️', descricao: 'Avaliação de atendimento e eficiência de setor administrativo.' };
-    case 'INSTITUICAO': return { singular: 'Instituição', plural: 'Instituições', icone: '🏛️', descricao: 'Avaliação global institucional e PDI multicampi.' };
-    case 'AUTOAVALIACAO': return { singular: 'Estudante', plural: 'Estudantes', icone: '👤', descricao: 'Autoavaliação discente individual.' };
-    default: return { singular: 'Alvo', plural: 'Alvos', icone: '🎯', descricao: 'Avaliação específica.' };
+  if (tipo && tiposPublico.value.length > 0) {
+    const encontrado = tiposPublico.value.find(t => t.codigo === tipo);
+    if (encontrado) {
+      return {
+        singular: encontrado.singular,
+        plural: encontrado.plural,
+        icone: encontrado.icone,
+        descricao: encontrado.descricao || ''
+      };
+    }
   }
 }
 
@@ -333,6 +312,7 @@ function getGruposAtuais(): GrupoQuestoes[] {
       :instrumentos="meusQuestionarios"
       :carregando="carregandoQuestionarios"
       :catalogoAlvos="catalogoAlvos"
+      :tiposPublico="tiposPublico"
       @novo="iniciarNovoQuestionario"
       @editar="editarQuestionario"
     />
@@ -515,23 +495,18 @@ function getGruposAtuais(): GrupoQuestoes[] {
             @change="aoMudarTipoAlvo"
             class="w-full text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 font-semibold text-slate-800"
           >
-            <option value="CAMPUS">📍 Campus / Unidade de Ensino Específica (Avaliação do Campus)</option>
-            <option value="DOCENTE">👨‍🏫 Docente (por Componente Curricular / Turma)</option>
-            <option value="SERVIDOR">💼 Servidor Técnico-Administrativo (TAE / Atendimento)</option>
-            <option value="INSTITUICAO">🏛️ Instituição Geral (PDI, Infraestrutura Global)</option>
-            <option value="SETOR">🛠️ Setor Administrativo / Atendimento (TI, Biblioteca, etc.)</option>
-            <option value="CURSO">📚 Curso de Graduação / Técnico</option>
-            <option value="TURMA">👥 Turma / Disciplina Específica</option>
-            <option value="AUTOAVALIACAO">👤 Próprio Estudante (Autoavaliação Discente)</option>
+            <template v-if="tiposPublico.length > 0">
+              <option v-for="tp in tiposPublico" :key="tp.codigo" :value="tp.codigo">
+                {{ tp.icone }} {{ tp.singular }} {{ tp.descricao ? `— ${tp.descricao}` : '' }}
+              </option>
+            </template>
           </select>
           <p class="text-[11px] text-slate-400">Define o objeto de julgamento e a agregação dos relatórios.</p>
         </div>
 
         <!-- PAINEL DINÂMICO GENÉRICO DE CONFIGURAÇÃO DE ALVO E ESCOPO -->
-        <div
-          v-if="['CAMPUS', 'DOCENTE', 'SERVIDOR', 'TURMA', 'CURSO', 'SETOR'].includes(form.tipoAlvo)"
-          class="space-y-4 md:col-span-2 p-4 md:p-5 bg-purple-50/60 border border-purple-200 rounded-2xl"
-        >
+        <div v-if="['CAMPUS', 'DOCENTE', 'SERVIDOR', 'TURMA', 'CURSO', 'SETOR'].includes(form.tipoAlvo)"
+          class="space-y-4 md:col-span-2 p-4 md:p-5 bg-purple-50/60 border border-purple-200 rounded-2xl" >
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-purple-100 pb-3">
             <div>
               <div class="flex items-center gap-1.5 text-xs font-bold text-purple-950 uppercase tracking-wide">

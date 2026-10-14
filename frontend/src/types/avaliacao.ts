@@ -44,6 +44,18 @@ export type TipoAlvoAvaliado = 'INSTITUICAO' | 'CAMPUS' | 'SETOR' | 'DOCENTE' | 
 
 export type TipoPublicoAvaliador = 'DISCENTES' | 'DOCENTES' | 'TAES' | 'EGRESSOS' | 'SOCIEDADE_CIVIL' | 'TODOS';
 
+export interface TipoPublico {
+  tipoPublicoId?: string;
+  codigo: string;
+  singular: string;
+  plural: string;
+  icone: string;
+  descricao?: string;
+  ordem?: number;
+  ativo?: boolean;
+  createdAt?: string;
+}
+
 export interface AlvoAvaliado {
   id: string;
   alvoAvaliadoId?: string;
