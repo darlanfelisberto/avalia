@@ -4,10 +4,9 @@ import type {
   InstrumentoAvaliativo,
   GrupoQuestoes,
   AlvoAvaliado,
-  PublicoAvaliador,
   TipoPublicoAvaliador
 } from '../types/avaliacao';
-import { salvarInstrumentoApi, listarAlvosApi, listarPublicosApi, listarInstrumentosApi } from '../services/api';
+import { salvarInstrumentoApi, listarAlvosApi, listarInstrumentosApi } from '../services/api';
 import { resetarInstrumentoParaPadrao, carregarUsuarioAtivo } from '../services/storage';
 import InstrumentoGruposEditor from './InstrumentoGruposEditor.vue';
 import InstrumentoListaView from './InstrumentoListaView.vue';
@@ -25,11 +24,9 @@ const emit = defineEmits<{
 const modoVisualizacao = ref<'lista' | 'formulario'>('lista');
 
 const catalogoAlvos = ref<AlvoAvaliado[]>([]);
-const catalogoPublicos = ref<PublicoAvaliador[]>([]);
 const meusQuestionarios = ref<InstrumentoAvaliativo[]>([]);
 const carregandoQuestionarios = ref(false);
 const usuarioLogado = ref(carregarUsuarioAtivo());
-
 
 async function atualizarListagem() {
   carregandoQuestionarios.value = true;
@@ -39,10 +36,8 @@ async function atualizarListagem() {
   carregandoQuestionarios.value = false;
 }
 
-
 onMounted(async () => {
   catalogoAlvos.value = await listarAlvosApi();
-  catalogoPublicos.value = await listarPublicosApi();
   await atualizarListagem();
 });
 
@@ -54,55 +49,37 @@ function paraDatetimeLocal(dataStr?: string, horaPadrao: string = '08:00'): stri
     const horaParte = (partes[1] || '').substring(0, 5);
     return `${dataParte}T${horaParte || horaPadrao}`;
   }
-  if (dataStr.length >= 10 && dataStr.includes('-')) {
-    return `${dataStr.substring(0, 10)}T${horaPadrao}`;
-  }
-  try {
-    const d = new Date(dataStr);
-    if (!isNaN(d.getTime())) {
-      const ano = d.getFullYear();
-      const mes = String(d.getMonth() + 1).padStart(2, '0');
-      const dia = String(d.getDate()).padStart(2, '0');
-      const hora = String(d.getHours()).padStart(2, '0');
-      const min = String(d.getMinutes()).padStart(2, '0');
-      return `${ano}-${mes}-${dia}T${hora}:${min}`;
-    }
-  } catch {}
   return dataStr;
 }
 
 function normalizarInstrumento(inst: InstrumentoAvaliativo): InstrumentoAvaliativo {
   const copia = JSON.parse(JSON.stringify(inst || {}));
-  if (!copia.tipoAlvo) copia.tipoAlvo = 'DOCENTE';
-  if (!copia.tipoPublico) copia.tipoPublico = 'DISCENTES';
-  if (!copia.publicosPermitidos || copia.publicosPermitidos.length === 0) {
-    copia.publicosPermitidos = [copia.tipoPublico || 'DISCENTES'];
-  }
-  if (copia.restringirVinculoCampus === undefined) {
-    copia.restringirVinculoCampus = true;
-  }
-  if (!copia.alvosEspecificosIds) {
-    copia.alvosEspecificosIds = copia.alvoEspecificoId ? [copia.alvoEspecificoId] : [];
-  }
-  if (!copia.criadorId) copia.criadorId = usuarioLogado.value?.id || 'usr-cpa-cain';
-  if (!copia.criadorNome) copia.criadorNome = usuarioLogado.value?.nome || 'Comissão Própria de Avaliação (CPA)';
-  if (!copia.gruposAutoavaliacaoDiscente) copia.gruposAutoavaliacaoDiscente = [];
-  if (!copia.gruposAvaliacaoDocente) copia.gruposAvaliacaoDocente = [];
-  if (!copia.componentesMatriculados) copia.componentesMatriculados = [];
+  // if (!copia.tipoAlvo) copia.tipoAlvo = 'DOCENTE';
+  // if (!copia.tipoPublico) copia.tipoPublico = 'DISCENTES';
+  // if (!copia.publicosPermitidos || copia.publicosPermitidos.length === 0) {
+  //   copia.publicosPermitidos = [copia.tipoPublico || 'DISCENTES'];
+  // }
+  // if (copia.restringirVinculoCampus === undefined) {
+  //   copia.restringirVinculoCampus = true;
+  // }
+  // if (!copia.alvosEspecificosIds) {
+  //   copia.alvosEspecificosIds = copia.alvoEspecificoId ? [copia.alvoEspecificoId] : [];
+  // }
+  // if (!copia.criadorId) copia.criadorId = usuarioLogado.value?.id || 'usr-cpa-cain';
+  // if (!copia.criadorNome) copia.criadorNome = usuarioLogado.value?.nome || 'Comissão Própria de Avaliação (CPA)';
+  // if (!copia.gruposAutoavaliacaoDiscente) copia.gruposAutoavaliacaoDiscente = [];
+  // if (!copia.gruposAvaliacaoDocente) copia.gruposAvaliacaoDocente = [];
+  // if (!copia.componentesMatriculados) copia.componentesMatriculados = [];
 
-  if (copia.dataInicio) {
-    copia.dataInicio = paraDatetimeLocal(copia.dataInicio, '08:00');
-  } else {
-    const hoje = new Date().toISOString().substring(0, 10);
-    copia.dataInicio = `${hoje}T08:00`;
-  }
+  copia.dataInicio = paraDatetimeLocal(copia.dataInicio,'00:00');
+  
 
-  if (copia.dataTermino) {
+  // if (copia.dataTermino) {
     copia.dataTermino = paraDatetimeLocal(copia.dataTermino, '23:59');
-  } else {
-    const daqui30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
-    copia.dataTermino = `${daqui30Dias}T23:59`;
-  }
+  // } else {
+  //   const daqui30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+  //   copia.dataTermino = `${daqui30Dias}T23:59`;
+  // }
 
   return copia;
 }
@@ -119,7 +96,6 @@ watch(
   },
   { deep: true }
 );
-
 const termoBuscaAlvo = ref('');
 
 const rotuloTipoAlvo = computed(() => {
@@ -267,10 +243,6 @@ function aoMudarTipoAlvo() {
     form.restringirVinculoCampus = false;
   }
 }
-
-
-
-
 
 function iniciarNovoQuestionario() {
   const u = carregarUsuarioAtivo();
@@ -658,7 +630,10 @@ function getGruposAtuais(): GrupoQuestoes[] {
 
             <!-- Grid de cartões de seleção rápida -->
             <div class="max-h-52 overflow-y-auto space-y-1.5 p-2 bg-white/70 border border-purple-200 rounded-xl">
-              <div v-if="instanciasAlvoFiltradas.length === 0" class="text-xs text-center py-4 text-purple-400">
+              <div v-if="carregandoAlvos" class="text-xs text-center py-4 text-purple-600 font-semibold animate-pulse">
+                Carregando alvos disponíveis...
+              </div>
+              <div v-else-if="instanciasAlvoFiltradas.length === 0" class="text-xs text-center py-4 text-purple-400">
                 Nenhum {{ rotuloTipoAlvo.singular.toLowerCase() }} encontrado com o filtro aplicado.
               </div>
               <label
