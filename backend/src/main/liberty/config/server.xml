@@ -53,7 +53,7 @@
     <!-- DataSource gerenciado do SIGAA (Base Remota para Integração - Contém schemas comum, rh, ensino e public) -->
     <dataSource id="SigaaDataSource" jndiName="jdbc/sigaaDS">
         <jdbcDriver libraryRef="postgresqlLib"/>
-        <properties.postgresql serverName="${AVALIA_DB_SIG_IP}" portNumber="${AVALIA_DB_SIG_PORT}"
+        <properties.postgresql serverName="${AVALI_DB_SIG_IP}" portNumber="${AVALIA_DB_SIG_PORT}"
                                 databaseName="${AVALIA_DB_SIG_DATABASE}"
                                 user="${AVALIA_DB_SIG_USER}" password="${AVALIA_DB_SIG_PASSWORD}"/>
     </dataSource>

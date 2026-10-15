@@ -3,6 +3,7 @@ package br.edu.iffar.avalia.avaliacao.dao;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import java.util.List;
 
 /** Consultas de elegibilidade que cruzam o schema avaliacao com os dados acadêmicos. */
@@ -12,40 +13,82 @@ public class ResponderAvaliacaoDao {
     private EntityManager em;
 
     @SuppressWarnings("unchecked")
+    public List<Object[]> listarTiposUsuario() {
+        return em.createNativeQuery("""
+            select cpf_cnpj, codigo, tipo
+            from avaliacao.mv_tipos_usuario
+            order by cpf_cnpj, tipo
+            """).getResultList();
+    }
+
+    @Transactional
+    public void atualizarTiposUsuario() {
+        em.createNativeQuery("refresh materialized view avaliacao.mv_tipos_usuario").executeUpdate();
+    }
+
+    @SuppressWarnings("unchecked")
     public List<Object[]> listarGerais(String codigo, String cpf) {
         return em.createNativeQuery("""
+            with pessoa_usuario as (
+                select id from academico.pessoa where cpf_cnpj = ?2
+            ), unidades_usuario as (
+                select unidade.id_unidade
+                from academico.servidor s
+                join pessoa_usuario pu on pu.id = s.id_pessoa
+                cross join lateral unnest(array[s.id_unidade_lotacao, s.id_unidade_exercicio]) as unidade(id_unidade)
+                union all
+                select c.id_unidade
+                from academico.aluno a
+                join pessoa_usuario pu on pu.id = a.id_pessoa
+                join academico.curso c on c.id = a.id_curso
+            )
             select cast(i.instrumento_avaliativo_id as text), i.titulo, i.descricao,
-            cast(alvo.entidade_id as text), alvo.rotulo, ta.codigo, null::text, null::text, exists (
-            select 1 from avaliacao.participacao p join avaliacao.entidade er
-            on er.entidade_id = p.entidade_respondente_id
-            where p.instrumento_avaliativo_id = i.instrumento_avaliativo_id
-            and p.entidade_avaliada_id = alvo.entidade_id
-            and er.tipo_entidade_id = ir.tipo_entidade_respondente_id
-            and er.referencia_externa = ?2)
+                   cast(alvo.entidade_id as text), alvo.rotulo, ta.codigo,
+                   null::text, null::text,
+                   exists (
+                       select 1
+                       from avaliacao.participacao p
+                       join avaliacao.entidade er on er.entidade_id = p.entidade_respondente_id
+                       where p.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+                         and p.entidade_avaliada_id = alvo.entidade_id
+                         and er.tipo_entidade_id = ir.tipo_entidade_respondente_id
+                         and er.referencia_externa = ?2
+                   )
             from avaliacao.instrumento_avaliativo i
             join avaliacao.instrumento_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
             join avaliacao.tipo_entidade t on t.tipo_entidade_id = ir.tipo_entidade_respondente_id
             join avaliacao.instrumento_entidade_avaliada ia on ia.instrumento_avaliativo_id = i.instrumento_avaliativo_id
             join avaliacao.entidade alvo on alvo.entidade_id = ia.entidade_id
             join avaliacao.tipo_entidade ta on ta.tipo_entidade_id = ia.tipo_entidade_alvo_id
-            where i.status = 'PUBLICADO' and now() between i.inicio_aplicacao and i.fim_aplicacao
-            and i.tipo_entidade_avaliada_id not in (select tipo_entidade_id from avaliacao.tipo_entidade where codigo in ('TURMA','DOCENTE'))
-            and (ta.codigo <> 'INSTITUICAO' or alvo.referencia_externa = 'instrumento:' || i.instrumento_avaliativo_id)
-            and t.codigo = ?1 and (ta.codigo not in ('CAMPUS','SETOR') or exists (
-            select 1 from academico.unidade alvo_unidade where alvo.referencia_externa = 'academico:unidade:' || alvo_unidade.id
-            and exists (select 1 from (
-            select s.id_unidade_lotacao id_unidade from academico.servidor s join academico.pessoa p on p.id = s.id_pessoa where p.cpf_cnpj = ?2
-            union select s.id_unidade_exercicio from academico.servidor s join academico.pessoa p on p.id = s.id_pessoa where p.cpf_cnpj = ?2
-            union select c.id_unidade from academico.aluno a join academico.pessoa p on p.id = a.id_pessoa
-            join academico.curso c on c.id = a.id_curso where p.cpf_cnpj = ?2) unidades_usuario
-            where unidades_usuario.id_unidade is not null and ((ta.codigo = 'SETOR' and unidades_usuario.id_unidade = alvo_unidade.id)
-            or (ta.codigo = 'CAMPUS' and exists (select 1 from academico.unidade_closure uc
-            where uc.id_ancestral = alvo_unidade.id and uc.id_descendente = unidades_usuario.id_unidade))))))
-            and (ir.tipo_vinculo is null or ta.codigo in ('CAMPUS','SETOR') or exists (
-            select 1 from avaliacao.entidade er join avaliacao.entidade_vinculo v
-            on v.entidade_origem_id = er.entidade_id
-            where er.tipo_entidade_id = t.tipo_entidade_id and er.referencia_externa = ?2
-            and v.entidade_destino_id = alvo.entidade_id and v.tipo_vinculo = ir.tipo_vinculo))
+            where i.status = 'PUBLICADO'
+              and now() between i.inicio_aplicacao and i.fim_aplicacao
+              and i.tipo_entidade_avaliada_id not in (
+                  select tipo_entidade_id from avaliacao.tipo_entidade where codigo in ('TURMA', 'DOCENTE')
+              )
+              and t.codigo = ?1
+              and (ta.codigo <> 'INSTITUICAO' or alvo.referencia_externa = 'instrumento:' || i.instrumento_avaliativo_id)
+              and (ta.codigo not in ('CAMPUS', 'SETOR') or exists (
+                  select 1
+                  from academico.unidade alvo_unidade
+                  join unidades_usuario uu on (
+                      (ta.codigo = 'SETOR' and uu.id_unidade = alvo_unidade.id)
+                      or (ta.codigo = 'CAMPUS' and exists (
+                          select 1 from academico.unidade_closure uc
+                          where uc.id_ancestral = alvo_unidade.id
+                            and uc.id_descendente = uu.id_unidade
+                      ))
+                  )
+                  where alvo.referencia_externa = 'academico:unidade:' || alvo_unidade.id
+              ))
+              and (ir.tipo_vinculo is null or ta.codigo in ('CAMPUS', 'SETOR') or exists (
+                  select 1
+                  from avaliacao.entidade er
+                  join avaliacao.entidade_vinculo v on v.entidade_origem_id = er.entidade_id
+                  where er.tipo_entidade_id = t.tipo_entidade_id
+                    and er.referencia_externa = ?2
+                    and v.entidade_destino_id = alvo.entidade_id
+                    and v.tipo_vinculo = ir.tipo_vinculo
+              ))
             order by i.titulo, alvo.rotulo
             """)
                 .setParameter(1, codigo).setParameter(2, cpf).getResultList();

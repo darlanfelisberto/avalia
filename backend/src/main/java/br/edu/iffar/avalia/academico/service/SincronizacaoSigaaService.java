@@ -1,6 +1,7 @@
 package br.edu.iffar.avalia.academico.service;
 
 import br.edu.iffar.avalia.avaliacao.service.AvaliacaoService;
+import br.edu.iffar.avalia.avaliacao.dao.ResponderAvaliacaoDao;
 import br.edu.iffar.avalia.academico.dao.SincronizacaoSigaaDao;
 import br.edu.iffar.avalia.academico.dto.SincronizacaoRequestDTO;
 import br.edu.iffar.avalia.academico.dto.SincronizacaoStatusDTO;
@@ -29,6 +30,9 @@ public class SincronizacaoSigaaService {
 
     @Inject
     private AvaliacaoService avaliacaoService;
+
+    @Inject
+    private ResponderAvaliacaoDao respostaDao;
 
     private final AtomicBoolean emExecucao = new AtomicBoolean(false);
 
@@ -71,6 +75,7 @@ public class SincronizacaoSigaaService {
             try {
                 LOGGER.info(">>> Iniciando sincronização SIGAA -> AVALIA (Ano: " + ano + ", Período: " + periodo + ") <<<");
                 dao.sincronizar(ano, periodo, syncEstrutura, syncTurmas);
+                respostaDao.atualizarTiposUsuario();
                 avaliacaoService.sincronizarEntidadesAcademicas();
 
                 LOGGER.info(">>> Sincronização SIGAA -> AVALIA concluída com sucesso! <<<");

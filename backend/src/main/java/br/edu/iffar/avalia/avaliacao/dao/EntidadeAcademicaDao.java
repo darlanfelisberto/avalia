@@ -44,24 +44,48 @@ public class EntidadeAcademicaDao {
             """).executeUpdate();
         dao.nativeQuery("""
             insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo)
-            select te.tipo_entidade_id, p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome)
-            from academico.aluno a join academico.pessoa p on p.id = a.id_pessoa
-            cross join avaliacao.tipo_entidade te where te.codigo = 'ALUNO' and p.cpf_cnpj is not null
+            select te.tipo_entidade_id, usuario.cpf_cnpj, usuario.rotulo
+            from (
+                select distinct on (p.cpf_cnpj) p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome) as rotulo
+                from academico.pessoa p
+                where p.cpf_cnpj is not null
+                  and exists (select 1 from academico.aluno a where a.id_pessoa = p.id)
+                order by p.cpf_cnpj, p.id
+            ) usuario
+            cross join avaliacao.tipo_entidade te
+            where te.codigo = 'ALUNO'
             on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true
             """).executeUpdate();
         dao.nativeQuery("""
             insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo)
-            select te.tipo_entidade_id, p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome)
-            from academico.servidor s join academico.pessoa p on p.id = s.id_pessoa
-            cross join avaliacao.tipo_entidade te where te.codigo = 'SERVIDOR' and p.cpf_cnpj is not null
+            select te.tipo_entidade_id, usuario.cpf_cnpj, usuario.rotulo
+            from (
+                select distinct on (p.cpf_cnpj) p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome) as rotulo
+                from academico.pessoa p
+                where p.cpf_cnpj is not null
+                  and exists (select 1 from academico.servidor s where s.id_pessoa = p.id)
+                order by p.cpf_cnpj, p.id
+            ) usuario
+            cross join avaliacao.tipo_entidade te
+            where te.codigo = 'SERVIDOR'
             on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true
             """).executeUpdate();
         dao.nativeQuery("""
             insert into avaliacao.entidade (tipo_entidade_id, referencia_externa, rotulo)
-            select te.tipo_entidade_id, p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome)
-            from academico.docente_turma dt join academico.servidor s on s.id = dt.id_servidor
-            join academico.pessoa p on p.id = s.id_pessoa cross join avaliacao.tipo_entidade te
-            where te.codigo = 'DOCENTE' and p.cpf_cnpj is not null
+            select te.tipo_entidade_id, usuario.cpf_cnpj, usuario.rotulo
+            from (
+                select distinct on (p.cpf_cnpj) p.cpf_cnpj, coalesce(nullif(p.nome_social, ''), p.nome) as rotulo
+                from academico.pessoa p
+                where p.cpf_cnpj is not null
+                  and exists (
+                      select 1 from academico.servidor s
+                      join academico.docente_turma dt on dt.id_servidor = s.id
+                      where s.id_pessoa = p.id
+                  )
+                order by p.cpf_cnpj, p.id
+            ) usuario
+            cross join avaliacao.tipo_entidade te
+            where te.codigo = 'DOCENTE'
             on conflict (tipo_entidade_id, referencia_externa) do update set rotulo = excluded.rotulo, ativo = true
             """).executeUpdate();
         dao.nativeQuery("""
