@@ -10,4 +10,10 @@ O backend usa Jakarta EE no Open Liberty. O Flyway mantém o schema; a unidade J
 - `academico/dao/SincronizacaoSigaaDao`: importação JDBC em lotes entre as duas bases; `academico/service` coordena a execução assíncrona.
 - `core/dao/AuthDao`: acesso a usuários e sessões JPA, com consultas do espelho acadêmico usadas no login.
 
+## Convenção de organização por objeto
+
+Cada entidade ou objeto de domínio deve ter seus próprios componentes de API e persistência. Por exemplo, `TipoEntidade` deve ter `TipoEntidadeResource` para seus endpoints, `TipoEntidadeService` para suas regras e `TipoEntidadeDao` para suas consultas e persistência, além do model e DTOs próprios quando necessários. Não adicionar endpoints e consultas de um objeto a um Resource ou DAO genérico de outro objeto, como `AvaliacaoResource` ou `AvaliacaoDao`.
+
+Os componentes devem ficar nos pacotes por camada (`model`, `resource`, `service`, `dao` e `dto`), com nomes correspondentes ao objeto de domínio. Essa separação vale também para novos objetos; ao alterar código existente, mover as operações para os componentes do objeto responsável.
+
 As migrações ficam em `src/main/resources/db/migration`. A V8 cria o schema de avaliação e a V16 remove a coluna legada de módulo. Execute `mvn -f backend/pom.xml verify` para compilar e empacotar o backend. Para verificar os fluxos com persistência, disponibilize PostgreSQL e inicie o Liberty conforme o README principal.

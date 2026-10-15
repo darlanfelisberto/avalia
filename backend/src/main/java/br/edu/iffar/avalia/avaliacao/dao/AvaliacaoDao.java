@@ -2,7 +2,6 @@ package br.edu.iffar.avalia.avaliacao.dao;
 
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
 import br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao;
-import br.edu.iffar.avalia.avaliacao.model.TipoEntidade;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -35,16 +34,6 @@ public class AvaliacaoDao {
 
     public void flush() {
         em.flush();
-    }
-
-    public List<TipoEntidade> listarTiposEntidade() {
-        return em.createQuery("select t from TipoEntidade t order by t.nome", TipoEntidade.class).getResultList();
-    }
-
-    public String codigoTipo(UUID id) {
-        TipoEntidade tipo = buscar(TipoEntidade.class, id);
-        if (tipo == null) throw new IllegalArgumentException("Tipo de entidade não encontrado.");
-        return tipo.getCodigo();
     }
 
     public InstrumentoAvaliativo buscarInstrumento(UUID id) {

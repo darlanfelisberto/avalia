@@ -9,6 +9,11 @@ export interface TipoEntidade {
   podeResponder: boolean;
 }
 
+export interface PermissaoTipoEntidadeAv {
+  tipoRespondenteId: string;
+  tipoAvaliadoId: string;
+}
+
 export interface OpcaoAv {
   id?: string;
   texto: string;

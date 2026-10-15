@@ -4,6 +4,8 @@ import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.*;
 import br.edu.iffar.avalia.avaliacao.dao.AvaliacaoDao;
 import br.edu.iffar.avalia.avaliacao.dao.EntidadeAcademicaDao;
 import br.edu.iffar.avalia.avaliacao.dao.InstrumentoDao;
+import br.edu.iffar.avalia.avaliacao.dao.TipoEntidadeDao;
+import br.edu.iffar.avalia.avaliacao.model.TipoEntidade;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoRespondente;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
@@ -35,21 +37,10 @@ public class AvaliacaoService {
     @Inject
     private InstrumentoDao consultas;
 
-    // ------------------------------------------------------------------ catálogos
+    @Inject
+    private TipoEntidadeDao tiposEntidadeDao;
 
-    public List<TipoEntidade> listarTiposEntidade() {
-        List<TipoEntidade> out = new ArrayList<>();
-        for (br.edu.iffar.avalia.avaliacao.model.TipoEntidade entidade : dao.listarTiposEntidade()) {
-            TipoEntidade t = new TipoEntidade();
-            t.id = entidade.getId().toString();
-            t.codigo = entidade.getCodigo();
-            t.nome = entidade.getNome();
-            t.podeSerAvaliada = entidade.isPodeSerAvaliada();
-            t.podeResponder = entidade.isPodeResponder();
-            out.add(t);
-        }
-        return out;
-    }
+    // ------------------------------------------------------------------ catálogos
 
     /** Atualiza os espelhos avaliativos a partir dos dados acadêmicos já sincronizados. */
     public void sincronizarEntidadesAcademicas() {
@@ -219,8 +210,7 @@ public class AvaliacaoService {
             entidade = new InstrumentoAvaliativo();
             entidade.setCriadoPor(usuario);
         }
-        if (rascunho) entidade.setTipoEntidadeAvaliada(dao.referencia(
-                br.edu.iffar.avalia.avaliacao.model.TipoEntidade.class, UUID.fromString(dto.tipoEntidadeAvaliadaId)));
+        if (rascunho) entidade.setTipoEntidadeAvaliada(tiposEntidadeDao.referencia(UUID.fromString(dto.tipoEntidadeAvaliadaId)));
         entidade.setTitulo(dto.titulo.trim());
         entidade.setDescricao(dto.descricao);
         entidade.setCicloReferencia(dto.cicloReferencia.trim());
@@ -252,7 +242,7 @@ public class AvaliacaoService {
         entidade.setStatus("PUBLICADO");
         entidade.setAtualizadoEm(OffsetDateTime.now());
         dao.flush();
-        String tipoContextoCodigo = dao.codigoTipo(UUID.fromString(i.tipoEntidadeAvaliadaId));
+        String tipoContextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(i.tipoEntidadeAvaliadaId));
         if ("INSTITUICAO".equals(tipoContextoCodigo) && i.tiposEntidadeAlvoIds.contains(i.tipoEntidadeAvaliadaId)) {
             consultas.criarEntidadeInstitucional(i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
             consultas.vincularEntidadeInstitucional(id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
@@ -281,8 +271,7 @@ public class AvaliacaoService {
         for (Respondente r : respondentes) {
             InstrumentoRespondente entidade = new InstrumentoRespondente();
             entidade.setInstrumento(instrumento);
-            entidade.setTipoEntidadeRespondente(dao.referencia(
-                    br.edu.iffar.avalia.avaliacao.model.TipoEntidade.class, UUID.fromString(r.tipoEntidadeId)));
+            entidade.setTipoEntidadeRespondente(tiposEntidadeDao.referencia(UUID.fromString(r.tipoEntidadeId)));
             entidade.setTipoVinculo(blank(r.tipoVinculo) ? null : r.tipoVinculo.trim());
             dao.persistir(entidade);
         }
@@ -397,16 +386,15 @@ public class AvaliacaoService {
         for (String tipoAlvo : d.tiposEntidadeAlvoIds) {
             if (blank(tipoAlvo)) throw new IllegalArgumentException("Tipo de alvo sem identificação.");
             if (!tiposAlvoVistos.add(tipoAlvo)) throw new IllegalArgumentException("Tipo de alvo repetido.");
-            br.edu.iffar.avalia.avaliacao.model.TipoEntidade tipo = dao.buscar(
-                    br.edu.iffar.avalia.avaliacao.model.TipoEntidade.class, UUID.fromString(tipoAlvo));
+            TipoEntidade tipo = tiposEntidadeDao.buscar(UUID.fromString(tipoAlvo));
             if (tipo == null || !tipo.isPodeSerAvaliada())
                 throw new IllegalArgumentException("Tipo de alvo inválido.");
         }
-        String contextoCodigo = dao.codigoTipo(UUID.fromString(d.tipoEntidadeAvaliadaId));
+        String contextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(d.tipoEntidadeAvaliadaId));
         if ("TURMA".equals(contextoCodigo)) {
             Set<String> codigos = new HashSet<>();
             for (String tipoId : d.tiposEntidadeAlvoIds) {
-                codigos.add(dao.codigoTipo(UUID.fromString(tipoId)));
+                codigos.add(tiposEntidadeDao.codigo(UUID.fromString(tipoId)));
             }
             if (codigos.isEmpty() || !Set.of("DOCENTE", "ALUNO").containsAll(codigos))
                 throw new IllegalArgumentException("Uma avaliação de turma pode incluir docentes e alunos como alvos.");
@@ -416,14 +404,17 @@ public class AvaliacaoService {
         if (validarRespondentes) for (Respondente r : d.respondentes) {
             if (blank(r.tipoEntidadeId)) throw new IllegalArgumentException("Respondente sem tipo definido.");
             if (!vistos.add(r.tipoEntidadeId)) throw new IllegalArgumentException("Público respondente repetido.");
-            br.edu.iffar.avalia.avaliacao.model.TipoEntidade tipoRespondente = dao.buscar(
-                    br.edu.iffar.avalia.avaliacao.model.TipoEntidade.class, UUID.fromString(r.tipoEntidadeId));
+            TipoEntidade tipoRespondente = tiposEntidadeDao.buscar(UUID.fromString(r.tipoEntidadeId));
             if (tipoRespondente == null || !tipoRespondente.isPodeResponder())
                 throw new IllegalArgumentException("Público respondente inválido.");
             String vinculo = blank(r.tipoVinculo) ? null : r.tipoVinculo.trim();
             String codigo = tipoRespondente.getCodigo();
-            if (!Set.of("ALUNO", "DOCENTE", "SERVIDOR").contains(codigo))
-                throw new IllegalArgumentException("Este público ainda não possui perfil de acesso para responder.");
+            for (String tipoAlvo : d.tiposEntidadeAlvoIds) {
+                if (!tiposEntidadeDao.podeAvaliar(UUID.fromString(r.tipoEntidadeId), UUID.fromString(tipoAlvo))) {
+                    throw new IllegalArgumentException("O tipo " + tipoRespondente.getNome()
+                            + " não está autorizado a avaliar um dos tipos de alvo selecionados.");
+                }
+            }
             boolean vinculoValido = switch (contextoCodigo) {
                 case "INSTITUICAO" -> vinculo == null;
                 case "CAMPUS", "SETOR" -> vinculo == null || "PERTENCE_A".equals(vinculo);

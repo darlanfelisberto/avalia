@@ -1,6 +1,7 @@
 <server description="IFFar AVALIA Core Engine">
 
     <featureManager>
+        <feature>servlet-6.1</feature>
         <feature>restfulWS-4.0</feature>
         <feature>cdi-4.1</feature>
         <feature>jsonb-3.0</feature>

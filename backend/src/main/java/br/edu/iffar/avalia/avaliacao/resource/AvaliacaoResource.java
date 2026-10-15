@@ -32,12 +32,6 @@ public class AvaliacaoResource {
     }
 
     @GET
-    @Path("/tipos-entidade")
-    public Response tiposEntidade() {
-        return executar(() -> Response.ok(service.listarTiposEntidade()).build());
-    }
-
-    @GET
     @Path("/conjuntos-opcao")
     public Response conjuntos(@HeaderParam("Authorization") String token,
                              @HeaderParam("X-Papel-Ativo") String papel) {

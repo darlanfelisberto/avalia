@@ -1,4 +1,4 @@
-import type { ConjuntoOpcao, InstrumentoAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcao, InstrumentoAv, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
 import { carregarTokenAtivo, carregarUsuarioAtivo } from './storage';
 
 const BASE = '/api/avaliacao';
@@ -34,6 +34,9 @@ async function chamar<T>(url: string, init?: RequestInit): Promise<Resultado<T>>
 
 export const avaliacaoApi = {
   tiposEntidade: () => chamar<TipoEntidade[]>(`${BASE}/tipos-entidade`),
+  permissoesTiposEntidade: () => chamar<PermissaoTipoEntidadeAv[]>(`${BASE}/permissoes-tipos-entidade`),
+  salvarPermissoesTiposEntidade: (permissoes: PermissaoTipoEntidadeAv[]) =>
+    chamar<void>(`${BASE}/permissoes-tipos-entidade`, { method: 'PUT', body: JSON.stringify(permissoes) }),
   conjuntos: () => chamar<ConjuntoOpcao[]>(`${BASE}/conjuntos-opcao`),
   salvarConjunto: (c: ConjuntoOpcao) => chamar<ConjuntoOpcao>(`${BASE}/conjuntos-opcao`, { method: 'POST', body: JSON.stringify(c) }),
   listar: () => chamar<InstrumentoAv[]>(`${BASE}/instrumentos`),

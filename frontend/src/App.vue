@@ -7,6 +7,7 @@ import ManagementActionPlanView from './components/ManagementActionPlanView.vue'
 import TechnicalView from './components/TechnicalView.vue';
 import SincronizacaoView from './components/SincronizacaoView.vue';
 import AvaliacaoInstrumentoView from './components/AvaliacaoInstrumentoView.vue';
+import PermissoesTiposEntidadeView from './components/PermissoesTiposEntidadeView.vue';
 import ResponderAvaliacoesView from './components/ResponderAvaliacoesView.vue';
 import LoginView from './components/LoginView.vue';
 
@@ -16,7 +17,7 @@ import { carregarEstadoPreenchimento, salvarEstadoPreenchimento, carregarInstrum
 const usuarioLogado = ref<UsuarioContexto | null>(carregarUsuarioAtivo());
 const instrumento = ref<InstrumentoAvaliativo>(carregarInstrumentoAtivo());
 
-const visaoAtual = ref<'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
+const visaoAtual = ref<'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
 const menuAbertoMobile = ref(false);
 
 const estado = reactive<EstadoPreenchimento>(carregarEstadoPreenchimento(instrumento.value.id, ''));
@@ -31,7 +32,7 @@ function reiniciarTeste() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' {
+function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes' {
   if (!u) return 'responder';
   const papel = u.papelAtivo || u.papel;
   if (papel === 'CPA' || papel === 'ADMIN') return 'instrumentos';
@@ -56,7 +57,7 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
   usuarioLogado.value = usuario;
   salvarUsuarioAtivo(usuario, usuario.token);
   // Se a visão atual não for permitida para o novo papel, redireciona
-  if (visaoAtual.value === 'instrumentos' && usuario.papelAtivo !== 'CPA' && usuario.papelAtivo !== 'ADMIN') {
+  if ((visaoAtual.value === 'instrumentos' || visaoAtual.value === 'permissoes') && usuario.papelAtivo !== 'CPA' && usuario.papelAtivo !== 'ADMIN') {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
   } else if (visaoAtual.value === 'docente' && !temPermissao(usuario, 'DOCENTE_MANIFESTAR')) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
@@ -130,6 +131,10 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
         <!-- Instrumentos de Avaliação (schema avaliacao): questionário, páginas, sessões e questões -->
         <AvaliacaoInstrumentoView
           v-else-if="visaoAtual === 'instrumentos'"
+        />
+
+        <PermissoesTiposEntidadeView
+          v-else-if="visaoAtual === 'permissoes'"
         />
 
         <!-- 6. Sincronização & Integração SIGAA / SIGRH -->

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import type { ConjuntoOpcao, InstrumentoAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcao, InstrumentoAv, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
 import { avaliacaoApi } from '../services/avaliacaoApi';
 import { carregarUsuarioAtivo } from '../services/storage';
 import AvaliacaoEstruturaEditor from './AvaliacaoEstruturaEditor.vue';
@@ -19,6 +19,7 @@ const modo = ref<'lista' | 'form'>('lista');
 const previsualizando = ref(false);
 const instrumentos = ref<InstrumentoAv[]>([]);
 const tipos = ref<TipoEntidade[]>([]);
+const permissoesTipos = ref<PermissaoTipoEntidadeAv[]>([]);
 const conjuntos = ref<ConjuntoOpcao[]>([]);
 const carregando = ref(false);
 const salvando = ref(false);
@@ -28,10 +29,11 @@ const sucesso = ref<string | null>(null);
 
 const tiposAvaliaveis = computed(() => tipos.value.filter(t => t.podeSerAvaliada));
 const tiposRespondentes = computed(() => {
-  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId)?.codigo;
-  if(contexto =='')
-    return ;
-  return tipos.value.filter(t => t.podeResponder);
+  const alvosSelecionados = form.tiposEntidadeAlvoIds || [];
+  if (!alvosSelecionados.length) return [];
+  return tipos.value.filter(tipo => tipo.podeResponder && alvosSelecionados.every(alvoId =>
+    permissoesTipos.value.some(permissao => permissao.tipoRespondenteId === tipo.id && permissao.tipoAvaliadoId === alvoId)
+  ));
 });
 const tiposAlvoDisponiveis = computed(() => {
   const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId);
@@ -83,8 +85,7 @@ function contextoAlterado() {
   form.tiposEntidadeAlvoIds = contexto?.codigo === 'TURMA'
     ? tiposAlvoDisponiveis.value.map(t => t.id)
     : (form.tipoEntidadeAvaliadaId ? [form.tipoEntidadeAvaliadaId] : []);
-  const tiposPermitidos = new Set(tiposRespondentes.value.map(t => t.id));
-  form.respondentes = form.respondentes.filter(r => tiposPermitidos.has(r.tipoEntidadeId));
+  ajustarRespondentesPermitidos();
   for (const respondente of form.respondentes) {
     const vinculos = vinculosParaRespondente(respondente.tipoEntidadeId).map(v => v.valor);
     if (!vinculos.includes(respondente.tipoVinculo || '')) respondente.tipoVinculo = '';
@@ -96,6 +97,12 @@ function alternarTipoAlvo(tipoId: string) {
   const idx = form.tiposEntidadeAlvoIds?.indexOf(tipoId) ?? -1;
   if (idx >= 0) form.tiposEntidadeAlvoIds!.splice(idx, 1);
   else form.tiposEntidadeAlvoIds!.push(tipoId);
+  ajustarRespondentesPermitidos();
+}
+
+function ajustarRespondentesPermitidos() {
+  const tiposPermitidos = new Set(tiposRespondentes.value.map(t => t.id));
+  form.respondentes = form.respondentes.filter(r => tiposPermitidos.has(r.tipoEntidadeId));
 }
 
 const form = reactive<InstrumentoAv>(novoInstrumento());
@@ -111,10 +118,16 @@ async function carregarLista() {
 }
 
 onMounted(async () => {
-  const [t, c] = await Promise.all([avaliacaoApi.tiposEntidade(), avaliacaoApi.conjuntos()]);
+  const [t, c, p] = await Promise.all([
+    avaliacaoApi.tiposEntidade(),
+    avaliacaoApi.conjuntos(),
+    avaliacaoApi.permissoesTiposEntidade()
+  ]);
   if (t.ok) tipos.value = t.dados || [];
   if (c.ok) conjuntos.value = c.dados || [];
+  if (p.ok) permissoesTipos.value = p.dados || [];
   if (!t.ok) erro.value = t.erro || 'Erro ao carregar os tipos de entidade.';
+  if (!p.ok) erro.value = p.erro || 'Erro ao carregar as permissões entre tipos de entidade.';
   await carregarLista();
 });
 

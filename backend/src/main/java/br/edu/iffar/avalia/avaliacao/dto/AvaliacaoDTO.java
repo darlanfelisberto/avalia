@@ -8,14 +8,6 @@ public final class AvaliacaoDTO {
 
     private AvaliacaoDTO() {}
 
-    public static class TipoEntidade {
-        public String id;
-        public String codigo;
-        public String nome;
-        public boolean podeSerAvaliada;
-        public boolean podeResponder;
-    }
-
     public static class Opcao {
         public String id;
         public String texto;

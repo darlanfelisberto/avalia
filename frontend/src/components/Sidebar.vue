@@ -4,13 +4,13 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { temPermissao } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos';
+  visaoAtual: 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes';
   menuAbertoMobile: boolean;
   usuario: UsuarioContexto | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'mudarVisao', visao: 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos'): void;
+  (e: 'mudarVisao', visao: 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes'): void;
   (e: 'fecharMenuMobile'): void;
   (e: 'logout'): void;
 }>();
@@ -84,6 +84,22 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
             <div class="flex-1">
               <div>Cadastro de Instrumentos</div>
               <div class="text-[10px] opacity-75 font-normal">Instrumentos, páginas, sessões e questões</div>
+            </div>
+          </button>
+
+          <button type="button"
+            @click="() => { emit('mudarVisao', 'permissoes'); emit('fecharMenuMobile'); }"
+            :class="[
+              'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left group cursor-pointer',
+              visaoAtual === 'permissoes'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            ]"
+          >
+            <span class="text-base">🔀</span>
+            <div class="flex-1">
+              <div>Permissões entre Entidades</div>
+              <div class="text-[10px] opacity-75 font-normal">Quem pode avaliar cada tipo</div>
             </div>
           </button>
 
