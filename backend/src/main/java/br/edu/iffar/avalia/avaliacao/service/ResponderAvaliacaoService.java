@@ -39,7 +39,7 @@ public class ResponderAvaliacaoService {
             case "DISCENTE" -> "ALUNO";
             case "DOCENTE" -> "DOCENTE";
             case "TAE", "GESTAO", "CPA", "ADMIN" -> "SERVIDOR";
-            default -> throw new SecurityException("Perfil sem tipo de respondente definido.");
+            default -> null;
         };
     }
 
@@ -47,7 +47,7 @@ public class ResponderAvaliacaoService {
     public List<Disponivel> listar(UsuarioDTO usuario) {
         String codigo = codigoRespondente(usuario);
         List<Disponivel> disponiveis = new ArrayList<>();
-        List<Object[]> linhas = respostaDao.listarGerais(codigo, usuario.getCpf());
+        List<Object[]> linhas = codigo == null ? List.of() : respostaDao.listarGerais(codigo, usuario.getCpf());
         for (Object[] linha : linhas) {
             Disponivel d = new Disponivel();
             d.instrumentoId = (String) linha[0];
@@ -59,7 +59,19 @@ public class ResponderAvaliacaoService {
             d.respondido = (Boolean) linha[8];
             disponiveis.add(d);
         }
-        disponiveis.addAll(listarAlvosDeTurma(usuario, codigo));
+        for (Object[] linha : respostaDao.listarInstitucionais(usuario.getCpf())) {
+            Disponivel d = new Disponivel();
+            d.instrumentoId = (String) linha[0];
+            d.titulo = (String) linha[1];
+            d.descricao = (String) linha[2];
+            d.alvoId = (String) linha[3];
+            d.alvoNome = (String) linha[4];
+            d.alvoTipoCodigo = (String) linha[5];
+            d.respondido = (Boolean) linha[8];
+            d.tipoRespondenteCodigo = (String) linha[9];
+            disponiveis.add(d);
+        }
+        if (codigo != null) disponiveis.addAll(listarAlvosDeTurma(usuario, codigo));
         if ("ALUNO".equals(codigo)) disponiveis.addAll(listarDocentesDaTurma(usuario));
         return disponiveis;
     }
@@ -174,7 +186,8 @@ public class ResponderAvaliacaoService {
         if (!idsValidos.containsAll(respostas.keySet()))
             throw new IllegalArgumentException("Questão fora do instrumento.");
 
-        String tipoCodigo = codigoRespondente(usuario);
+        String tipoCodigo = disponivel.tipoRespondenteCodigo != null
+                ? disponivel.tipoRespondenteCodigo : codigoRespondente(usuario);
         UUID respondenteId = dao.buscarOuCriarRespondente(usuario.getCpf(), usuario.getNome(), tipoCodigo);
         InstrumentoAvaliativo instrumento = dao.buscarInstrumento(UUID.fromString(instrumentoId));
         Entidade alvo = dao.referencia(Entidade.class, UUID.fromString(envio.alvoId));

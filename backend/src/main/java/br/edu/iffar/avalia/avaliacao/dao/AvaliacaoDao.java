@@ -46,15 +46,16 @@ public class AvaliacaoDao {
     }
 
     public boolean existeInstrumento(String titulo, String ciclo, UUID tipoId, UUID ignorarId) {
-        var query = em.createQuery("""
+        String jpql = """
             select count(i) from InstrumentoAvaliativo i
             where i.titulo = :titulo and i.cicloReferencia = :ciclo and i.tipoEntidadeAvaliada.id = :tipo
-              and (:ignorarId is null or i.id <> :ignorarId)
-            """, Long.class)
+            """;
+        if (ignorarId != null) jpql += " and i.id <> :ignorarId";
+        var query = em.createQuery(jpql, Long.class)
                 .setParameter("titulo", titulo)
                 .setParameter("ciclo", ciclo)
-                .setParameter("tipo", tipoId)
-                .setParameter("ignorarId", ignorarId);
+                .setParameter("tipo", tipoId);
+        if (ignorarId != null) query.setParameter("ignorarId", ignorarId);
         return query.getSingleResult() > 0;
     }
 

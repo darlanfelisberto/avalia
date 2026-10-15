@@ -16,6 +16,7 @@ public final class RespostaAvaliacaoDTO {
         public String contextoId;
         public String contextoNome;
         public boolean respondido;
+        public String tipoRespondenteCodigo;
     }
 
     public static class Item {

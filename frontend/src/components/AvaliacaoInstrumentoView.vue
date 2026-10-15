@@ -29,11 +29,14 @@ const sucesso = ref<string | null>(null);
 
 const tiposAvaliaveis = computed(() => tipos.value.filter(t => t.podeSerAvaliada));
 const tiposRespondentes = computed(() => {
+  const tipoAvaliadoId = form.tipoEntidadeAvaliadaId;
   const alvosSelecionados = form.tiposEntidadeAlvoIds || [];
-  if (!alvosSelecionados.length) return [];
-  return tipos.value.filter(tipo => tipo.podeResponder && alvosSelecionados.every(alvoId =>
-    permissoesTipos.value.some(permissao => permissao.tipoRespondenteId === tipo.id && permissao.tipoAvaliadoId === alvoId)
-  ));
+  if (!tipoAvaliadoId || !alvosSelecionados.length) return [];
+  return tipos.value.filter(tipo => tipo.podeResponder
+    && permissoesTipos.value.some(permissao =>
+      permissao.tipoRespondenteId === tipo.id && permissao.tipoAvaliadoId === tipoAvaliadoId)
+    && alvosSelecionados.every(alvoId => permissoesTipos.value.some(permissao =>
+      permissao.tipoRespondenteId === tipo.id && permissao.tipoAvaliadoId === alvoId)));
 });
 const tiposAlvoDisponiveis = computed(() => {
   const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId);
@@ -395,6 +398,8 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
             </select>
           </div>
         </div>
+        <p v-if="!form.tipoEntidadeAvaliadaId" class="text-xs text-slate-500">Selecione o que será avaliado para ver quem pode responder.</p>
+        <p v-else-if="!tiposRespondentes.length" class="text-xs text-slate-500">Nenhum público está autorizado na matriz de permissões para os tipos selecionados.</p>
       </div>
 
       <!-- 3. Estrutura -->

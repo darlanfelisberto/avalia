@@ -409,6 +409,10 @@ public class AvaliacaoService {
                 throw new IllegalArgumentException("Público respondente inválido.");
             String vinculo = blank(r.tipoVinculo) ? null : r.tipoVinculo.trim();
             String codigo = tipoRespondente.getCodigo();
+            if (!tiposEntidadeDao.podeAvaliar(UUID.fromString(r.tipoEntidadeId), UUID.fromString(d.tipoEntidadeAvaliadaId))) {
+                throw new IllegalArgumentException("O tipo " + tipoRespondente.getNome()
+                        + " não está autorizado a avaliar o tipo selecionado.");
+            }
             for (String tipoAlvo : d.tiposEntidadeAlvoIds) {
                 if (!tiposEntidadeDao.podeAvaliar(UUID.fromString(r.tipoEntidadeId), UUID.fromString(tipoAlvo))) {
                     throw new IllegalArgumentException("O tipo " + tipoRespondente.getNome()

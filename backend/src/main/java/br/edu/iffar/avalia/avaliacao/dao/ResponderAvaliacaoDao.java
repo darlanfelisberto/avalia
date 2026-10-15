@@ -65,8 +65,8 @@ public class ResponderAvaliacaoDao {
               and i.tipo_entidade_avaliada_id not in (
                   select tipo_entidade_id from avaliacao.tipo_entidade where codigo in ('TURMA', 'DOCENTE')
               )
+              and ta.codigo <> 'INSTITUICAO'
               and t.codigo = ?1
-              and (ta.codigo <> 'INSTITUICAO' or alvo.referencia_externa = 'instrumento:' || i.instrumento_avaliativo_id)
               and (ta.codigo not in ('CAMPUS', 'SETOR') or exists (
                   select 1
                   from academico.unidade alvo_unidade
@@ -92,6 +92,55 @@ public class ResponderAvaliacaoDao {
             order by i.titulo, alvo.rotulo
             """)
                 .setParameter(1, codigo).setParameter(2, cpf).getResultList();
+    }
+
+    /** Consulta o público institucional no momento do acesso, sem criar participações antecipadas. */
+    @SuppressWarnings("unchecked")
+    public List<Object[]> listarInstitucionais(String cpf) {
+        return em.createNativeQuery("""
+            with tipos_usuario as (
+                select distinct case when tipo = 'EXTERNO' then 'COMUNIDADE' else tipo end as codigo
+                from avaliacao.mv_tipos_usuario
+                where cpf_cnpj = ?1
+                union
+                select 'COMUNIDADE'
+                where not exists (select 1 from avaliacao.mv_tipos_usuario where cpf_cnpj = ?1)
+            )
+            select cast(i.instrumento_avaliativo_id as text), i.titulo, i.descricao,
+                   cast(alvo.entidade_id as text), alvo.rotulo, 'INSTITUICAO',
+                   null::text, null::text,
+                   exists (
+                       select 1 from avaliacao.participacao p
+                       join avaliacao.entidade er on er.entidade_id = p.entidade_respondente_id
+                       where p.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+                         and p.entidade_avaliada_id = alvo.entidade_id
+                         and er.referencia_externa = ?1
+                   ), respondente.codigo
+            from avaliacao.instrumento_avaliativo i
+            join avaliacao.tipo_entidade contexto on contexto.tipo_entidade_id = i.tipo_entidade_avaliada_id
+                and contexto.codigo = 'INSTITUICAO'
+            join avaliacao.instrumento_entidade_avaliada ia on ia.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+            join avaliacao.entidade alvo on alvo.entidade_id = ia.entidade_id
+                and alvo.referencia_externa = 'instrumento:' || i.instrumento_avaliativo_id
+            join avaliacao.tipo_entidade tipo_alvo on tipo_alvo.tipo_entidade_id = ia.tipo_entidade_alvo_id
+                and tipo_alvo.codigo = 'INSTITUICAO'
+            join lateral (
+                select tr.codigo
+                from avaliacao.instrumento_respondente ir
+                join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = ir.tipo_entidade_respondente_id
+                join avaliacao.tipo_entidade_permissao permissao
+                    on permissao.tipo_respondente_id = tr.tipo_entidade_id
+                    and permissao.tipo_avaliado_id = contexto.tipo_entidade_id
+                join tipos_usuario tu on tu.codigo = tr.codigo
+                where ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+                order by case tr.codigo when 'ALUNO' then 1 when 'DOCENTE' then 2
+                         when 'SERVIDOR' then 3 when 'EGRESSO' then 4 else 5 end
+                limit 1
+            ) respondente on true
+            where i.status = 'PUBLICADO'
+              and now() between i.inicio_aplicacao and i.fim_aplicacao
+            order by i.titulo
+            """).setParameter(1, cpf).getResultList();
     }
 
     @SuppressWarnings("unchecked")
