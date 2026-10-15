@@ -12,17 +12,17 @@
     </featureManager>
 
     <!-- Variáveis injetadas pelo container/SO ou com defaultValue vazio (sem credenciais fixas no fonte) -->
-    <variable name="APP_DB_IP" defaultValue="localhost"/>
-    <variable name="APP_DB_PORT" defaultValue="5432"/>
-    <variable name="APP_DB_DATABASE" defaultValue="avalia"/>
-    <variable name="APP_DB_USER" defaultValue=""/>
-    <variable name="APP_DB_PASSWORD" defaultValue=""/>
+    <variable name="AVALIA_DB_IP" defaultValue="localhost"/>
+    <variable name="AVALIA_DB_PORT" defaultValue="5432"/>
+    <variable name="AVALIA_DB_DATABASE" defaultValue="avalia"/>
+    <variable name="AVALIA_DB_USER" defaultValue=""/>
+    <variable name="AVALIA_DB_PASSWORD" defaultValue=""/>
 
-    <variable name="APP_DB_SIG_IP" defaultValue=""/>
-    <variable name="APP_DB_SIG_PORT" defaultValue="5432"/>
-    <variable name="APP_DB_SIG_DATABASE" defaultValue="sigaa"/>
-    <variable name="APP_DB_SIG_USER" defaultValue=""/>
-    <variable name="APP_DB_SIG_PASSWORD" defaultValue=""/>
+    <variable name="AVALIA_DB_SIG_IP" defaultValue=""/>
+    <variable name="AVALIA_DB_SIG_PORT" defaultValue="5432"/>
+    <variable name="AVALIA_DB_SIG_DATABASE" defaultValue="sigaa"/>
+    <variable name="AVALIA_DB_SIG_USER" defaultValue=""/>
+    <variable name="AVALIA_DB_SIG_PASSWORD" defaultValue=""/>
 
     <httpEndpoint id="defaultHttpEndpoint"
                   httpPort="9080"
@@ -44,18 +44,18 @@
     <!-- DataSource oficial do AVALIA (Base Local) -->
     <dataSource id="AvaliaDataSource" jndiName="jdbc/avaliaDS">
         <jdbcDriver libraryRef="postgresqlLib"/>
-        <properties.postgresql serverName="${APP_DB_IP}" portNumber="${APP_DB_PORT}"
-                                databaseName="${APP_DB_DATABASE}"
-                                user="${APP_DB_USER}" password="${APP_DB_PASSWORD}"
+        <properties.postgresql serverName="${AVALIA_DB_IP}" portNumber="${AVALIA_DB_PORT}"
+                                databaseName="${AVALIA_DB_DATABASE}"
+                                user="${AVALIA_DB_USER}" password="${AVALIA_DB_PASSWORD}"
                                 stringType="unspecified"/>
     </dataSource>
 
     <!-- DataSource gerenciado do SIGAA (Base Remota para Integração - Contém schemas comum, rh, ensino e public) -->
     <dataSource id="SigaaDataSource" jndiName="jdbc/sigaaDS">
         <jdbcDriver libraryRef="postgresqlLib"/>
-        <properties.postgresql serverName="${APP_DB_SIG_IP}" portNumber="${APP_DB_SIG_PORT}"
-                                databaseName="${APP_DB_SIG_DATABASE}"
-                                user="${APP_DB_SIG_USER}" password="${APP_DB_SIG_PASSWORD}"/>
+        <properties.postgresql serverName="${AVALIA_DB_SIG_IP}" portNumber="${AVALIA_DB_SIG_PORT}"
+                                databaseName="${AVALIA_DB_SIG_DATABASE}"
+                                user="${AVALIA_DB_SIG_USER}" password="${AVALIA_DB_SIG_PASSWORD}"/>
     </dataSource>
 
 </server>

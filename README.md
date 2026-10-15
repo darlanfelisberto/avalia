@@ -7,8 +7,8 @@ Pré-requisitos: Node.js e npm para o frontend; Java 25 e Maven para o backend; 
 Configure as credenciais do banco antes de iniciar o backend:
 
 ```bash
-export APP_DB_USER=postgres
-export APP_DB_PASSWORD=postgres
+export AVALIA_DB_USER=postgres
+export AVALIA_DB_PASSWORD=postgres
 ```
 
 Use terminais separados para iniciar as partes do sistema.

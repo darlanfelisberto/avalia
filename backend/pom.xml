@@ -108,8 +108,8 @@
                 <version>${version.flyway}</version>
                 <configuration>
                     <url>jdbc:postgresql://localhost:5432/avalia</url>
-                    <user>${env.APP_DB_USER}</user>
-                    <password>${env.APP_DB_PASSWORD}</password>
+                    <user>${env.AVALIA_DB_USER}</user>
+                    <password>${env.AVALIA_DB_PASSWORD}</password>
                     <locations>
                         <location>classpath:db/migration</location>
                     </locations>
