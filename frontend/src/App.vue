@@ -15,6 +15,7 @@ import { concluirLoginOidc, encerrarLoginOidc, recebeuRetornoOidc, validarSessao
 const usuarioLogado = ref<UsuarioContexto | null>(carregarUsuarioAtivo());
 
 const visaoAtual = ref<'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
+const recargaVisao = ref(0);
 const menuAbertoMobile = ref(false);
 const processandoRetorno = ref(true);
 const erroLogin = ref('');
@@ -57,6 +58,11 @@ function aoLoginSucesso(usuario: UsuarioContexto) {
   visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
 }
 
+function aoMudarVisao(visao: typeof visaoAtual.value) {
+  visaoAtual.value = visao;
+  recargaVisao.value++;
+}
+
 async function aoLogout() {
   erroLogout.value = '';
   try {
@@ -81,7 +87,7 @@ async function aoLogout() {
       :visaoAtual="visaoAtual"
       :menuAbertoMobile="menuAbertoMobile"
       :usuario="usuarioLogado"
-      @mudarVisao="visaoAtual = $event"
+      @mudarVisao="aoMudarVisao"
       @fecharMenuMobile="menuAbertoMobile = false"
       @logout="aoLogout"
     />
@@ -99,21 +105,24 @@ async function aoLogout() {
         <p v-if="erroLogout" role="alert" class="mb-4 rounded bg-red-50 p-3 text-red-700">{{ erroLogout }}</p>
         <ResponderAvaliacoesView
           v-if="visaoAtual === 'responder'"
-          :key="usuarioLogado.cpf"
+          :key="`${usuarioLogado.cpf}-${recargaVisao}`"
         />
 
         <!-- Instrumentos de Avaliação (schema avaliacao): questionário, páginas, sessões e questões -->
         <AvaliacaoInstrumentoView
           v-else-if="visaoAtual === 'instrumentos'"
+          :key="`instrumentos-${recargaVisao}`"
         />
 
         <PermissoesTiposEntidadeView
           v-else-if="visaoAtual === 'permissoes'"
+          :key="`permissoes-${recargaVisao}`"
         />
 
         <!-- 6. Sincronização & Integração SIGAA / SIGRH -->
         <SincronizacaoView
           v-else-if="visaoAtual === 'sincronizacao'"
+          :key="`sincronizacao-${recargaVisao}`"
         />
       </main>
 
