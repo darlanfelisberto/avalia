@@ -264,7 +264,7 @@ function voltarDaPrevia() {
       <div class="surface-card form-panel form-panel--respondents">
         <div class="form-panel__heading">
           <h3 class="form-panel__title">2. Quem Responde</h3>
-          <p class="form-panel__description">Marque os públicos e, se necessário, o vínculo exigido com o que é avaliado.</p>
+          <p class="form-panel__description">Marque os públicos autorizados a responder ao instrumento.</p>
         </div>
         <div class="respondent-grid">
           <div v-for="t in tiposRespondentes" :key="t.id"
@@ -275,9 +275,6 @@ function voltarDaPrevia() {
             </label>
             <p v-if="respondenteDe(t.id) && tipos.find(item => item.id === form.tipoEntidadeAvaliadaId)?.codigo === 'DOCENTE'"
               class="respondent-card__hint">Apenas alunos matriculados em uma turma do docente poderão responder.</p>
-            <select v-else-if="respondenteDe(t.id)" v-model="respondenteDe(t.id)!.tipoVinculo" :disabled="somenteLeitura" :class="input">
-              <option v-for="v in vinculosParaRespondente(t.id)" :key="v.valor" :value="v.valor">{{ v.rotulo }}</option>
-            </select>
           </div>
         </div>
         <p v-if="!form.tipoEntidadeAvaliadaId" class="form-panel__help">Selecione o que será avaliado para ver quem pode responder.</p>
