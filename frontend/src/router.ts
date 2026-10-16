@@ -21,16 +21,15 @@ function podeGerenciarInstrumentos(usuario: UsuarioContexto): boolean {
 function rotaInicial(usuario: UsuarioContexto | null): string {
   if (!usuario) return '/responder';
   if (podeGerenciarInstrumentos(usuario)) return '/instrumentos';
-  if (temPermissao(usuario, 'AVALIACAO_RESPONDER')) return '/responder';
   if (temPermissao(usuario, 'SIGAA_SINCRONIZAR')) return '/sincronizacao';
-  return '/acesso-negado';
+  return '/responder';
 }
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', redirect: () => rotaInicial(carregarUsuarioAtivo()) },
-    { path: '/responder', name: 'responder', component: ResponderAvaliacoesView, meta: { permissao: 'AVALIACAO_RESPONDER' } },
+    { path: '/responder', name: 'responder', component: ResponderAvaliacoesView },
     { path: '/instrumentos', name: 'instrumentos', component: AvaliacaoInstrumentoView, meta: { exigeGerenciaInstrumentos: true } },
     { path: '/instrumentos/novo', name: 'instrumento-novo', component: InstrumentoFormularioView, meta: { exigeGerenciaInstrumentos: true, permissao: 'INSTRUMENTO_CRIAR' } },
     { path: '/instrumentos/:id', name: 'instrumento-editar', component: InstrumentoFormularioView, meta: { exigeGerenciaInstrumentos: true } },

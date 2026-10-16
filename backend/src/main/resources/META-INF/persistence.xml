@@ -8,7 +8,7 @@
     <persistence-unit name="avaliaPU" transaction-type="JTA">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <jta-data-source>jdbc/avaliaDS</jta-data-source>
-        <class>br.edu.iffar.avalia.academico.model.PessoaAcademica</class>
+        <class>br.edu.iffar.avalia.academico.model.Pessoa</class>
         <class>br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao</class>
         <class>br.edu.iffar.avalia.avaliacao.model.Entidade</class>
         <class>br.edu.iffar.avalia.avaliacao.model.EntidadeVinculo</class>

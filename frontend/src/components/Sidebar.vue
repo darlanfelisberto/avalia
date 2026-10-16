@@ -17,7 +17,6 @@ const emit = defineEmits<{
 
 const podeGerenciarInstrumentos = computed(() => !!props.usuario?.papeis?.some(p => p === 'CPA' || p === 'ADMIN')
   && temPermissao(props.usuario, 'INSTRUMENTO_VISUALIZAR'));
-const podeDiscente = computed(() => temPermissao(props.usuario, 'AVALIACAO_RESPONDER'));
 const podeSincronizacao = computed(() => temPermissao(props.usuario, 'SIGAA_SINCRONIZAR'));
 </script>
 
@@ -89,22 +88,20 @@ const podeSincronizacao = computed(() => temPermissao(props.usuario, 'SIGAA_SINC
       </div>
 
       <!-- Grupo 2: Execução Avaliativa e Ciclos -->
-      <div v-if="podeDiscente">
+      <div>
         <div class="sidebar__group-title">
           Aplicação e Respostas
         </div>
         <div class="sidebar__group-links">
           <!-- Avaliações disponíveis para o perfil ativo -->
-          <button
-            v-if="podeDiscente"
-            type="button"
+          <button type="button"
             @click="() => { emit('mudarVisao', 'responder'); emit('fecharMenuMobile'); }"
             :class="['sidebar__link', visaoAtual === 'responder' ? 'sidebar__link--active' : '']"
           >
             <span class="sidebar__link-icon">🎓</span>
             <div class="sidebar__link-copy">
-              <div>Responder Avaliação</div>
-              <div class="sidebar__link-description">Instrumentos disponíveis para seu perfil</div>
+              <div>Avaliações disponíveis</div>
+              <div class="sidebar__link-description">Avaliações que você pode responder</div>
             </div>
           </button>
 
