@@ -132,8 +132,8 @@ public class AvaliacaoService {
 
         // Respondentes e estrutura só podem mudar enquanto o instrumento é rascunho
         if (rascunho) {
-            substituirRespondentes(id, dto.respondentes);
-            substituirEstrutura(id, dto.paginas, dto.sessoes, usuario);
+            substituirRespondentes(entidade, dto.respondentes);
+            substituirEstrutura(entidade, dto.paginas, dto.sessoes, usuario);
         }
         return buscarInstrumento(id);
     }
@@ -170,10 +170,10 @@ public class AvaliacaoService {
 
     // ------------------------------------------------------------------ internos
 
-    private void substituirRespondentes(String id, List<AvaliacaoDTO.InstrumentoTipoRespondenteDTO> respondentes) {
-        UUID instrumentoId = UUID.fromString(id);
+    private void substituirRespondentes(InstrumentoAvaliativo instrumento,
+                                        List<AvaliacaoDTO.InstrumentoTipoRespondenteDTO> respondentes) {
+        UUID instrumentoId = instrumento.getId();
         dao.removerRespondentes(instrumentoId);
-        InstrumentoAvaliativo instrumento = dao.referencia(InstrumentoAvaliativo.class, instrumentoId);
         for (AvaliacaoDTO.InstrumentoTipoRespondenteDTO r : respondentes) {
             InstrumentoTipoRespondente entidade = new InstrumentoTipoRespondente();
             entidade.setInstrumentoAvaliativo(instrumento);
@@ -190,11 +190,12 @@ public class AvaliacaoService {
         dao.flush();
     }
 
-    private void substituirEstrutura(String id, List<AvaliacaoDTO.InstrumentoSessaoPaginaDTO> paginas,
+    private void substituirEstrutura(InstrumentoAvaliativo instrumento,
+                                     List<AvaliacaoDTO.InstrumentoSessaoPaginaDTO> paginas,
                                      List<AvaliacaoDTO.InstrumentoSessaoDTO> sessoes, String usuario) {
+        String id = instrumento.getId().toString();
         List<String> anteriores = idsQuestoes(id);
-        dao.removerSessoes(UUID.fromString(id));
-        InstrumentoAvaliativo instrumento = dao.referencia(InstrumentoAvaliativo.class, UUID.fromString(id));
+        dao.removerSessoes(instrumento.getId());
 
         int ordemPagina = 1;
         for (AvaliacaoDTO.InstrumentoSessaoPaginaDTO p : paginas) {

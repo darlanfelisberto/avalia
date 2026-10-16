@@ -105,6 +105,13 @@ public class AvaliacaoDao {
     }
 
     public void removerSessoes(UUID instrumentoId) {
+        exec("""
+            delete from avaliacao.sessao_questao
+            where instrumento_sessao_id in (
+                select instrumento_sessao_id from avaliacao.instrumento_sessao
+                where instrumento_avaliativo_id = cast(?1 as uuid)
+            )
+            """, instrumentoId.toString());
         exec("delete from avaliacao.instrumento_sessao where instrumento_avaliativo_id = cast(?1 as uuid)",
                 instrumentoId.toString());
     }

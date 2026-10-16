@@ -76,7 +76,7 @@ const btnIcone = 'icon-button-control';
 </script>
 
 <template>
-  <div class="structure-editor form-panel">
+  <div class="surface-card structure-editor form-panel">
     <div class="structure-editor__heading">
       <div>
         <h3 class="form-panel__title">3. Estrutura do Questionário</h3>
