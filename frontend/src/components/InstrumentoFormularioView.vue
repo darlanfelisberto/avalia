@@ -71,7 +71,7 @@ function normalizarRespondentes(respondentes?: InstrumentoAvaliativoDTO['respond
 const form = reactive<InstrumentoAvaliativoDTO>(novoInstrumento());
 const semPermissaoDeEdicao = computed(() => idRota.value ? (!form.id || !podeEditar) : !podeCriar);
 const somenteLeitura = computed(() => (!!form.status && form.status !== 'RASCUNHO') || semPermissaoDeEdicao.value);
-const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-hidden disabled:bg-slate-50 disabled:text-slate-500';
+const input = 'form-field';
 
 function aplicar(i: InstrumentoAvaliativoDTO) {
   Object.assign(form, i, {
@@ -189,99 +189,99 @@ function voltarDaPrevia() {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="instrument-form">
     <InstrumentoPreview v-if="previsualizando" :instrumento="form" :conjuntos="conjuntos" @voltar="voltarDaPrevia" />
     <template v-else>
-      <p v-if="erro" class="p-4 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-900 font-semibold flex justify-between gap-3">
+      <p v-if="erro" class="alert alert--error instrument-form__alert">
         <span>⚠️ {{ erro }}</span><button type="button" @click="erro = null">✕</button>
       </p>
-      <p v-if="sucesso" class="p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 font-semibold flex justify-between gap-3">
+      <p v-if="sucesso" class="alert alert--success instrument-form__alert">
         <span>✓ {{ sucesso }}</span><button type="button" @click="sucesso = null">✕</button>
       </p>
 
-      <div class="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
+      <div class="instrument-form__heading">
         <div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="text-xs font-bold text-emerald-700 hover:underline" @click="voltarLista">← Voltar à lista</button>
-            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase">
+          <div class="instrument-form__breadcrumb">
+            <button type="button" class="text-action text-action--primary instrument-form__back" @click="voltarLista">← Voltar à lista</button>
+            <span class="instrument-form__mode-badge">
               {{ form.id ? `Edição · ${form.status}` : 'Novo instrumento' }}
             </span>
           </div>
-          <h2 class="text-xl font-bold text-slate-900 mt-1">{{ form.titulo || 'Cadastro de Instrumento' }}</h2>
+          <h2 class="instrument-form__title">{{ form.titulo || 'Cadastro de Instrumento' }}</h2>
         </div>
-        <div class="flex gap-2.5">
-          <button type="button" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl" @click="previsualizando = true">
+        <div class="instrument-form__actions">
+          <button type="button" class="button button--secondary" @click="previsualizando = true">
             👁 Visualizar instrumento
           </button>
-          <button v-if="!semPermissaoDeEdicao" type="button" :disabled="salvando" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl disabled:opacity-50" @click="salvar()">
+          <button v-if="!semPermissaoDeEdicao" type="button" :disabled="salvando" class="button button--primary instrument-form__save" @click="salvar()">
             💾 {{ salvando ? 'Salvando…' : 'Salvar' }}
           </button>
-          <button v-if="podeEditar && !somenteLeitura" type="button" :disabled="salvando" class="bg-slate-900 hover:bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50" @click="publicar">
+          <button v-if="podeEditar && !somenteLeitura" type="button" :disabled="salvando" class="button button--publish" @click="publicar">
             🚀 Salvar e publicar
           </button>
         </div>
       </div>
 
       <!-- 1. Dados gerais -->
-      <div class="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-xs space-y-5">
-        <div class="border-b border-slate-100 pb-3">
-          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">1. Dados Gerais</h3>
+      <div class="form-panel">
+        <div class="form-panel__heading">
+          <h3 class="form-panel__title">1. Dados Gerais</h3>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label class="md:col-span-2 space-y-1.5 text-xs font-bold text-slate-700">Título
-            <input v-model="form.titulo" :disabled="semPermissaoDeEdicao" :class="[input, 'font-semibold']" placeholder="Ex.: ADPD 2026/1 – Avaliação Docente" />
+        <div class="form-grid">
+          <label class="form-label form-grid__wide">Título
+            <input v-model="form.titulo" :disabled="semPermissaoDeEdicao" :class="[input, 'form-field--emphasis']" placeholder="Ex.: ADPD 2026/1 – Avaliação Docente" />
           </label>
-          <label class="md:col-span-2 space-y-1.5 text-xs font-bold text-slate-700">Descrição
+          <label class="form-label form-grid__wide">Descrição
             <textarea v-model="form.descricao" :disabled="semPermissaoDeEdicao" rows="2" :class="input" placeholder="Orientações exibidas ao respondente"></textarea>
           </label>
-          <label class="space-y-1.5 text-xs font-bold text-slate-700">Ciclo de referência
+          <label class="form-label">Ciclo de referência
             <input v-model="form.cicloReferencia" :disabled="semPermissaoDeEdicao" :class="input" placeholder="2026/1" />
           </label>
-          <label class="space-y-1.5 text-xs font-bold text-slate-700">Início da aplicação
+          <label class="form-label">Início da aplicação
             <input v-model="form.inicioAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" :class="input" />
           </label>
-          <label class="space-y-1.5 text-xs font-bold text-slate-700">Término da aplicação
+          <label class="form-label">Término da aplicação
             <input v-model="form.fimAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" :class="input" />
           </label>
-          <label class="md:col-span-2 space-y-1.5 text-xs font-bold text-slate-700">O que será avaliado
+          <label class="form-label form-grid__wide">O que será avaliado
             <select v-model="form.tipoEntidadeAvaliadaId" :disabled="somenteLeitura" :class="input" @change="contextoAlterado">
               <option value="" disabled>Selecione…</option>
               <option v-for="t in tiposAvaliaveis" :key="t.id" :value="t.id">{{ t.nome }}</option>
             </select>
           </label>
-          <div class="md:col-span-2 flex flex-wrap gap-6">
-            <label class="flex items-center gap-2 text-xs font-medium text-slate-800 cursor-pointer">
-              <input v-model="form.anonimo" type="checkbox" class="w-4 h-4" /> Respostas anônimas (não vincular o respondente à resposta)
+          <div class="form-grid__wide form-checkboxes">
+            <label class="form-checkbox-label">
+              <input v-model="form.anonimo" type="checkbox" class="form-checkbox" /> Respostas anônimas (não vincular o respondente à resposta)
             </label>
-            <label class="flex items-center gap-2 text-xs font-medium text-slate-800 cursor-pointer">
-              <input v-model="form.permiteEdicao" type="checkbox" class="w-4 h-4" /> Permitir editar a resposta até o término
+            <label class="form-checkbox-label">
+              <input v-model="form.permiteEdicao" type="checkbox" class="form-checkbox" /> Permitir editar a resposta até o término
             </label>
           </div>
         </div>
       </div>
 
       <!-- 2. Respondentes -->
-      <div class="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-xs space-y-4">
-        <div class="border-b border-slate-100 pb-3">
-          <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wide">2. Quem Responde</h3>
-          <p class="text-xs text-slate-500 mt-0.5">Marque os públicos e, se necessário, o vínculo exigido com o que é avaliado.</p>
+      <div class="form-panel form-panel--respondents">
+        <div class="form-panel__heading">
+          <h3 class="form-panel__title">2. Quem Responde</h3>
+          <p class="form-panel__description">Marque os públicos e, se necessário, o vínculo exigido com o que é avaliado.</p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="respondent-grid">
           <div v-for="t in tiposRespondentes" :key="t.id"
-            :class="['border rounded-xl p-3 space-y-2 transition-all', respondenteDe(t.id) ? 'border-emerald-500 bg-emerald-50/40' : 'border-slate-200']">
-            <label class="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
-              <input type="checkbox" class="w-4 h-4" :checked="!!respondenteDe(t.id)" :disabled="somenteLeitura" @change="alternarRespondente(t.id)" />
+            :class="['respondent-card', respondenteDe(t.id) ? 'respondent-card--selected' : '']">
+            <label class="respondent-card__label">
+              <input type="checkbox" class="respondent-card__checkbox" :checked="!!respondenteDe(t.id)" :disabled="somenteLeitura" @change="alternarRespondente(t.id)" />
               {{ t.nome }}
             </label>
             <p v-if="respondenteDe(t.id) && tipos.find(item => item.id === form.tipoEntidadeAvaliadaId)?.codigo === 'DOCENTE'"
-              class="text-xs text-slate-600">Apenas alunos matriculados em uma turma do docente poderão responder.</p>
+              class="respondent-card__hint">Apenas alunos matriculados em uma turma do docente poderão responder.</p>
             <select v-else-if="respondenteDe(t.id)" v-model="respondenteDe(t.id)!.tipoVinculo" :disabled="somenteLeitura" :class="input">
               <option v-for="v in vinculosParaRespondente(t.id)" :key="v.valor" :value="v.valor">{{ v.rotulo }}</option>
             </select>
           </div>
         </div>
-        <p v-if="!form.tipoEntidadeAvaliadaId" class="text-xs text-slate-500">Selecione o que será avaliado para ver quem pode responder.</p>
-        <p v-else-if="!tiposRespondentes.length" class="text-xs text-slate-500">Nenhum público está autorizado na matriz de permissões para os tipos selecionados.</p>
+        <p v-if="!form.tipoEntidadeAvaliadaId" class="form-panel__help">Selecione o que será avaliado para ver quem pode responder.</p>
+        <p v-else-if="!tiposRespondentes.length" class="form-panel__help">Nenhum público está autorizado na matriz de permissões para os tipos selecionados.</p>
       </div>
 
       <!-- 3. Estrutura -->

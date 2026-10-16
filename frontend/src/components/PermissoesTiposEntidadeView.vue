@@ -72,46 +72,46 @@ onMounted(carregar);
 </script>
 
 <template>
-  <section class="space-y-5">
-    <header class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-      <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Regras de participação</p>
-      <h1 class="mt-1 text-xl font-bold text-slate-900">Quem pode avaliar cada tipo de entidade</h1>
-      <p class="mt-2 max-w-3xl text-sm text-slate-600">
+  <section class="permissions-view">
+    <header class="permissions-view__intro">
+      <p class="permissions-view__eyebrow">Regras de participação</p>
+      <h1 class="permissions-view__title">Quem pode avaliar cada tipo de entidade</h1>
+      <p class="permissions-view__description">
         Marque cada combinação permitida. As linhas indicam quem responde e as colunas indicam quem pode ser avaliado.
         Essas regras serão verificadas ao configurar novos instrumentos.
       </p>
     </header>
 
-    <div v-if="erro" role="alert" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ erro }}</div>
-    <div v-if="sucesso" role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ sucesso }}</div>
+    <div v-if="erro" role="alert" class="alert alert--error">{{ erro }}</div>
+    <div v-if="sucesso" role="status" class="alert alert--success">{{ sucesso }}</div>
 
-    <div v-if="carregando" class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+    <div v-if="carregando" class="permissions-view__loading">
       Carregando tipos de entidade…
     </div>
 
-    <div v-else class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="overflow-x-auto">
-        <table class="min-w-full border-collapse text-sm">
+    <div v-else class="permissions-matrix">
+      <div class="permissions-matrix__scroll">
+        <table class="permissions-matrix__table">
           <thead>
-            <tr class="bg-slate-50">
-              <th scope="col" class="sticky left-0 z-10 min-w-48 border-b border-r border-slate-200 bg-slate-50 p-4 text-left font-semibold text-slate-700">
-                Quem responde ↓<br><span class="font-normal text-slate-500">Quem é avaliado →</span>
+            <tr class="permissions-matrix__heading-row">
+              <th scope="col" class="permissions-matrix__corner">
+                Quem responde ↓<br><span class="permissions-matrix__subheading">Quem é avaliado →</span>
               </th>
-              <th v-for="alvo in alvos" :key="alvo.id" scope="col" class="min-w-36 border-b border-slate-200 p-4 text-center font-semibold text-slate-700">
+              <th v-for="alvo in alvos" :key="alvo.id" scope="col" class="permissions-matrix__column-heading">
                 {{ alvo.nome }}
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="respondente in respondentes" :key="respondente.id" class="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
-              <th scope="row" class="sticky left-0 z-10 border-r border-slate-200 bg-white p-4 text-left font-semibold text-slate-800">
+            <tr v-for="respondente in respondentes" :key="respondente.id" class="permissions-matrix__row">
+              <th scope="row" class="permissions-matrix__row-heading">
                 {{ respondente.nome }}
               </th>
-              <td v-for="alvo in alvos" :key="alvo.id" class="p-4 text-center">
-                <label class="inline-flex cursor-pointer items-center justify-center rounded-lg p-2 hover:bg-emerald-50" :title="`${respondente.nome} pode avaliar ${alvo.nome}`">
+              <td v-for="alvo in alvos" :key="alvo.id" class="permissions-matrix__cell">
+                <label class="permissions-matrix__toggle" :title="`${respondente.nome} pode avaliar ${alvo.nome}`">
                   <input
                     type="checkbox"
-                    class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    class="permissions-matrix__checkbox"
                     :aria-label="`${respondente.nome} pode avaliar ${alvo.nome}`"
                     :checked="estaPermitido(respondente.id, alvo.id)"
                     :disabled="salvando || !podeEditar"
@@ -121,7 +121,7 @@ onMounted(carregar);
               </td>
             </tr>
             <tr v-if="respondentes.length === 0 || alvos.length === 0">
-              <td :colspan="Math.max(1, alvos.length + 1)" class="p-8 text-center text-sm text-slate-500">
+              <td :colspan="Math.max(1, alvos.length + 1)" class="permissions-matrix__empty">
                 Não há tipos habilitados como respondente ou alvo.
               </td>
             </tr>
@@ -129,9 +129,9 @@ onMounted(carregar);
         </table>
       </div>
 
-      <footer class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-xs text-slate-500">{{ permissoes.size }} combinação(ões) permitida(s)</p>
-        <button v-if="podeEditar" type="button" class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60" :disabled="salvando" @click="salvar">
+      <footer class="permissions-matrix__footer">
+        <p class="permissions-matrix__count">{{ permissoes.size }} combinação(ões) permitida(s)</p>
+        <button v-if="podeEditar" type="button" class="button button--primary permissions-matrix__save" :disabled="salvando" @click="salvar">
           {{ salvando ? 'Salvando…' : 'Salvar permissões' }}
         </button>
       </footer>

@@ -151,83 +151,83 @@ function voltarASelecao() {
 </script>
 
 <template>
-  <div class="space-y-5">
-    <div class="bg-white border border-slate-200 rounded-2xl p-5 md:p-6">
-      <h2 class="text-lg font-bold text-slate-900">Responder avaliações</h2>
-      <p class="text-xs text-slate-500 mt-1">Avaliações publicadas para seu perfil durante o período de aplicação.</p>
+  <div class="survey-response">
+    <div class="survey-response__intro">
+      <h2 class="survey-response__title">Responder avaliações</h2>
+      <p class="survey-response__description">Avaliações publicadas para seu perfil durante o período de aplicação.</p>
     </div>
 
-    <p v-if="erro" role="alert" class="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-800">{{ erro }}</p>
-    <p v-if="sucesso" role="status" class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800">{{ sucesso }}</p>
-    <p v-if="carregando" class="text-sm text-slate-500">Carregando avaliações…</p>
+    <p v-if="erro" role="alert" class="alert alert--error">{{ erro }}</p>
+    <p v-if="sucesso" role="status" class="alert alert--success">{{ sucesso }}</p>
+    <p v-if="carregando" class="loading-message">Carregando avaliações…</p>
 
     <template v-if="!instrumento">
-      <p v-if="!carregando && grupos.length === 0" class="bg-white border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
+      <p v-if="!carregando && grupos.length === 0" class="empty-state">
         Nenhuma avaliação disponível para seu perfil neste período.
       </p>
-      <div v-if="grupoSelecionado" class="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-        <button type="button" @click="grupoSelecionado = null; alvosMarcados = []" class="text-xs font-bold text-emerald-700 hover:underline">← Voltar às avaliações</button>
+      <div v-if="grupoSelecionado" class="survey-selection">
+        <button type="button" @click="grupoSelecionado = null; alvosMarcados = []" class="text-action text-action--primary">← Voltar às avaliações</button>
         <div>
-          <h3 class="font-bold text-slate-900">{{ grupos.find(g => g.chave === grupoSelecionado)?.titulo }}</h3>
-          <p class="text-xs text-slate-500 mt-1">{{ grupos.find(g => g.chave === grupoSelecionado)?.contextoNome || 'Avaliação institucional' }} · selecione os alvos antes de responder.</p>
+          <h3 class="survey-card__title">{{ grupos.find(g => g.chave === grupoSelecionado)?.titulo }}</h3>
+          <p class="survey-card__hint">{{ grupos.find(g => g.chave === grupoSelecionado)?.contextoNome || 'Avaliação institucional' }} · selecione os alvos antes de responder.</p>
         </div>
         <label v-for="item in grupos.find(g => g.chave === grupoSelecionado)?.alvos" :key="`${item.alvoId}:${item.contextoId || ''}`"
-          class="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-sm">
-          <span class="flex items-center gap-2">
+          class="survey-selection__target">
+          <span class="survey-selection__target-name">
             <input v-if="!item.respondido" type="checkbox" :checked="alvosMarcados.includes(`${item.alvoId}:${item.contextoId || ''}`)"
               @change="alternarAlvo(`${item.alvoId}:${item.contextoId || ''}`)" />
-            <span>{{ item.alvoNome }}<span v-if="item.alvoTipoCodigo" class="text-xs text-slate-500"> · {{ item.alvoTipoCodigo }}</span></span>
+            <span>{{ item.alvoNome }}<span v-if="item.alvoTipoCodigo" class="survey-selection__target-type"> · {{ item.alvoTipoCodigo }}</span></span>
           </span>
-          <span v-if="item.respondido" class="text-xs font-bold text-emerald-700">Respondida</span>
+          <span v-if="item.respondido" class="survey-selection__answered">Respondida</span>
         </label>
         <button type="button" :disabled="!alvosMarcados.length || carregando" @click="responderAlvosSelecionados"
-          class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
+          class="button button--primary survey-response__button">
           Responder aos alvos selecionados
         </button>
       </div>
       <div v-else v-for="grupo in grupos" :key="grupo.chave"
-        class="bg-white border border-slate-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+        class="survey-card survey-card--summary">
         <div>
-          <h3 class="font-bold text-slate-900">{{ grupo.titulo }}</h3>
-          <p v-if="grupo.descricao" class="text-sm text-slate-600 mt-1">{{ grupo.descricao }}</p>
-          <p v-if="grupo.contextoNome" class="text-xs text-slate-500 mt-1">Turma: {{ grupo.contextoNome }}</p>
-          <p class="text-xs text-slate-500">{{ grupo.alvos.filter(a => !a.respondido).length }} alvo(s) disponíveis</p>
+          <h3 class="survey-card__title">{{ grupo.titulo }}</h3>
+          <p v-if="grupo.descricao" class="survey-card__description">{{ grupo.descricao }}</p>
+          <p v-if="grupo.contextoNome" class="survey-card__hint">Turma: {{ grupo.contextoNome }}</p>
+          <p class="survey-card__hint">{{ grupo.alvos.filter(a => !a.respondido).length }} alvo(s) disponíveis</p>
         </div>
         <button type="button" :disabled="carregando || grupo.alvos.every(a => a.respondido)" @click="selecionarGrupo(grupo.chave)"
-          class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
+          class="button button--primary survey-response__button">
           Selecionar alvos
         </button>
       </div>
     </template>
 
     <template v-else>
-      <div class="bg-white border border-slate-200 rounded-xl p-5">
+      <div class="survey-response__instrument">
         <button type="button" @click="voltarASelecao"
-          class="text-xs font-bold text-emerald-700 hover:underline">← Voltar às avaliações</button>
-        <h3 class="text-lg font-bold text-slate-900 mt-3">{{ instrumento.titulo }}</h3>
-        <p v-if="instrumento.descricao" class="text-sm text-slate-600 mt-1">{{ instrumento.descricao }}</p>
-        <p v-if="selecionada" class="text-xs font-semibold text-emerald-800 mt-2">
+          class="text-action text-action--primary">← Voltar às avaliações</button>
+        <h3 class="survey-response__instrument-title">{{ instrumento.titulo }}</h3>
+        <p v-if="instrumento.descricao" class="survey-card__description">{{ instrumento.descricao }}</p>
+        <p v-if="selecionada" class="survey-response__target-caption">
           Avaliando: {{ selecionada.alvoNome }}<span v-if="selecionada.contextoNome"> · Turma: {{ selecionada.contextoNome }}</span>
         </p>
       </div>
       <section v-for="(pagina, pi) in instrumento.paginas || []" :key="pagina.id || pi"
-        class="bg-slate-100 border border-slate-200 rounded-xl p-5">
-        <p class="text-[10px] uppercase font-bold text-slate-500">Página {{ pi + 1 }}</p>
-        <h4 class="font-bold text-slate-900 mt-1">{{ pagina.titulo }}</h4>
-        <p v-if="pagina.descricao" class="text-sm text-slate-600 mt-1">{{ pagina.descricao }}</p>
+        class="survey-page">
+        <p class="survey-page__number">Página {{ pi + 1 }}</p>
+        <h4 class="survey-page__title">{{ pagina.titulo }}</h4>
+        <p v-if="pagina.descricao" class="survey-page__description">{{ pagina.descricao }}</p>
       </section>
       <section v-for="(sessao, si) in instrumento.sessoes || []" :key="sessao.id || si"
-        class="bg-white border border-slate-200 rounded-xl p-5 space-y-5">
+        class="survey-session">
         <div>
-          <h4 class="font-bold text-slate-900">{{ sessao.titulo }}</h4>
-          <p v-if="sessao.descricao" class="text-sm text-slate-500">{{ sessao.descricao }}</p>
+          <h4 class="survey-session__title">{{ sessao.titulo }}</h4>
+          <p v-if="sessao.descricao" class="survey-session__description">{{ sessao.descricao }}</p>
         </div>
-        <fieldset v-for="(q, qi) in sessao.questoes" :key="q.sessaoQuestaoId || qi" class="border-t border-slate-100 pt-4 space-y-2">
-          <legend class="font-semibold text-sm text-slate-800">{{ qi + 1 }}. {{ q.enunciado }} <span v-if="q.obrigatoria" class="text-rose-600">*</span></legend>
+        <fieldset v-for="(q, qi) in sessao.questoes" :key="q.sessaoQuestaoId || qi" class="survey-question">
+          <legend class="survey-question__title">{{ qi + 1 }}. {{ q.enunciado }} <span v-if="q.obrigatoria" class="survey-question__required">*</span></legend>
           <textarea v-if="q.tipo === 'DESCRITIVA'" v-model="textos[q.sessaoQuestaoId!]" rows="4"
-            class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Escreva sua resposta"></textarea>
+            class="survey-answer" placeholder="Escreva sua resposta"></textarea>
           <template v-else>
-            <label v-for="op in opcoes(q)" :key="op.id" class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <label v-for="op in opcoes(q)" :key="op.id" class="survey-option">
               <input v-if="q.tipo === 'MULTIPLA_ESCOLHA'" v-model="multiplas[q.sessaoQuestaoId!]" type="checkbox" :value="op.id" />
               <input v-else v-model="escolhas[q.sessaoQuestaoId!]" type="radio" :name="q.sessaoQuestaoId" :value="op.id" />
               {{ op.texto }}
@@ -236,7 +236,7 @@ function voltarASelecao() {
         </fieldset>
       </section>
       <button type="button" :disabled="enviando || carregando" @click="enviar"
-        class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-sm px-5 py-3 rounded-xl">
+        class="button button--primary survey-response__submit">
         {{ enviando ? 'Enviando…' : 'Enviar avaliação' }}
       </button>
     </template>

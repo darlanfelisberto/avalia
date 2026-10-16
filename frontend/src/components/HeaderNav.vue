@@ -40,63 +40,63 @@ const tituloVisao = computed(() => {
 </script>
 
 <template>
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+  <header class="app-header">
     <!-- Barra de contexto da página ativa -->
-    <div class="px-4 py-3 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
+    <div class="app-header__bar">
+      <div class="app-header__context">
         <!-- Botão hambúrguer para abrir o menu no celular/tablet -->
         <button
           type="button"
           @click="emit('abrirMenuMobile')"
-          class="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200"
+          class="icon-button app-header__menu-button"
           title="Abrir Menu Lateral"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="app-header__menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
 
         <div>
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+          <div class="app-header__labels">
+            <span class="app-header__category">
               {{ tituloVisao.categoria }}
             </span>
-            <span class="text-[11px] text-slate-400 font-mono hidden sm:inline">
+            <span class="app-header__code">
               {{ tituloVisao.codigo }}
             </span>
           </div>
-          <h1 class="text-base md:text-lg font-bold text-slate-900 leading-tight mt-0.5">
+          <h1 class="app-header__title">
             {{ tituloVisao.titulo }}
           </h1>
         </div>
       </div>
 
       <!-- Usuário Ativo e Indicadores -->
-      <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+      <div class="app-header__user-area">
         <!-- Usuário Autenticado e Papel Ativo -->
-        <div v-if="usuario" class="flex items-center gap-2.5 bg-slate-50 border border-slate-200/90 rounded-xl px-3 py-1.5 shadow-2xs">
-          <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+        <div v-if="usuario" class="app-header__user-card">
+          <div class="app-header__avatar">
             {{ usuario.nome?.charAt(0) || 'U' }}
           </div>
-          <div class="flex flex-col text-left">
-            <div class="flex items-center gap-1.5">
-              <span class="font-bold text-xs text-slate-800 max-w-[120px] sm:max-w-[180px] truncate" :title="usuario.nome">
+          <div class="app-header__user-copy">
+            <div class="app-header__user-line">
+              <span class="app-header__user-name" :title="usuario.nome">
                 {{ usuario.nome }}
               </span>
-              <span class="text-[10px] text-slate-400 font-mono hidden md:inline">({{ usuario.cpfFormatado || usuario.cpf }})</span>
+              <span class="app-header__user-id">({{ usuario.cpfFormatado || usuario.cpf }})</span>
             </div>
-            <div class="flex items-center gap-1.5">
-              <span class="text-[10px] font-semibold text-emerald-700 uppercase tracking-wide">
+            <div class="app-header__user-line">
+              <span class="app-header__roles">
                 {{ usuario.papeis?.join(' / ') || usuario.papel }}
               </span>
-              <span class="text-[10px] text-slate-400">&bull;</span>
-              <span class="text-[10px] text-slate-500 truncate max-w-[100px]">{{ usuario.campus || 'Geral' }}</span>
+              <span class="app-header__separator">&bull;</span>
+              <span class="app-header__campus">{{ usuario.campus || 'Geral' }}</span>
             </div>
           </div>
 
           <button
             @click="emit('logout')"
-            class="ml-1 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer text-xs"
+            class="app-header__logout"
             title="Sair / Desconectar"
           >
             Sair

@@ -30,19 +30,19 @@ function valor(linha: T, chave: string): unknown {
 </script>
 
 <template>
-  <div class="w-full">
-    <div class="overflow-x-auto">
-      <table class="w-full text-xs">
-        <thead class="bg-slate-50 text-[10px] uppercase text-slate-500">
+  <div class="data-table-wrap">
+    <div class="data-table-scroll">
+      <table class="data-table">
+        <thead class="data-table__head">
           <tr>
-            <th v-for="coluna in columns" :key="coluna.key" :class="['p-3', coluna.headerClass || 'text-left']">
+            <th v-for="coluna in columns" :key="coluna.key" :class="['data-table__heading', coluna.headerClass]">
               {{ coluna.label }}
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(linha, indice) in rows" :key="String(valor(linha, rowKey) ?? indice)" class="border-t border-slate-100 hover:bg-slate-50/60">
-            <td v-for="coluna in columns" :key="coluna.key" :class="['p-3', coluna.class]">
+          <tr v-for="(linha, indice) in rows" :key="String(valor(linha, rowKey) ?? indice)" class="data-table__row">
+            <td v-for="coluna in columns" :key="coluna.key" :class="['data-table__cell', coluna.class]">
               <slot name="cell" :row="linha" :column="coluna.key">
                 {{ valor(linha, coluna.key) }}
               </slot>
@@ -52,12 +52,12 @@ function valor(linha: T, chave: string): unknown {
       </table>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
+    <div class="data-table__pagination">
       <span>{{ rows.length ? `Exibindo ${primeiroItem}–${ultimoItem} nesta página` : 'Nenhum instrumento nesta página' }}</span>
-      <nav class="flex items-center gap-1" aria-label="Paginação da tabela">
-        <button type="button" class="rounded-lg border border-slate-200 px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-40" :disabled="page <= 1" aria-label="Página anterior" @click="emit('page-change', page - 1)">Anterior</button>
-        <span class="px-2">Página {{ page }}</span>
-        <button type="button" class="rounded-lg border border-slate-200 px-2.5 py-1.5 hover:bg-slate-50 disabled:opacity-40" :disabled="!hasNext" aria-label="Próxima página" @click="emit('page-change', page + 1)">Próxima</button>
+      <nav class="data-table__page-controls" aria-label="Paginação da tabela">
+        <button type="button" class="button button--secondary data-table__page-button" :disabled="page <= 1" aria-label="Página anterior" @click="emit('page-change', page - 1)">Anterior</button>
+        <span class="data-table__current-page">Página {{ page }}</span>
+        <button type="button" class="button button--secondary data-table__page-button" :disabled="!hasNext" aria-label="Próxima página" @click="emit('page-change', page + 1)">Próxima</button>
       </nav>
     </div>
   </div>

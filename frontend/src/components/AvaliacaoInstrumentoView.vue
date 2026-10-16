@@ -54,50 +54,50 @@ onMounted(() => carregarLista());
 
 const fmtData = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '—');
 const corStatus: Record<string, string> = {
-  RASCUNHO: 'bg-slate-100 text-slate-700',
-  PUBLICADO: 'bg-emerald-100 text-emerald-800',
-  ENCERRADO: 'bg-amber-100 text-amber-800',
-  CONSOLIDADO: 'bg-purple-100 text-purple-800'
+  RASCUNHO: 'status-badge--draft',
+  PUBLICADO: 'status-badge--published',
+  ENCERRADO: 'status-badge--closed',
+  CONSOLIDADO: 'status-badge--consolidated'
 };
 const colunasInstrumentos = [
-  { key: 'titulo', label: 'Título', class: 'font-semibold text-slate-900' },
-  { key: 'cicloReferencia', label: 'Ciclo', class: 'text-slate-600' },
-  { key: 'tipoEntidadeAvaliadaNome', label: 'Avalia', class: 'text-slate-600' },
-  { key: 'periodo', label: 'Período', class: 'text-slate-600' },
+  { key: 'titulo', label: 'Título', class: 'instrument-table__title' },
+  { key: 'cicloReferencia', label: 'Ciclo', class: 'instrument-table__secondary' },
+  { key: 'tipoEntidadeAvaliadaNome', label: 'Avalia', class: 'instrument-table__secondary' },
+  { key: 'periodo', label: 'Período', class: 'instrument-table__secondary' },
   { key: 'status', label: 'Status' },
   { key: 'acoes', label: '', class: 'text-right whitespace-nowrap' }
 ];
 </script>
 
 <template>
-  <div class="space-y-6">
-    <p v-if="erro" class="p-4 bg-rose-50 border border-rose-300 rounded-xl text-xs text-rose-900 font-semibold flex justify-between gap-3">
+  <div class="instrument-list">
+    <p v-if="erro" class="alert alert--error instrument-list__error">
       <span>⚠️ {{ erro }}</span><button type="button" @click="erro = null">✕</button>
     </p>
 
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-      <div class="p-5 md:p-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100">
+    <div class="instrument-list__card">
+      <div class="instrument-list__header">
         <div>
-          <h2 class="text-lg font-bold text-slate-900">Instrumentos de Avaliação</h2>
-          <p class="text-xs text-slate-500">Questionários cadastrados no schema <code>avaliacao</code>.</p>
+          <h2 class="instrument-list__title">Instrumentos de Avaliação</h2>
+          <p class="instrument-list__description">Questionários cadastrados no schema <code>avaliacao</code>.</p>
         </div>
-        <button v-if="podeCriar" type="button" @click="abrirNovo" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
+        <button v-if="podeCriar" type="button" @click="abrirNovo" class="button button--primary instrument-list__create">
           + Novo instrumento
         </button>
       </div>
 
-      <p v-if="carregando" class="p-8 text-center text-xs text-slate-400 animate-pulse">Carregando…</p>
-      <p v-else-if="instrumentos.length === 0" class="p-8 text-center text-xs text-slate-400">Nenhum instrumento cadastrado.</p>
+      <p v-if="carregando" class="instrument-list__empty instrument-list__empty--loading">Carregando…</p>
+      <p v-else-if="instrumentos.length === 0" class="instrument-list__empty">Nenhum instrumento cadastrado.</p>
       <PaginatedTable v-else :rows="instrumentos" :columns="colunasInstrumentos" :page-size="tamanhoPagina"
                       :page="paginaAtual" :has-next="temProximaPagina" @page-change="carregarLista">
         <template #cell="{ row, column }">
           <template v-if="column === 'periodo'">
             {{ fmtData(row.inicioAplicacao) }} – {{ fmtData(row.fimAplicacao) }}
           </template>
-          <span v-else-if="column === 'status'" :class="['px-2 py-0.5 rounded-full font-bold text-[10px]', corStatus[row.status || 'RASCUNHO']]">{{ row.status }}</span>
+          <span v-else-if="column === 'status'" :class="['status-badge', corStatus[row.status || 'RASCUNHO']]">{{ row.status }}</span>
           <div v-else-if="column === 'acoes'">
-            <button type="button" class="font-bold text-emerald-700 hover:underline mr-3" @click="abrirInstrumento(row.id!)">{{ row.status === 'RASCUNHO' ? 'Editar' : 'Abrir' }}</button>
-            <button v-if="podeExcluir && row.status === 'RASCUNHO'" type="button" class="font-bold text-rose-600 hover:underline" @click="excluir(row.id!, row.titulo)">Excluir</button>
+            <button type="button" class="text-action text-action--primary instrument-table__open" @click="abrirInstrumento(row.id!)">{{ row.status === 'RASCUNHO' ? 'Editar' : 'Abrir' }}</button>
+            <button v-if="podeExcluir && row.status === 'RASCUNHO'" type="button" class="text-action text-action--danger" @click="excluir(row.id!, row.titulo)">Excluir</button>
           </div>
         </template>
       </PaginatedTable>

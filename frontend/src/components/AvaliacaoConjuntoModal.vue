@@ -31,37 +31,37 @@ async function salvar() {
   else erro.value = res.erro || 'Erro ao salvar o conjunto.';
 }
 
-const input = 'w-full text-xs p-2.5 border border-slate-200 rounded-lg outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600';
+const input = 'form-field';
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4" @click.self="emit('fechar')">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+  <div class="dialog-backdrop" @click.self="emit('fechar')">
+    <div class="dialog-card">
       <div>
-        <h3 class="text-sm font-bold text-slate-900">Novo conjunto de opções</h3>
-        <p class="text-xs text-slate-500 mt-0.5">Fica disponível para reutilização em qualquer questão.</p>
+        <h3 class="dialog-card__title">Novo conjunto de opções</h3>
+        <p class="dialog-card__description">Fica disponível para reutilização em qualquer questão.</p>
       </div>
 
-      <input v-model="conjunto.nome" placeholder="Nome (ex.: Frequência: Nunca … Sempre)" :class="[input, 'font-semibold']" />
+      <input v-model="conjunto.nome" placeholder="Nome (ex.: Frequência: Nunca … Sempre)" :class="[input, 'form-field--emphasis']" />
 
-      <div class="space-y-2">
-        <div class="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase text-slate-400 px-1">
-          <span class="col-span-7">Texto</span><span class="col-span-2">Valor</span><span class="col-span-2 text-center">Correta</span><span></span>
+      <div class="dialog-options">
+        <div class="dialog-options__header">
+          <span class="dialog-options__text">Texto</span><span class="dialog-options__value">Valor</span><span class="dialog-options__correct">Correta</span><span></span>
         </div>
-        <div v-for="(o, i) in conjunto.opcoes" :key="i" class="grid grid-cols-12 gap-2 items-center">
-          <input v-model="o.texto" placeholder="Texto da opção" :class="[input, 'col-span-7']" />
-          <input v-model.number="o.valor" type="number" step="0.5" :class="[input, 'col-span-2']" />
-          <input v-model="o.correta" type="checkbox" class="col-span-2 mx-auto w-4 h-4" />
-          <button type="button" class="text-rose-500 text-sm disabled:opacity-30" :disabled="conjunto.opcoes.length <= 2" @click="conjunto.opcoes.splice(i, 1)">✕</button>
+        <div v-for="(o, i) in conjunto.opcoes" :key="i" class="dialog-options__row">
+          <input v-model="o.texto" placeholder="Texto da opção" class="form-field dialog-options__text" />
+          <input v-model.number="o.valor" type="number" step="0.5" class="form-field dialog-options__value" />
+          <input v-model="o.correta" type="checkbox" class="dialog-options__checkbox" />
+          <button type="button" class="dialog-options__remove" :disabled="conjunto.opcoes.length <= 2" @click="conjunto.opcoes.splice(i, 1)">✕</button>
         </div>
-        <button type="button" class="text-[11px] font-bold text-emerald-700" @click="addOpcao">+ Adicionar opção</button>
+        <button type="button" class="dialog-options__add" @click="addOpcao">+ Adicionar opção</button>
       </div>
 
-      <p v-if="erro" class="text-xs bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-2.5">{{ erro }}</p>
+      <p v-if="erro" class="alert alert--error dialog-card__error">{{ erro }}</p>
 
-      <div class="flex justify-end gap-2 pt-2">
-        <button type="button" class="text-xs font-semibold border border-slate-200 rounded-xl px-4 py-2 hover:bg-slate-50" @click="emit('fechar')">Cancelar</button>
-        <button type="button" :disabled="salvando" class="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-4 py-2 disabled:opacity-50" @click="salvar">
+      <div class="dialog-card__actions">
+        <button type="button" class="button button--secondary" @click="emit('fechar')">Cancelar</button>
+        <button type="button" :disabled="salvando" class="button button--primary dialog-card__save" @click="salvar">
           {{ salvando ? 'Salvando…' : 'Salvar conjunto' }}
         </button>
       </div>

@@ -79,11 +79,11 @@ async function aoLogout() {
 </script>
 
 <template>
-  <div v-if="processandoRetorno" class="min-h-screen flex items-center justify-center text-slate-600">Concluindo autenticação...</div>
+  <div v-if="processandoRetorno" class="auth-loading">Concluindo autenticação...</div>
   <LoginView v-else-if="!usuarioLogado" :erroInicial="erroLogin" />
 
   <!-- Aplicação Principal Autenticada -->
-  <div v-else class="min-h-screen bg-slate-50 text-slate-800 flex">
+  <div v-else class="app-shell">
     <!-- Menu Lateral Esquerdo Institucional -->
     <Sidebar
       :visaoAtual="visaoAtual"
@@ -95,7 +95,7 @@ async function aoLogout() {
     />
 
     <!-- Área de Conteúdo Principal (deslocada pela largura da Sidebar no Desktop) -->
-    <div class="flex-1 flex flex-col min-h-screen lg:pl-72 w-full transition-all duration-300">
+    <div class="app-workspace">
       <HeaderNav
         :visaoAtual="visaoAtual"
         :usuario="usuarioLogado"
@@ -103,23 +103,23 @@ async function aoLogout() {
         @logout="aoLogout"
       />
 
-      <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8">
-        <p v-if="erroLogout" role="alert" class="mb-4 rounded bg-red-50 p-3 text-red-700">{{ erroLogout }}</p>
+      <main class="app-main-content">
+        <p v-if="erroLogout" role="alert" class="alert alert--error app-logout-error">{{ erroLogout }}</p>
         <RouterView v-slot="{ Component }">
           <component :is="Component" :key="`${route.fullPath}-${usuarioLogado.cpf}-${recargaVisao}`" />
         </RouterView>
       </main>
 
       <!-- Rodapé Acadêmico e Institucional -->
-      <footer class="bg-white border-t border-slate-200 mt-auto py-5 text-xs text-slate-500">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+      <footer class="app-footer">
+        <div class="app-footer__content">
           <div>
-            <p class="font-medium text-slate-700">Sistema Informatizado para o Fechamento do Ciclo Avaliativo (AVALIA)</p>
-            <p class="text-[11px] text-slate-400 mt-0.5">
+            <p class="app-footer__title">Sistema Informatizado para o Fechamento do Ciclo Avaliativo (AVALIA)</p>
+            <p class="app-footer__subtitle">
               Dissertação de Mestrado Profissional em Tecnologias Educacionais em Rede (PPGTER / UFSM)
             </p>
           </div>
-          <div class="text-[11px] text-slate-400">
+          <div class="app-footer__researcher">
             Pesquisador: Darlan E. F. da Silva • IFFar (2026/2027)
           </div>
         </div>
