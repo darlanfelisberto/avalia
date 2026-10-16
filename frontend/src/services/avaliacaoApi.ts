@@ -1,6 +1,4 @@
 import type { ConjuntoOpcao, InstrumentoAv, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
-import { carregarUsuarioAtivo } from './storage';
-
 const BASE = '/api/avaliacao';
 
 export interface Resultado<T> {
@@ -11,12 +9,10 @@ export interface Resultado<T> {
 
 async function chamar<T>(url: string, init?: RequestInit): Promise<Resultado<T>> {
   try {
-    const usuario = carregarUsuarioAtivo();
     const res = await fetch(url, {
       ...init,
       headers: {
         'Content-Type': 'application/json',
-        ...(usuario ? { 'X-Papel-Ativo': usuario.papelAtivo || usuario.papel } : {}),
         ...(init?.headers || {})
       }
     });

@@ -32,32 +32,34 @@ public class ResponderAvaliacaoService {
     @Inject
     private ResponderAvaliacaoDao respostaDao;
 
-    private String codigoRespondente(UsuarioDTO usuario) {
+    private List<String> codigosRespondente(UsuarioDTO usuario) {
         if (!usuario.getPermissoes().contains("AVALIACAO_RESPONDER"))
             throw new SecurityException("Seu perfil não tem permissão para responder avaliações.");
-        return switch (usuario.getPapelAtivo()) {
-            case "DISCENTE" -> "ALUNO";
-            case "DOCENTE" -> "DOCENTE";
-            case "TAE", "CPA", "ADMIN" -> "SERVIDOR";
-            default -> null;
-        };
+        Set<String> codigos = new LinkedHashSet<>();
+        List<String> papeis = usuario.getPapeis();
+        if (papeis.contains("DISCENTE")) codigos.add("ALUNO");
+        if (papeis.contains("DOCENTE")) codigos.add("DOCENTE");
+        if (papeis.stream().anyMatch(p -> List.of("TAE", "CPA", "ADMIN").contains(p))) codigos.add("SERVIDOR");
+        return List.copyOf(codigos);
     }
 
-    @SuppressWarnings("unchecked")
     public List<Disponivel> listar(UsuarioDTO usuario) {
-        String codigo = codigoRespondente(usuario);
-        List<Disponivel> disponiveis = new ArrayList<>();
-        List<Object[]> linhas = codigo == null ? List.of() : respostaDao.listarGerais(codigo, usuario.getCpf());
-        for (Object[] linha : linhas) {
-            Disponivel d = new Disponivel();
-            d.instrumentoId = (String) linha[0];
-            d.titulo = (String) linha[1];
-            d.descricao = (String) linha[2];
-            d.alvoId = (String) linha[3];
-            d.alvoNome = (String) linha[4];
-            d.alvoTipoCodigo = (String) linha[5];
-            d.respondido = (Boolean) linha[8];
-            disponiveis.add(d);
+        List<String> codigos = codigosRespondente(usuario);
+        Map<String, Disponivel> disponiveis = new LinkedHashMap<>();
+        for (String codigo : codigos) {
+            for (Object[] linha : respostaDao.listarGerais(codigo, usuario.getCpf())) {
+                Disponivel d = new Disponivel();
+                d.instrumentoId = (String) linha[0];
+                d.titulo = (String) linha[1];
+                d.descricao = (String) linha[2];
+                d.alvoId = (String) linha[3];
+                d.alvoNome = (String) linha[4];
+                d.alvoTipoCodigo = (String) linha[5];
+                d.respondido = (Boolean) linha[8];
+                d.tipoRespondenteCodigo = codigo;
+                adicionarDisponivel(disponiveis, d);
+            }
+            for (Disponivel d : listarAlvosDeTurma(usuario, codigo)) adicionarDisponivel(disponiveis, d);
         }
         for (Object[] linha : respostaDao.listarInstitucionais(usuario.getCpf())) {
             Disponivel d = new Disponivel();
@@ -69,11 +71,18 @@ public class ResponderAvaliacaoService {
             d.alvoTipoCodigo = (String) linha[5];
             d.respondido = (Boolean) linha[8];
             d.tipoRespondenteCodigo = (String) linha[9];
-            disponiveis.add(d);
+            adicionarDisponivel(disponiveis, d);
         }
-        if (codigo != null) disponiveis.addAll(listarAlvosDeTurma(usuario, codigo));
-        if ("ALUNO".equals(codigo)) disponiveis.addAll(listarDocentesDaTurma(usuario));
-        return disponiveis;
+        if (codigos.contains("ALUNO"))
+            for (Disponivel d : listarDocentesDaTurma(usuario)) adicionarDisponivel(disponiveis, d);
+        return new ArrayList<>(disponiveis.values());
+    }
+
+    private void adicionarDisponivel(Map<String, Disponivel> disponiveis, Disponivel d) {
+        String chave = String.join("|", Objects.toString(d.instrumentoId, ""),
+                Objects.toString(d.alvoId, ""), Objects.toString(d.contextoId, ""),
+                Objects.toString(d.tipoRespondenteCodigo, ""));
+        disponiveis.putIfAbsent(chave, d);
     }
 
     @SuppressWarnings("unchecked")
@@ -91,6 +100,7 @@ public class ResponderAvaliacaoService {
             d.contextoId = (String) row[6];
             d.contextoNome = (String) row[7];
             d.respondido = (Boolean) row[8];
+            d.tipoRespondenteCodigo = codigo;
             out.add(d);
         }
         return out;
@@ -111,6 +121,7 @@ public class ResponderAvaliacaoService {
             d.contextoId = (String) row[6];
             d.contextoNome = (String) row[7];
             d.respondido = (Boolean) row[8];
+            d.tipoRespondenteCodigo = "ALUNO";
             out.add(d);
         }
         return out;
@@ -187,7 +198,8 @@ public class ResponderAvaliacaoService {
             throw new IllegalArgumentException("Questão fora do instrumento.");
 
         String tipoCodigo = disponivel.tipoRespondenteCodigo != null
-                ? disponivel.tipoRespondenteCodigo : codigoRespondente(usuario);
+                ? disponivel.tipoRespondenteCodigo : codigosRespondente(usuario).stream().findFirst()
+                    .orElseThrow(() -> new SecurityException("Perfil sem tipo de respondente autorizado."));
         UUID respondenteId = dao.buscarOuCriarRespondente(usuario.getCpf(), usuario.getNome(), tipoCodigo);
         InstrumentoAvaliativo instrumento = dao.buscarInstrumento(UUID.fromString(instrumentoId));
         Entidade alvo = dao.referencia(Entidade.class, UUID.fromString(envio.alvoId));

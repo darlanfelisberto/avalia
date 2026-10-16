@@ -21,41 +21,38 @@ public class ResponderAvaliacaoResource {
     @Inject ResponderAvaliacaoService service;
 
     @GET
-    public Response listar(@HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> Response.ok(service.listar(usuario(papel))).build());
+    public Response listar() {
+        return executar(() -> Response.ok(service.listar(usuario())).build());
     }
 
     @GET
     @Path("/{instrumentoId}/{alvoId}")
     public Response buscar(@PathParam("instrumentoId") String instrumentoId,
                            @PathParam("alvoId") String alvoId,
-                           @QueryParam("contextoId") String contextoId,
-                           @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> Response.ok(service.buscar(usuario(papel), instrumentoId, alvoId, contextoId)).build());
+                           @QueryParam("contextoId") String contextoId) {
+        return executar(() -> Response.ok(service.buscar(usuario(), instrumentoId, alvoId, contextoId)).build());
     }
 
     @GET
     @Path("/{instrumentoId}/{alvoId}/conjuntos-opcao")
     public Response conjuntos(@PathParam("instrumentoId") String instrumentoId,
                              @PathParam("alvoId") String alvoId,
-                             @QueryParam("contextoId") String contextoId,
-                             @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> Response.ok(service.listarConjuntos(usuario(papel),
+                             @QueryParam("contextoId") String contextoId) {
+        return executar(() -> Response.ok(service.listarConjuntos(usuario(),
                 instrumentoId, alvoId, contextoId)).build());
     }
 
     @POST
     @Path("/{instrumentoId}/envios")
-    public Response enviar(@PathParam("instrumentoId") String instrumentoId, Envio envio,
-                           @HeaderParam("X-Papel-Ativo") String papel) {
+    public Response enviar(@PathParam("instrumentoId") String instrumentoId, Envio envio) {
         return executar(() -> {
-            service.enviar(usuario(papel), instrumentoId, envio);
+            service.enviar(usuario(), instrumentoId, envio);
             return Response.noContent().build();
         });
     }
 
-    private UsuarioDTO usuario(String papel) {
-        return auth.validarJwt(papel);
+    private UsuarioDTO usuario() {
+        return auth.validarJwt();
     }
 
     private Response executar(Supplier<Response> acao) {

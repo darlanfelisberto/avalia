@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 @Path("/avaliacao")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@RolesAllowed("user")
+@RolesAllowed({"CPA", "ADMIN"})
 public class AvaliacaoResource {
 
     @Inject
@@ -26,36 +26,36 @@ public class AvaliacaoResource {
     @Inject
     AuthService auth;
 
-    private void exigirGestor(String papel, String permissao) {
-        UsuarioDTO usuario = auth.validarJwt(papel);
-        if (!("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
-                || !usuario.getPermissoes().contains(permissao))
-            throw new SecurityException("Acesso restrito à administração de instrumentos.");
+    private UsuarioDTO exigirPermissao(String permissao) {
+        UsuarioDTO usuario = auth.validarJwt();
+        if (!usuario.getPermissoes().contains(permissao))
+            throw new SecurityException("Permissão insuficiente para esta operação.");
+        return usuario;
     }
 
     @GET
     @Path("/conjuntos-opcao")
-    public Response conjuntos(@HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarConjuntos()).build(); });
+    public Response conjuntos() {
+        return executar(() -> { exigirPermissao("INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarConjuntos()).build(); });
     }
 
     @POST
     @Path("/conjuntos-opcao")
-    public Response salvarConjunto(ConjuntoOpcao dto, @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_CRIAR"); return Response.ok(service.salvarConjunto(dto)).build(); });
+    public Response salvarConjunto(ConjuntoOpcao dto) {
+        return executar(() -> { exigirPermissao("INSTRUMENTO_CRIAR"); return Response.ok(service.salvarConjunto(dto)).build(); });
     }
 
     @GET
     @Path("/instrumentos")
-    public Response listar(@HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarInstrumentos()).build(); });
+    public Response listar() {
+        return executar(() -> { exigirPermissao("INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarInstrumentos()).build(); });
     }
 
     @GET
     @Path("/instrumentos/{id}")
-    public Response buscar(@PathParam("id") String id, @HeaderParam("X-Papel-Ativo") String papel) {
+    public Response buscar(@PathParam("id") String id) {
         return executar(() -> {
-            exigirGestor(papel, "INSTRUMENTO_VISUALIZAR");
+            exigirPermissao("INSTRUMENTO_VISUALIZAR");
             Instrumento i = service.buscarInstrumento(id);
             return i == null ? Response.status(Response.Status.NOT_FOUND).build() : Response.ok(i).build();
         });
@@ -63,24 +63,24 @@ public class AvaliacaoResource {
 
     @POST
     @Path("/instrumentos")
-    public Response salvar(Instrumento dto, @HeaderParam("X-Papel-Ativo") String papel) {
+    public Response salvar(Instrumento dto) {
         return executar(() -> {
-            exigirGestor(papel, dto == null || dto.id == null || dto.id.isBlank() ? "INSTRUMENTO_CRIAR" : "INSTRUMENTO_EDITAR");
-            UsuarioDTO usuario = auth.validarJwt(papel);
+            UsuarioDTO usuario = exigirPermissao(dto == null || dto.id == null || dto.id.isBlank()
+                    ? "INSTRUMENTO_CRIAR" : "INSTRUMENTO_EDITAR");
             return Response.ok(service.salvarInstrumento(dto, usuario.getCpf())).build();
         });
     }
 
     @POST
     @Path("/instrumentos/{id}/publicar")
-    public Response publicar(@PathParam("id") String id, @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_EDITAR"); return Response.ok(service.publicar(id)).build(); });
+    public Response publicar(@PathParam("id") String id) {
+        return executar(() -> { exigirPermissao("INSTRUMENTO_EDITAR"); return Response.ok(service.publicar(id)).build(); });
     }
 
     @DELETE
     @Path("/instrumentos/{id}")
-    public Response excluir(@PathParam("id") String id, @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_EXCLUIR"); return service.excluir(id)
+    public Response excluir(@PathParam("id") String id) {
+        return executar(() -> { exigirPermissao("INSTRUMENTO_EXCLUIR"); return service.excluir(id)
                 ? Response.noContent().build()
                 : Response.status(Response.Status.NOT_FOUND).build(); });
     }

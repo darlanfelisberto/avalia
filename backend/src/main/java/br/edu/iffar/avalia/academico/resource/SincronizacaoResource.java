@@ -17,7 +17,7 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @ApplicationScoped
-@RolesAllowed("user")
+@RolesAllowed({"CPA", "ADMIN"})
 public class SincronizacaoResource {
 
     @Inject
@@ -26,11 +26,9 @@ public class SincronizacaoResource {
     @Inject
     private AuthService authService;
 
-    private boolean autorizado(String papel) {
+    private boolean autorizado() {
         try {
-            var usuario = authService.validarJwt(papel);
-            return ("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
-                    && usuario.getPermissoes().contains("SIGAA_SINCRONIZAR");
+            return authService.validarJwt().getPermissoes().contains("SIGAA_SINCRONIZAR");
         } catch (SecurityException e) {
             return false;
         }
@@ -38,17 +36,16 @@ public class SincronizacaoResource {
 
     @GET
     @Path("/status")
-    public Response getStatus(@HeaderParam("X-Papel-Ativo") String papel) {
-        if (!autorizado(papel)) return Response.status(Response.Status.UNAUTHORIZED).build();
+    public Response getStatus() {
+        if (!autorizado()) return Response.status(Response.Status.FORBIDDEN).build();
         SincronizacaoStatusDTO status = sincronizacaoService.getStatus();
         return Response.ok(status).build();
     }
 
     @POST
     @Path("/executar")
-    public Response executar(SincronizacaoRequestDTO req,
-                            @HeaderParam("X-Papel-Ativo") String papel) {
-        if (!autorizado(papel)) return Response.status(Response.Status.UNAUTHORIZED).build();
+    public Response executar(SincronizacaoRequestDTO req) {
+        if (!autorizado()) return Response.status(Response.Status.FORBIDDEN).build();
         Map<String, Object> resp = sincronizacaoService.executarSincronizacao(req);
         return Response.ok(resp).build();
     }

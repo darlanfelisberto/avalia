@@ -87,10 +87,9 @@ export async function concluirLoginOidc(): Promise<AuthResponseDTO> {
   return resposta;
 }
 
-export async function validarSessaoAtual(papel?: string): Promise<UsuarioContexto | null> {
+export async function validarSessaoAtual(): Promise<UsuarioContexto | null> {
   try {
     const res = await fetch('/api/auth/me', {
-      headers: papel ? { 'X-Papel-Ativo': papel } : {},
       cache: 'no-store'
     });
     return res.ok ? await res.json() as UsuarioContexto : null;

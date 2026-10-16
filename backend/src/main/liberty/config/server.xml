@@ -35,7 +35,7 @@
     <mpJwt id="avaliaJwt" issuer="${AVALIA_OIDC_ISSUER}"
            jwksUri="${AVALIA_OIDC_JWKS_URI}" audiences="${AVALIA_OIDC_CLIENT_ID}"
            signatureAlgorithm="RS256" tokenHeader="Cookie" cookieName="avalia_access"
-           userNameAttribute="preferred_username"/>
+           userNameAttribute="preferred_username" groupNameAttribute="groups"/>
 
     <!-- Para exibir logs detalhados de SQL no messages.log e console (descomente abaixo):
     <logging traceSpecification="*=info:eclipselink=fine:eclipselink.sql=fine:org.eclipse.persistence=fine"

@@ -124,7 +124,7 @@ public class AuthService {
         usuario.setPermissoes(PERMISSOES_OIDC.stream().filter(gruposConfiaveis::contains).toList());
     }
 
-    public UsuarioDTO validarJwt(String papelAtivo) {
+    public UsuarioDTO validarJwt() {
         String cpf = jwt == null ? null : jwt.getClaim("preferred_username");
         if (cpf == null || !cpf.matches("\\d{11}"))
             throw new SecurityException("Token de acesso inválido.");
@@ -134,10 +134,6 @@ public class AuthService {
         aplicarAutorizacaoOidc(usuario, new ArrayList<>(jwt.getGroups()));
         if (usuario.getPermissoes().isEmpty())
             throw new SecurityException("Usuário sem permissões no provedor OIDC.");
-        String papel = papelAtivo == null || papelAtivo.isBlank() ? usuario.getPapelAtivo() : papelAtivo;
-        if (!usuario.getPapeis().contains(papel))
-            throw new SecurityException("Perfil não autorizado para este token.");
-        usuario.setPapelAtivo(papel);
         return usuario;
     }
 

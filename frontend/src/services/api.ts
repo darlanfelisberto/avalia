@@ -1,13 +1,4 @@
-import { carregarUsuarioAtivo } from './storage';
-
 // --- Integração Acadêmica SIGAA ---
-
-function headersAutenticacao(): Record<string, string> {
-  const usuario = carregarUsuarioAtivo();
-  return usuario ? {
-    'X-Papel-Ativo': usuario.papelAtivo || usuario.papel
-  } : {};
-}
 
 export interface SincronizacaoStatus {
   conectadoSigaa: boolean;
@@ -19,7 +10,7 @@ export interface SincronizacaoStatus {
 
 export async function buscarStatusSincronizacaoApi(): Promise<SincronizacaoStatus | null> {
   try {
-    const res = await fetch('/api/sincronizacao/status', { headers: headersAutenticacao() });
+    const res = await fetch('/api/sincronizacao/status');
     if (res.ok) {
       return await res.json();
     }
@@ -38,7 +29,7 @@ export async function executarSincronizacaoApi(params: {
   try {
     const res = await fetch('/api/sincronizacao/executar', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headersAutenticacao() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
     });
     if (res.ok) {

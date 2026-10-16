@@ -1,5 +1,4 @@
 import type { ConjuntoOpcao, InstrumentoAv } from '../types/instrumentoAvaliacao';
-import { carregarUsuarioAtivo } from './storage';
 
 export interface AvaliacaoDisponivel {
   instrumentoId: string;
@@ -20,13 +19,10 @@ export interface RespostaEnvio {
 }
 
 async function chamar<T>(caminho: string, init?: RequestInit): Promise<T> {
-  const usuario = carregarUsuarioAtivo();
-  if (!usuario) throw new Error('Entre novamente para responder avaliações.');
   const res = await fetch(`/api/avaliacao/responder${caminho}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      'X-Papel-Ativo': usuario.papelAtivo || usuario.papel,
       ...init?.headers
     }
   });

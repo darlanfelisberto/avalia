@@ -26,7 +26,7 @@ onMounted(async () => {
       const resposta = await concluirLoginOidc();
       aoLoginSucesso({ ...resposta.usuario!, papel: resposta.usuario!.papelAtivo || resposta.usuario!.papel });
     } else {
-      const usuario = await validarSessaoAtual(usuarioLogado.value?.papelAtivo || usuarioLogado.value?.papel);
+      const usuario = await validarSessaoAtual();
       if (usuario) {
         aoLoginSucesso({ ...usuario, papel: usuario.papelAtivo || usuario.papel });
       } else {
@@ -45,8 +45,7 @@ onMounted(async () => {
 
 function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes' {
   if (!u) return 'responder';
-  const papel = u.papelAtivo || u.papel;
-  if ((papel === 'CPA' || papel === 'ADMIN') && temPermissao(u, 'INSTRUMENTO_VISUALIZAR')) return 'instrumentos';
+  if (u.papeis.some(p => p === 'CPA' || p === 'ADMIN') && temPermissao(u, 'INSTRUMENTO_VISUALIZAR')) return 'instrumentos';
   if (temPermissao(u, 'AVALIACAO_RESPONDER')) return 'responder';
   if (temPermissao(u, 'SIGAA_SINCRONIZAR')) return 'sincronizacao';
   return 'responder';
@@ -69,19 +68,6 @@ async function aoLogout() {
   }
 }
 
-function onUsuarioAlterado(usuario: UsuarioContexto) {
-  usuarioLogado.value = usuario;
-  salvarUsuarioAtivo(usuario);
-  // Se a visão atual não for permitida para o novo papel, redireciona
-  if ((visaoAtual.value === 'instrumentos' || visaoAtual.value === 'permissoes')
-      && ((usuario.papelAtivo !== 'CPA' && usuario.papelAtivo !== 'ADMIN') || !temPermissao(usuario, 'INSTRUMENTO_VISUALIZAR'))) {
-    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
-  } else if (visaoAtual.value === 'sincronizacao' && !temPermissao(usuario, 'SIGAA_SINCRONIZAR')) {
-    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
-  } else if (visaoAtual.value === 'responder' && !temPermissao(usuario, 'AVALIACAO_RESPONDER')) {
-    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
-  }
-}
 </script>
 
 <template>
@@ -106,7 +92,6 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
         :visaoAtual="visaoAtual"
         :usuario="usuarioLogado"
         @abrirMenuMobile="menuAbertoMobile = true"
-        @usuarioAlterado="onUsuarioAlterado"
         @logout="aoLogout"
       />
 
@@ -114,7 +99,7 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
         <p v-if="erroLogout" role="alert" class="mb-4 rounded bg-red-50 p-3 text-red-700">{{ erroLogout }}</p>
         <ResponderAvaliacoesView
           v-if="visaoAtual === 'responder'"
-          :key="`${usuarioLogado.cpf}:${usuarioLogado.papelAtivo || usuarioLogado.papel}`"
+          :key="usuarioLogado.cpf"
         />
 
         <!-- Instrumentos de Avaliação (schema avaliacao): questionário, páginas, sessões e questões -->

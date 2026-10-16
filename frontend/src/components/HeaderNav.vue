@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { UsuarioContexto } from '../types/avaliacao';
-import { salvarUsuarioAtivo } from '../services/storage';
 
 const props = defineProps<{
   visaoAtual: 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes';
@@ -10,22 +9,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'abrirMenuMobile'): void;
-  (e: 'usuarioAlterado', usuario: UsuarioContexto): void;
   (e: 'logout'): void;
 }>();
-
-function alternarPapelAtivo(e: Event) {
-  if (!props.usuario) return;
-  const target = e.target as HTMLSelectElement;
-  const novoPapel = target.value as any;
-  const atualizado: UsuarioContexto = {
-    ...props.usuario,
-    papel: novoPapel,
-    papelAtivo: novoPapel
-  };
-  salvarUsuarioAtivo(atualizado);
-  emit('usuarioAlterado', atualizado);
-}
 
 const tituloVisao = computed(() => {
   switch (props.visaoAtual) {
@@ -97,20 +82,8 @@ const tituloVisao = computed(() => {
               <span class="text-[10px] text-slate-400 font-mono hidden md:inline">({{ usuario.cpfFormatado || usuario.cpf }})</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <!-- Se tiver mais de um papel, permite alternar -->
-              <select
-                v-if="usuario.papeis && usuario.papeis.length > 1"
-                :value="usuario.papelAtivo || usuario.papel"
-                @change="alternarPapelAtivo"
-                class="bg-transparent font-semibold text-[10px] text-emerald-700 outline-hidden cursor-pointer hover:underline"
-                title="Alternar Perfil Ativo"
-              >
-                <option v-for="p in usuario.papeis" :key="p" :value="p">
-                  Perfil: {{ p }}
-                </option>
-              </select>
-              <span v-else class="text-[10px] font-semibold text-emerald-700 uppercase tracking-wide">
-                {{ usuario.papelAtivo || usuario.papel }}
+              <span class="text-[10px] font-semibold text-emerald-700 uppercase tracking-wide">
+                {{ usuario.papeis?.join(' / ') || usuario.papel }}
               </span>
               <span class="text-[10px] text-slate-400">&bull;</span>
               <span class="text-[10px] text-slate-500 truncate max-w-[100px]">{{ usuario.campus || 'Geral' }}</span>

@@ -15,7 +15,7 @@ const emit = defineEmits<{
   (e: 'logout'): void;
 }>();
 
-const podeGerenciarInstrumentos = computed(() => (props.usuario?.papelAtivo === 'CPA' || props.usuario?.papelAtivo === 'ADMIN' || (!props.usuario?.papelAtivo && (props.usuario?.papel === 'CPA' || props.usuario?.papel === 'ADMIN')))
+const podeGerenciarInstrumentos = computed(() => !!props.usuario?.papeis?.some(p => p === 'CPA' || p === 'ADMIN')
   && temPermissao(props.usuario, 'INSTRUMENTO_VISUALIZAR'));
 const podeDiscente = computed(() => temPermissao(props.usuario, 'AVALIACAO_RESPONDER'));
 const podeSincronizacao = computed(() => temPermissao(props.usuario, 'SIGAA_SINCRONIZAR'));

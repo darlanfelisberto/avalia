@@ -70,9 +70,9 @@ public class AuthResource {
     @GET
     @Path("/me")
     @RolesAllowed("user")
-    public Response sessaoAtual(@HeaderParam("X-Papel-Ativo") String papel) {
+    public Response sessaoAtual() {
         try {
-            return Response.ok(authService.validarJwt(papel)).header("Cache-Control", "no-store").build();
+            return Response.ok(authService.validarJwt()).header("Cache-Control", "no-store").build();
         } catch (SecurityException e) {
             return Response.status(Response.Status.UNAUTHORIZED).header("Cache-Control", "no-store").build();
         }

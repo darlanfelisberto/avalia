@@ -8,7 +8,6 @@ import jakarta.inject.Inject;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -38,29 +37,29 @@ public class TipoEntidadeResource {
 
     @GET
     @Path("/permissoes-tipos-entidade")
-    public Response listarPermissoes(@HeaderParam("X-Papel-Ativo") String papel) {
+    @RolesAllowed({"CPA", "ADMIN"})
+    public Response listarPermissoes() {
         return executar(() -> {
-            exigirGestor(papel, "INSTRUMENTO_VISUALIZAR");
+            exigirPermissao("INSTRUMENTO_VISUALIZAR");
             return Response.ok(service.listarPermissoes()).build();
         });
     }
 
     @PUT
     @Path("/permissoes-tipos-entidade")
-    public Response salvarPermissoes(List<PermissaoTipoEntidadeDTO> permissoes,
-                                     @HeaderParam("X-Papel-Ativo") String papel) {
+    @RolesAllowed({"CPA", "ADMIN"})
+    public Response salvarPermissoes(List<PermissaoTipoEntidadeDTO> permissoes) {
         return executar(() -> {
-            exigirGestor(papel, "INSTRUMENTO_EDITAR");
+            exigirPermissao("INSTRUMENTO_EDITAR");
             service.salvarPermissoes(permissoes);
             return Response.noContent().build();
         });
     }
 
-    private void exigirGestor(String papel, String permissao) {
-        UsuarioDTO usuario = auth.validarJwt(papel);
-        if (!("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
-                || !usuario.getPermissoes().contains(permissao))
-            throw new SecurityException("Acesso restrito à administração de instrumentos.");
+    private void exigirPermissao(String permissao) {
+        UsuarioDTO usuario = auth.validarJwt();
+        if (!usuario.getPermissoes().contains(permissao))
+            throw new SecurityException("Permissão insuficiente para esta operação.");
     }
 
     private Response executar(Supplier<Response> acao) {
