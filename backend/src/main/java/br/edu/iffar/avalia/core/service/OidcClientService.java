@@ -49,9 +49,9 @@ public class OidcClientService {
     }
 
     public String trocarCodigoPorCpf(OidcCallbackDTO callback) throws Exception {
-        if (callback == null || callback.code == null || callback.code.isBlank()
+        if (callback == null || callback.code == null || callback.code.isBlank() || callback.code.length() > 1024
                 || callback.codeVerifier == null || !callback.codeVerifier.matches("[A-Za-z0-9._~-]{43,128}")
-                || callback.nonce == null || callback.nonce.isBlank()
+                || callback.nonce == null || !callback.nonce.matches("[A-Za-z0-9_-]{43,128}")
                 || !redirectUri.equals(callback.redirectUri)) {
             throw new SecurityException("Resposta OIDC inválida.");
         }
@@ -96,8 +96,15 @@ public class OidcClientService {
         Instant now = Instant.now();
         Date expiry = claims.getExpirationTime();
         Date notBefore = claims.getNotBeforeTime();
-        if (!issuer.equals(claims.getIssuer()) || !claims.getAudience().contains(clientId)
+        Date issuedAt = claims.getIssueTime();
+        String authorizedParty = claims.getStringClaim("azp");
+        if (!issuer.equals(claims.getIssuer()) || claims.getSubject() == null || claims.getSubject().isBlank()
+                || claims.getAudience() == null || claims.getAudience().size() != 1
+                || !claims.getAudience().contains(clientId)
+                || (authorizedParty != null && !clientId.equals(authorizedParty))
                 || expiry == null || !expiry.toInstant().isAfter(now)
+                || issuedAt == null || issuedAt.toInstant().isAfter(now.plusSeconds(60))
+                || !expiry.toInstant().isAfter(issuedAt.toInstant())
                 || (notBefore != null && notBefore.toInstant().isAfter(now.plusSeconds(60)))
                 || !nonce.equals(claims.getStringClaim("nonce"))) {
             throw new SecurityException("Claims OIDC inválidas.");

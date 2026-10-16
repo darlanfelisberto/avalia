@@ -28,10 +28,10 @@ public class AuthResource {
     @Path("/oidc/config")
     public Response configuracaoOidc() {
         try {
-            return Response.ok(oidcClient.configuracaoPublica()).build();
+            return Response.ok(oidcClient.configuracaoPublica()).header("Cache-Control", "no-store").build();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_GATEWAY)
-                    .entity(new AuthResponseDTO(false, null, "Provedor OIDC indisponível.", null)).build();
+                    .entity(new AuthResponseDTO(false, null, "Provedor OIDC indisponível.", null)).header("Cache-Control", "no-store").build();
         }
     }
 
@@ -41,14 +41,14 @@ public class AuthResource {
         try {
             String cpf = oidcClient.trocarCodigoPorCpf(callback);
             AuthResponseDTO resposta = authService.autenticarUsuarioOidc(cpf);
-            return resposta.isAutenticado() ? Response.ok(resposta).build()
-                    : Response.status(Response.Status.FORBIDDEN).entity(resposta).build();
+            return resposta.isAutenticado() ? Response.ok(resposta).header("Cache-Control", "no-store").build()
+                    : Response.status(Response.Status.FORBIDDEN).entity(resposta).header("Cache-Control", "no-store").build();
         } catch (SecurityException e) {
             return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(new AuthResponseDTO(false, null, e.getMessage(), null)).build();
+                    .entity(new AuthResponseDTO(false, null, e.getMessage(), null)).header("Cache-Control", "no-store").build();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_GATEWAY)
-                    .entity(new AuthResponseDTO(false, null, "Falha na comunicação com o provedor OIDC.", null)).build();
+                    .entity(new AuthResponseDTO(false, null, "Falha na comunicação com o provedor OIDC.", null)).header("Cache-Control", "no-store").build();
         }
     }
 
@@ -56,7 +56,7 @@ public class AuthResource {
     @Path("/logout")
     public Response logout(@HeaderParam("Authorization") String authorization) {
         authService.encerrarSessao(authorization);
-        return Response.noContent().build();
+        return Response.noContent().header("Cache-Control", "no-store").build();
     }
 
     @GET
@@ -64,9 +64,9 @@ public class AuthResource {
     public Response sessaoAtual(@HeaderParam("Authorization") String authorization,
                                @HeaderParam("X-Papel-Ativo") String papel) {
         try {
-            return Response.ok(authService.validarSessao(authorization, papel)).build();
+            return Response.ok(authService.validarSessao(authorization, papel)).header("Cache-Control", "no-store").build();
         } catch (SecurityException e) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            return Response.status(Response.Status.UNAUTHORIZED).header("Cache-Control", "no-store").build();
         }
     }
 

@@ -67,6 +67,9 @@ public class AuthService {
 
             // Identificar papéis e vínculos institucionais
             List<String> papeis = identificarPapeisAcademicos(pessoaId);
+            if (papeis.isEmpty()) {
+                return new AuthResponseDTO(false, null, "CPF sem vínculo acadêmico identificado para acesso ao AVALIA.", null);
+            }
             String campus = identificarCampusPessoa(pessoaId);
 
             String papelPrincipal = definirPapelPrincipal(papeis);
@@ -170,7 +173,6 @@ public class AuthService {
         if (dao.existeAluno(pessoaId)) papeis.add("DISCENTE");
         if (dao.existeDocenteTurma(pessoaId)) papeis.add("DOCENTE");
         if (dao.existeServidor(pessoaId) && !papeis.contains("DOCENTE")) papeis.add("TAE");
-        if (papeis.isEmpty()) papeis.add("DISCENTE");
         return new ArrayList<>(papeis);
     }
 

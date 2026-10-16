@@ -24,10 +24,10 @@ public class AvaliacaoResource {
     @Inject
     AuthService auth;
 
-    private void exigirGestor(String token, String papel) {
+    private void exigirGestor(String token, String papel, String permissao) {
         UsuarioDTO usuario = auth.validarSessao(token, papel);
         if (!("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
-                || !usuario.getPermissoes().contains("INSTRUMENTO_VISUALIZAR"))
+                || !usuario.getPermissoes().contains(permissao))
             throw new SecurityException("Acesso restrito à administração de instrumentos.");
     }
 
@@ -35,21 +35,21 @@ public class AvaliacaoResource {
     @Path("/conjuntos-opcao")
     public Response conjuntos(@HeaderParam("Authorization") String token,
                              @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel); return Response.ok(service.listarConjuntos()).build(); });
+        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarConjuntos()).build(); });
     }
 
     @POST
     @Path("/conjuntos-opcao")
     public Response salvarConjunto(ConjuntoOpcao dto, @HeaderParam("Authorization") String token,
                                   @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel); return Response.ok(service.salvarConjunto(dto)).build(); });
+        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_CRIAR"); return Response.ok(service.salvarConjunto(dto)).build(); });
     }
 
     @GET
     @Path("/instrumentos")
     public Response listar(@HeaderParam("Authorization") String token,
                            @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel); return Response.ok(service.listarInstrumentos()).build(); });
+        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarInstrumentos()).build(); });
     }
 
     @GET
@@ -57,7 +57,7 @@ public class AvaliacaoResource {
     public Response buscar(@PathParam("id") String id, @HeaderParam("Authorization") String token,
                            @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
-            exigirGestor(token, papel);
+            exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR");
             Instrumento i = service.buscarInstrumento(id);
             return i == null ? Response.status(Response.Status.NOT_FOUND).build() : Response.ok(i).build();
         });
@@ -68,7 +68,7 @@ public class AvaliacaoResource {
     public Response salvar(Instrumento dto, @HeaderParam("Authorization") String token,
                            @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
-            exigirGestor(token, papel);
+            exigirGestor(token, papel, dto == null || dto.id == null || dto.id.isBlank() ? "INSTRUMENTO_CRIAR" : "INSTRUMENTO_EDITAR");
             UsuarioDTO usuario = auth.validarSessao(token, papel);
             return Response.ok(service.salvarInstrumento(dto, usuario.getCpf())).build();
         });
@@ -78,14 +78,14 @@ public class AvaliacaoResource {
     @Path("/instrumentos/{id}/publicar")
     public Response publicar(@PathParam("id") String id, @HeaderParam("Authorization") String token,
                              @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel); return Response.ok(service.publicar(id)).build(); });
+        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_EDITAR"); return Response.ok(service.publicar(id)).build(); });
     }
 
     @DELETE
     @Path("/instrumentos/{id}")
     public Response excluir(@PathParam("id") String id, @HeaderParam("Authorization") String token,
                             @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel); return service.excluir(id)
+        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_EXCLUIR"); return service.excluir(id)
                 ? Response.noContent().build()
                 : Response.status(Response.Status.NOT_FOUND).build(); });
     }

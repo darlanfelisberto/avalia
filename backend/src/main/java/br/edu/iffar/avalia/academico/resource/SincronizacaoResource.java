@@ -26,7 +26,9 @@ public class SincronizacaoResource {
 
     private boolean autorizado(String token, String papel) {
         try {
-            return authService.validarSessao(token, papel).getPermissoes().contains("SIGAA_SINCRONIZAR");
+            var usuario = authService.validarSessao(token, papel);
+            return ("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
+                    && usuario.getPermissoes().contains("SIGAA_SINCRONIZAR");
         } catch (SecurityException e) {
             return false;
         }

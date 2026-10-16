@@ -39,7 +39,7 @@ public class TipoEntidadeResource {
     public Response listarPermissoes(@HeaderParam("Authorization") String token,
                                      @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
-            exigirGestor(token, papel);
+            exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR");
             return Response.ok(service.listarPermissoes()).build();
         });
     }
@@ -50,16 +50,16 @@ public class TipoEntidadeResource {
                                      @HeaderParam("Authorization") String token,
                                      @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
-            exigirGestor(token, papel);
+            exigirGestor(token, papel, "INSTRUMENTO_EDITAR");
             service.salvarPermissoes(permissoes);
             return Response.noContent().build();
         });
     }
 
-    private void exigirGestor(String token, String papel) {
+    private void exigirGestor(String token, String papel, String permissao) {
         UsuarioDTO usuario = auth.validarSessao(token, papel);
         if (!("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
-                || !usuario.getPermissoes().contains("INSTRUMENTO_VISUALIZAR"))
+                || !usuario.getPermissoes().contains(permissao))
             throw new SecurityException("Acesso restrito à administração de instrumentos.");
     }
 

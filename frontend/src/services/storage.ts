@@ -34,7 +34,8 @@ export function salvarUsuarioAtivo(usuario: import('../types/avaliacao').Usuario
     if (!usuario.papel && usuario.papelAtivo) {
       usuario.papel = usuario.papelAtivo;
     }
-    localStorage.setItem(STORAGE_KEY_USUARIO, JSON.stringify(usuario));
+    const { token: _token, ...usuarioSemToken } = usuario;
+    localStorage.setItem(STORAGE_KEY_USUARIO, JSON.stringify(usuarioSemToken));
     if (token) {
       localStorage.setItem(STORAGE_KEY_TOKEN, token);
     }
