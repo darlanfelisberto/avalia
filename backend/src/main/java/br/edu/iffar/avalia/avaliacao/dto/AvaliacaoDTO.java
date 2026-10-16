@@ -77,4 +77,11 @@ public final class AvaliacaoDTO {
         public List<Pagina> paginas = new ArrayList<>();
         public List<Sessao> sessoes = new ArrayList<>();
     }
+
+    public static class PaginaInstrumentos {
+        public List<Instrumento> itens = new ArrayList<>();
+        public int pagina;
+        public int tamanho;
+        public boolean temProxima;
+    }
 }

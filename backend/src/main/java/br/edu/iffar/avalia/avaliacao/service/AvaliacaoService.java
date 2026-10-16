@@ -95,30 +95,82 @@ public class AvaliacaoService {
 
     // ------------------------------------------------------------------ instrumento
 
-    public List<Instrumento> listarInstrumentos() {
-        List<Instrumento> out = new ArrayList<>();
-        Map<String, Instrumento> porId = new LinkedHashMap<>();
-        for (Object[] r : consultas.listarInstrumentosBase()) {
+    public PaginaInstrumentos listarInstrumentos(int paginaSolicitada, int tamanhoSolicitado) {
+        if (paginaSolicitada < 1) throw new IllegalArgumentException("A página deve ser maior que zero.");
+        if (tamanhoSolicitado < 1 || tamanhoSolicitado > 100)
+            throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e 100.");
+
+        InstrumentoDao.PaginaEntidades paginaEntidades = consultas.listarInstrumentosBase(paginaSolicitada, tamanhoSolicitado);
+        PaginaInstrumentos resultado = new PaginaInstrumentos();
+        resultado.tamanho = tamanhoSolicitado;
+        resultado.pagina = paginaSolicitada;
+        resultado.temProxima = paginaEntidades.temProxima();
+
+        for (InstrumentoAvaliativo entidade : paginaEntidades.itens()) {
             Instrumento i = new Instrumento();
-            i.id = (String) r[0];
-            i.titulo = (String) r[1];
-            i.cicloReferencia = (String) r[2];
-            i.status = (String) r[3];
-            i.inicioAplicacao = (String) r[4];
-            i.fimAplicacao = (String) r[5];
-            i.tipoEntidadeAvaliadaNome = (String) r[6];
-            i.totalQuestoes = ((Number) r[7]).intValue();
-            out.add(i);
-            porId.put(i.id, i);
-        }
-        for (Object[] x : consultas.listarTodosTiposAlvo()) {
-            Instrumento instrumento = porId.get(x[0]);
-            if (instrumento != null) {
-                instrumento.tiposEntidadeAlvoIds.add((String) x[1]);
-                instrumento.tiposEntidadeAlvoNomes.add((String) x[2]);
+            i.id = entidade.getId().toString();
+            i.tipoEntidadeAvaliadaId = entidade.getTipoEntidadeAvaliada().getId().toString();
+            i.tipoEntidadeAvaliadaNome = entidade.getTipoEntidadeAvaliada().getNome();
+            i.titulo = entidade.getTitulo();
+            i.cicloReferencia = entidade.getCicloReferencia();
+            i.status = entidade.getStatus();
+            i.inicioAplicacao = entidade.getInicioAplicacao().toString();
+            i.fimAplicacao = entidade.getFimAplicacao().toString();
+            i.anonimo = entidade.isAnonimo();
+            i.permiteEdicao = entidade.isPermiteEdicao();
+            i.criadoPor = entidade.getCriadoPor();
+            i.atualizadoEm = entidade.getAtualizadoEm().toString();
+
+            for (InstrumentoTipoAlvo alvo : entidade.getTiposAlvo()) {
+                i.tiposEntidadeAlvoIds.add(alvo.getTipoAlvo().getId().toString());
+                i.tiposEntidadeAlvoNomes.add(alvo.getTipoAlvo().getNome());
             }
+            if (i.tiposEntidadeAlvoIds.isEmpty()) {
+                i.tiposEntidadeAlvoIds.add(i.tipoEntidadeAvaliadaId);
+                i.tiposEntidadeAlvoNomes.add(i.tipoEntidadeAvaliadaNome);
+            }
+
+            for (InstrumentoRespondente respondente : entidade.getRespondentes()) {
+                Respondente dto = new Respondente();
+                dto.tipoEntidadeId = respondente.getTipoEntidadeRespondente().getId().toString();
+                dto.tipoVinculo = respondente.getTipoVinculo();
+                i.respondentes.add(dto);
+            }
+            for (InstrumentoSessao sessao : entidade.getSessoes()) {
+                if ("PAGINA".equals(sessao.getTipo())) {
+                    Pagina pagina = new Pagina();
+                    pagina.id = sessao.getId().toString();
+                    pagina.titulo = sessao.getTitulo();
+                    pagina.descricao = sessao.getDescricao();
+                    pagina.ordem = sessao.getOrdem();
+                    i.paginas.add(pagina);
+                } else {
+                    Sessao dto = new Sessao();
+                    dto.id = sessao.getId().toString();
+                    dto.titulo = sessao.getTitulo();
+                    dto.descricao = sessao.getDescricao();
+                    dto.ordem = sessao.getOrdem();
+                    for (SessaoQuestao sessaoQuestao : sessao.getQuestoes()) {
+                        QuestaoAvaliativa questao = sessaoQuestao.getQuestao();
+                        Questao pergunta = new Questao();
+                        pergunta.questaoId = questao.getId().toString();
+                        pergunta.sessaoQuestaoId = sessaoQuestao.getId().toString();
+                        pergunta.enunciado = questao.getEnunciado();
+                        pergunta.tipo = questao.getTipo();
+                        pergunta.assunto = questao.getAssunto();
+                        pergunta.conjuntoOpcaoId = questao.getConjunto() == null ? null : questao.getConjunto().getId().toString();
+                        pergunta.obrigatoria = sessaoQuestao.isObrigatoria();
+                        pergunta.peso = sessaoQuestao.getPeso() == null ? null : sessaoQuestao.getPeso().doubleValue();
+                        pergunta.ordem = sessaoQuestao.getOrdem();
+                        dto.questoes.add(pergunta);
+                        i.totalQuestoes++;
+                    }
+                    i.sessoes.add(dto);
+                }
+            }
+            resultado.itens.add(i);
         }
-        return out;
+        return resultado;
     }
 
     public Instrumento buscarInstrumento(String id) {

@@ -1,6 +1,8 @@
 package br.edu.iffar.avalia.avaliacao.model;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -19,6 +21,10 @@ public class InstrumentoSessao {
     @JoinColumn(name = "instrumento_sessao_pai_id")
     private InstrumentoSessao pai;
 
+    @OneToMany(mappedBy = "sessao")
+    @OrderBy("ordem ASC")
+    private List<SessaoQuestao> questoes = new ArrayList<>();
+
     @Column(nullable = false, length = 6)
     private String tipo;
 
@@ -36,6 +42,7 @@ public class InstrumentoSessao {
     public void setInstrumento(InstrumentoAvaliativo instrumento) { this.instrumento = instrumento; }
     public InstrumentoSessao getPai() { return pai; }
     public void setPai(InstrumentoSessao pai) { this.pai = pai; }
+    public List<SessaoQuestao> getQuestoes() { return questoes; }
     public String getTipo() { return tipo; }
     public void setTipo(String tipo) { this.tipo = tipo; }
     public String getTitulo() { return titulo; }

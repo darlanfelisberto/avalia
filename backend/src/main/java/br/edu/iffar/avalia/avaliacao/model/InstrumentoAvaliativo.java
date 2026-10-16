@@ -2,6 +2,8 @@ package br.edu.iffar.avalia.avaliacao.model;
 
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -19,6 +21,19 @@ public class InstrumentoAvaliativo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_entidade_avaliada_id", nullable = false)
     private TipoEntidade tipoEntidadeAvaliada;
+
+    @OneToMany(mappedBy = "instrumento")
+    private List<InstrumentoRespondente> respondentes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "instrumento")
+    @OrderBy("ordem ASC")
+    private List<InstrumentoSessao> sessoes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "instrumento")
+    private List<InstrumentoTipoAlvo> tiposAlvo = new ArrayList<>();
+
+    @OneToMany(mappedBy = "instrumento")
+    private List<InstrumentoEntidadeAvaliada> entidadesAvaliadas = new ArrayList<>();
 
     @Column(nullable = false, length = 200)
     private String titulo;
@@ -59,25 +74,31 @@ public class InstrumentoAvaliativo {
     public UUID getId() { return id; }
     public InstrumentoAvaliativo getOrigem() { return origem; }
     public TipoEntidade getTipoEntidadeAvaliada() { return tipoEntidadeAvaliada; }
-    public void setTipoEntidadeAvaliada(TipoEntidade tipoEntidadeAvaliada) { this.tipoEntidadeAvaliada = tipoEntidadeAvaliada; }
     public String getTitulo() { return titulo; }
-    public void setTitulo(String titulo) { this.titulo = titulo; }
     public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
     public String getCicloReferencia() { return cicloReferencia; }
-    public void setCicloReferencia(String cicloReferencia) { this.cicloReferencia = cicloReferencia; }
     public OffsetDateTime getInicioAplicacao() { return inicioAplicacao; }
-    public void setInicioAplicacao(OffsetDateTime inicioAplicacao) { this.inicioAplicacao = inicioAplicacao; }
     public OffsetDateTime getFimAplicacao() { return fimAplicacao; }
-    public void setFimAplicacao(OffsetDateTime fimAplicacao) { this.fimAplicacao = fimAplicacao; }
     public boolean isAnonimo() { return anonimo; }
-    public void setAnonimo(boolean anonimo) { this.anonimo = anonimo; }
     public boolean isPermiteEdicao() { return permiteEdicao; }
-    public void setPermiteEdicao(boolean permiteEdicao) { this.permiteEdicao = permiteEdicao; }
     public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public OffsetDateTime getConsolidadoEm() { return consolidadoEm; }
     public String getCriadoPor() { return criadoPor; }
-    public void setCriadoPor(String criadoPor) { this.criadoPor = criadoPor; }
+    public OffsetDateTime getCriadoEm() { return criadoEm; }
     public OffsetDateTime getAtualizadoEm() { return atualizadoEm; }
+    public List<InstrumentoRespondente> getRespondentes() { return respondentes; }
+    public List<InstrumentoSessao> getSessoes() { return sessoes; }
+    public List<InstrumentoTipoAlvo> getTiposAlvo() { return tiposAlvo; }
+    public List<InstrumentoEntidadeAvaliada> getEntidadesAvaliadas() { return entidadesAvaliadas; }
+    public void setTipoEntidadeAvaliada(TipoEntidade tipoEntidadeAvaliada) { this.tipoEntidadeAvaliada = tipoEntidadeAvaliada; }
+    public void setTitulo(String titulo) { this.titulo = titulo; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public void setCicloReferencia(String cicloReferencia) { this.cicloReferencia = cicloReferencia; }
+    public void setInicioAplicacao(OffsetDateTime inicioAplicacao) { this.inicioAplicacao = inicioAplicacao; }
+    public void setFimAplicacao(OffsetDateTime fimAplicacao) { this.fimAplicacao = fimAplicacao; }
+    public void setAnonimo(boolean anonimo) { this.anonimo = anonimo; }
+    public void setPermiteEdicao(boolean permiteEdicao) { this.permiteEdicao = permiteEdicao; }
+    public void setStatus(String status) { this.status = status; }
+    public void setCriadoPor(String criadoPor) { this.criadoPor = criadoPor; }
     public void setAtualizadoEm(OffsetDateTime atualizadoEm) { this.atualizadoEm = atualizadoEm; }
 }

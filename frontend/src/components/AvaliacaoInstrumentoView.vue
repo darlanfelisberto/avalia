@@ -6,6 +6,7 @@ import { carregarUsuarioAtivo, temPermissao } from '../services/storage';
 import AvaliacaoEstruturaEditor from './AvaliacaoEstruturaEditor.vue';
 import AvaliacaoConjuntoModal from './AvaliacaoConjuntoModal.vue';
 import InstrumentoPreview from './InstrumentoPreview.vue';
+import PaginatedTable from './PaginatedTable.vue';
 
 const VINCULOS = [
   { valor: '', rotulo: 'Sem vínculo exigido (qualquer pessoa do público)' },
@@ -18,6 +19,9 @@ const VINCULOS = [
 const modo = ref<'lista' | 'form'>('lista');
 const previsualizando = ref(false);
 const instrumentos = ref<InstrumentoAv[]>([]);
+const paginaAtual = ref(1);
+const temProximaPagina = ref(false);
+const TAMANHO_PAGINA = 10;
 const tipos = ref<TipoEntidade[]>([]);
 const permissoesTipos = ref<PermissaoTipoEntidadeAv[]>([]);
 const conjuntos = ref<ConjuntoOpcao[]>([]);
@@ -117,11 +121,19 @@ const semPermissaoDeEdicao = computed(() => form.id ? !podeEditar : !podeCriar);
 const somenteLeitura = computed(() => (!!form.status && form.status !== 'RASCUNHO') || semPermissaoDeEdicao.value);
 
 // ---------------------------------------------------------------- carga
-async function carregarLista() {
+async function carregarLista(pagina = paginaAtual.value) {
   carregando.value = true;
-  const res = await avaliacaoApi.listar();
+  const res = await avaliacaoApi.listar(pagina, TAMANHO_PAGINA);
   carregando.value = false;
-  if (res.ok) instrumentos.value = res.dados || [];
+  if (res.ok && res.dados) {
+    instrumentos.value = res.dados.itens || [];
+    if (instrumentos.value.length === 0 && pagina > 1) {
+      await carregarLista(pagina - 1);
+      return;
+    }
+    paginaAtual.value = res.dados.pagina;
+    temProximaPagina.value = res.dados.temProxima;
+  }
   else erro.value = res.erro || 'Erro ao carregar instrumentos.';
 }
 
@@ -255,6 +267,14 @@ const corStatus: Record<string, string> = {
   ENCERRADO: 'bg-amber-100 text-amber-800',
   CONSOLIDADO: 'bg-purple-100 text-purple-800'
 };
+const colunasInstrumentos = [
+  { key: 'titulo', label: 'Título', class: 'font-semibold text-slate-900' },
+  { key: 'cicloReferencia', label: 'Ciclo', class: 'text-slate-600' },
+  { key: 'tiposEntidadeAlvoNomes', label: 'Avalia', class: 'text-slate-600' },
+  { key: 'periodo', label: 'Período', class: 'text-slate-600' },
+  { key: 'status', label: 'Status' },
+  { key: 'acoes', label: '', class: 'text-right whitespace-nowrap' }
+];
 
 const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-hidden disabled:bg-slate-50 disabled:text-slate-500';
 </script>
@@ -284,28 +304,23 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
 
       <p v-if="carregando" class="p-8 text-center text-xs text-slate-400 animate-pulse">Carregando…</p>
       <p v-else-if="instrumentos.length === 0" class="p-8 text-center text-xs text-slate-400">Nenhum instrumento cadastrado.</p>
-      <table v-else class="w-full text-xs">
-        <thead class="bg-slate-50 text-[10px] uppercase text-slate-500">
-          <tr>
-            <th class="text-left p-3">Título</th><th class="text-left p-3">Ciclo</th><th class="text-left p-3">Avalia</th>
-            <th class="text-left p-3">Período</th><th class="text-center p-3">Questões</th><th class="text-left p-3">Status</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="i in instrumentos" :key="i.id" class="border-t border-slate-100 hover:bg-slate-50/60">
-            <td class="p-3 font-semibold text-slate-900">{{ i.titulo }}</td>
-            <td class="p-3 text-slate-600">{{ i.cicloReferencia }}</td>
-            <td class="p-3 text-slate-600">{{ i.tiposEntidadeAlvoNomes?.join(', ') || i.tipoEntidadeAvaliadaNome }}</td>
-            <td class="p-3 text-slate-600">{{ fmtData(i.inicioAplicacao) }} – {{ fmtData(i.fimAplicacao) }}</td>
-            <td class="p-3 text-center">{{ i.totalQuestoes }}</td>
-            <td class="p-3"><span :class="['px-2 py-0.5 rounded-full font-bold text-[10px]', corStatus[i.status || 'RASCUNHO']]">{{ i.status }}</span></td>
-            <td class="p-3 text-right whitespace-nowrap">
-              <button type="button" class="font-bold text-emerald-700 hover:underline mr-3" @click="editar(i.id!)">{{ i.status === 'RASCUNHO' ? 'Editar' : 'Abrir' }}</button>
-              <button v-if="podeExcluir && i.status === 'RASCUNHO'" type="button" class="font-bold text-rose-600 hover:underline" @click="excluir(i.id!, i.titulo)">Excluir</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <PaginatedTable v-else :rows="instrumentos" :columns="colunasInstrumentos" :page-size="TAMANHO_PAGINA"
+                      :page="paginaAtual" :has-next="temProximaPagina"
+                      @page-change="carregarLista">
+        <template #cell="{ row, column }">
+          <template v-if="column === 'tiposEntidadeAlvoNomes'">
+            {{ row.tiposEntidadeAlvoNomes?.join(', ') || row.tipoEntidadeAvaliadaNome }}
+          </template>
+          <template v-else-if="column === 'periodo'">
+            {{ fmtData(row.inicioAplicacao) }} – {{ fmtData(row.fimAplicacao) }}
+          </template>
+          <span v-else-if="column === 'status'" :class="['px-2 py-0.5 rounded-full font-bold text-[10px]', corStatus[row.status || 'RASCUNHO']]">{{ row.status }}</span>
+          <div v-else-if="column === 'acoes'">
+            <button type="button" class="font-bold text-emerald-700 hover:underline mr-3" @click="editar(row.id!)">{{ row.status === 'RASCUNHO' ? 'Editar' : 'Abrir' }}</button>
+            <button v-if="podeExcluir && row.status === 'RASCUNHO'" type="button" class="font-bold text-rose-600 hover:underline" @click="excluir(row.id!, row.titulo)">Excluir</button>
+          </div>
+        </template>
+      </PaginatedTable>
     </div>
 
     <!-- ===================== FORMULÁRIO ===================== -->

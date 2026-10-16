@@ -47,8 +47,9 @@ public class AvaliacaoResource {
 
     @GET
     @Path("/instrumentos")
-    public Response listar() {
-        return executar(() -> { exigirPermissao("INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarInstrumentos()).build(); });
+    public Response listar(@QueryParam("pagina") @DefaultValue("1") int pagina,
+                           @QueryParam("tamanho") @DefaultValue("100") int tamanho) {
+        return executar(() -> { exigirPermissao("INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarInstrumentos(pagina, tamanho)).build(); });
     }
 
     @GET

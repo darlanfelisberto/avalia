@@ -1,33 +1,88 @@
 package br.edu.iffar.avalia.avaliacao.dao;
 
+import br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao;
+import br.edu.iffar.avalia.avaliacao.model.Entidade;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoEntidadeAvaliada;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoRespondente;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo;
+import br.edu.iffar.avalia.avaliacao.model.QuestaoAvaliativa;
+import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /** Projeções e operações em lote dos instrumentos que exigem SQL PostgreSQL. */
 @ApplicationScoped
 public class InstrumentoDao {
+    public record PaginaEntidades(List<InstrumentoAvaliativo> itens, boolean temProxima) {}
+
     private static final String TS = "to_char(%s at time zone 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')";
 
     @Inject
     private AvaliacaoDao dao;
 
+    @PersistenceContext(unitName = "avaliaPU")
+    private EntityManager em;
+
     private static String ts(String coluna) {
         return String.format(TS, coluna);
     }
 
-    public List<Object[]> listarInstrumentosBase() {
-        return dao.rows("""
-                select cast(i.instrumento_avaliativo_id as text), i.titulo, i.ciclo_referencia, i.status,
-                    %s, %s, t.nome,
-                    (select count(*) from avaliacao.sessao_questao sq
-                     join avaliacao.instrumento_sessao s
-                       on s.instrumento_sessao_id = sq.instrumento_sessao_id
-                     where s.instrumento_avaliativo_id = i.instrumento_avaliativo_id)
-                from avaliacao.instrumento_avaliativo i
-                join avaliacao.tipo_entidade t on t.tipo_entidade_id = i.tipo_entidade_avaliada_id
-                order by i.atualizado_em desc
-                """.formatted(ts("i.inicio_aplicacao"), ts("i.fim_aplicacao")));
+    public PaginaEntidades listarInstrumentosBase(int pagina, int tamanho) {
+        List<InstrumentoAvaliativo> instrumentos = em.createQuery("""
+                select i from InstrumentoAvaliativo i
+                left join fetch i.origem
+                left join fetch i.tipoEntidadeAvaliada
+                order by i.atualizadoEm desc, i.id desc
+                """, InstrumentoAvaliativo.class)
+                .setFirstResult((pagina - 1) * tamanho)
+                .setMaxResults(tamanho)
+                .getResultList();
+        boolean temProxima = instrumentos.size() == tamanho;
+
+        if (instrumentos.isEmpty()) return new PaginaEntidades(instrumentos, temProxima);
+        List<UUID> ids = instrumentos.stream().map(InstrumentoAvaliativo::getId).toList();
+
+        // Busca cada coleção em uma consulta separada para carregar o grafo sem gerar
+        // multiplicação de linhas nem conflito entre várias coleções List no Hibernate.
+        em.createQuery("""
+                select distinct i from InstrumentoAvaliativo i
+                left join fetch i.respondentes r
+                left join fetch r.tipoEntidadeRespondente
+                where i.id in :ids
+                """, InstrumentoAvaliativo.class).setParameter("ids", ids).getResultList();
+        em.createQuery("""
+                select distinct i from InstrumentoAvaliativo i
+                left join fetch i.tiposAlvo ta
+                left join fetch ta.tipoAlvo
+                where i.id in :ids
+                """, InstrumentoAvaliativo.class).setParameter("ids", ids).getResultList();
+        em.createQuery("""
+                select distinct i from InstrumentoAvaliativo i
+                left join fetch i.entidadesAvaliadas ea
+                left join fetch ea.tipoAlvo
+                left join fetch ea.entidade e
+                left join fetch e.tipo
+                where i.id in :ids
+                """, InstrumentoAvaliativo.class).setParameter("ids", ids).getResultList();
+        em.createQuery("""
+                select distinct i from InstrumentoAvaliativo i
+                left join fetch i.sessoes s
+                left join fetch s.questoes sq
+                left join fetch sq.questao q
+                left join fetch q.conjunto c
+                left join fetch c.opcoes
+                where i.id in :ids
+                """, InstrumentoAvaliativo.class).setParameter("ids", ids).getResultList();
+        return new PaginaEntidades(instrumentos, temProxima);
     }
 
     public List<Object[]> listarTiposAlvo(String id) {

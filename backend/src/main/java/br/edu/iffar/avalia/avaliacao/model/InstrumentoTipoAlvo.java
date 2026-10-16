@@ -34,6 +34,7 @@ public class InstrumentoTipoAlvo {
 
     public UUID getInstrumentoId() { return instrumentoId; }
     public UUID getTipoAlvoId() { return tipoAlvoId; }
+    public TipoEntidade getTipoAlvo() { return tipoAlvo; }
 
     public static class Chave implements Serializable {
         private UUID instrumentoId;

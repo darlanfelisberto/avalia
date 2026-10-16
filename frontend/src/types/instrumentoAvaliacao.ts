@@ -79,3 +79,10 @@ export interface InstrumentoAv {
   paginas: PaginaAv[];
   sessoes: SessaoAv[];
 }
+
+export interface PaginaInstrumentosAv {
+  itens: InstrumentoAv[];
+  pagina: number;
+  tamanho: number;
+  temProxima: boolean;
+}
