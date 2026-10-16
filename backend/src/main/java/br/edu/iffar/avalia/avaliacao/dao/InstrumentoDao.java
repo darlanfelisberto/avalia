@@ -39,9 +39,8 @@ public class InstrumentoDao {
     public List<InstrumentoAvaliativo> listInstrumentos(int pagina, int tamanho) {
         return em.createQuery("""
                     select i from InstrumentoAvaliativo i
-                    left join fetch i.tiposAlvo
-                    left join fetch i.entidadesAvaliadas
-                    order by i.atualizadoEm desc, i.id desc
+                    left join fetch i.origem o
+                    order by i.atualizadoEm desc
                 """, InstrumentoAvaliativo.class)
                 .setFirstResult((pagina - 1) * tamanho)
                 .setMaxResults(tamanho)
@@ -51,9 +50,8 @@ public class InstrumentoDao {
     public PaginaEntidades listarInstrumentosBase(int pagina, int tamanho) {
         List<InstrumentoAvaliativo> instrumentos = em.createQuery("""
                 select i from InstrumentoAvaliativo i
-                left join fetch i.origem
-                left join fetch i.tipoEntidadeAvaliada
-                order by i.atualizadoEm desc, i.id desc
+                left join fetch i.origem o
+                order by i.atualizadoEm desc
                 """, InstrumentoAvaliativo.class)
                 .setFirstResult((pagina - 1) * tamanho)
                 .setMaxResults(tamanho)
@@ -135,7 +133,7 @@ public class InstrumentoDao {
 
     public List<Object[]> listarSessoes(String id) {
         return dao.rows("""
-            select cast(instrumento_sessao_id as text), cast(instrumento_sessao_pai_id as text), tipo, titulo, descricao, ordem
+            select cast(instrumento_sessao_id as text), tipo, titulo, descricao, ordem
             from avaliacao.instrumento_sessao where instrumento_avaliativo_id = cast(?1 as uuid) order by ordem
             """, id);
     }

@@ -106,11 +106,4 @@ public final class AvaliacaoDTO {
             return i;
         }
     }
-
-    public static class PaginaInstrumentos {
-        public List<InstrumentoAvaliativoDTO> itens = new ArrayList<>();
-        public int pagina;
-        public int tamanho;
-        public boolean temProxima;
-    }
 }

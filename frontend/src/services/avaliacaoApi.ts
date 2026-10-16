@@ -1,4 +1,4 @@
-import type { ConjuntoOpcao, InstrumentoAvaliativoDTO, PaginaInstrumentosAv, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcao, InstrumentoAvaliativoDTO, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
 const BASE = '/api/avaliacao';
 
 export interface Resultado<T> {
@@ -33,7 +33,7 @@ export const avaliacaoApi = {
     chamar<void>(`${BASE}/permissoes-tipos-entidade`, { method: 'PUT', body: JSON.stringify(permissoes) }),
   conjuntos: () => chamar<ConjuntoOpcao[]>(`${BASE}/conjuntos-opcao`),
   salvarConjunto: (c: ConjuntoOpcao) => chamar<ConjuntoOpcao>(`${BASE}/conjuntos-opcao`, { method: 'POST', body: JSON.stringify(c) }),
-  listar: (pagina = 1, tamanho = 10) => chamar<PaginaInstrumentosAv>(`${BASE}/instrumentos?pagina=${pagina}&tamanho=${tamanho}`),
+  listar: (pagina = 1, tamanho = 10) => chamar<InstrumentoAvaliativoDTO[]>(`${BASE}/instrumentos?pagina=${pagina}&tamanho=${tamanho}`),
   buscar: (id: string) => chamar<InstrumentoAvaliativoDTO>(`${BASE}/instrumentos/${id}`),
   salvar: (i: InstrumentoAvaliativoDTO, usuario?: string) =>
     chamar<InstrumentoAvaliativoDTO>(`${BASE}/instrumentos`, {

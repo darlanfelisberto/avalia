@@ -32,7 +32,7 @@
 
             <!-- Exibir SQLs gerados e parâmetros (equivalente ao show_sql) -->
             <property name="hibernate.show_sql" value="true"/>
-            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.format_sql" value="false"/>
         </properties>
     </persistence-unit>
 </persistence>

@@ -126,13 +126,13 @@ async function carregarLista(pagina = paginaAtual.value) {
   const res = await avaliacaoApi.listar(pagina, TAMANHO_PAGINA);
   carregando.value = false;
   if (res.ok && res.dados) {
-    instrumentos.value = res.dados.itens || [];
-    if (instrumentos.value.length === 0 && pagina > 1) {
-      await carregarLista(pagina - 1);
+    if (res.dados.length === 0 && pagina > 1) {
+      temProximaPagina.value = false;
       return;
     }
-    paginaAtual.value = res.dados.pagina;
-    temProximaPagina.value = res.dados.temProxima;
+    instrumentos.value = res.dados;
+    paginaAtual.value = pagina;
+    temProximaPagina.value = res.dados.length === TAMANHO_PAGINA;
   }
   else erro.value = res.erro || 'Erro ao carregar instrumentos.';
 }

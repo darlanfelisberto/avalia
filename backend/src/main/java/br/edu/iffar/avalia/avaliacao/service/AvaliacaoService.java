@@ -96,20 +96,16 @@ public class AvaliacaoService {
 
     // ------------------------------------------------------------------ instrumento
 
-    public PaginaInstrumentos listarInstrumentos(int paginaSolicitada, int tamanhoSolicitado) {
+    public List<InstrumentoAvaliativoDTO> listarInstrumentos(int paginaSolicitada, int tamanhoSolicitado) {
         if (tamanhoSolicitado < 1 || tamanhoSolicitado > 100)
             throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e 100.");
 
         List<InstrumentoAvaliativo> instrumentoAvaliativoList = instrumentoDao.listInstrumentos(paginaSolicitada, tamanhoSolicitado);
+        List<InstrumentoAvaliativoDTO> resultado = new ArrayList<>();
 
-        InstrumentoDao.PaginaEntidades paginaEntidades = instrumentoDao.listarInstrumentosBase(paginaSolicitada, tamanhoSolicitado);
-        PaginaInstrumentos resultado = new PaginaInstrumentos();
-        resultado.tamanho = tamanhoSolicitado;
-        resultado.pagina = paginaSolicitada;
-        resultado.temProxima = paginaEntidades.temProxima();
-
-        for (InstrumentoAvaliativo entidade : paginaEntidades.itens()) {
+        for (InstrumentoAvaliativo entidade : instrumentoAvaliativoList) {
             InstrumentoAvaliativoDTO i = InstrumentoAvaliativoDTO.create(entidade);
+
 
             for (InstrumentoTipoAlvo alvo : entidade.getTiposAlvo()) {
                 i.tiposEntidadeAlvoIds.add(alvo.getTipoAlvo().getId().toString());
@@ -126,39 +122,7 @@ public class AvaliacaoService {
                 dto.tipoVinculo = respondente.getTipoVinculo();
                 i.respondentes.add(dto);
             }
-            for (InstrumentoSessao sessao : entidade.getSessoes()) {
-                if ("PAGINA".equals(sessao.getTipo())) {
-                    Pagina pagina = new Pagina();
-                    pagina.id = sessao.getId().toString();
-                    pagina.titulo = sessao.getTitulo();
-                    pagina.descricao = sessao.getDescricao();
-                    pagina.ordem = sessao.getOrdem();
-                    i.paginas.add(pagina);
-                } else {
-                    Sessao dto = new Sessao();
-                    dto.id = sessao.getId().toString();
-                    dto.titulo = sessao.getTitulo();
-                    dto.descricao = sessao.getDescricao();
-                    dto.ordem = sessao.getOrdem();
-                    for (SessaoQuestao sessaoQuestao : sessao.getQuestoes()) {
-                        QuestaoAvaliativa questao = sessaoQuestao.getQuestao();
-                        Questao pergunta = new Questao();
-                        pergunta.questaoId = questao.getId().toString();
-                        pergunta.sessaoQuestaoId = sessaoQuestao.getId().toString();
-                        pergunta.enunciado = questao.getEnunciado();
-                        pergunta.tipo = questao.getTipo();
-                        pergunta.assunto = questao.getAssunto();
-                        pergunta.conjuntoOpcaoId = questao.getConjunto() == null ? null : questao.getConjunto().getId().toString();
-                        pergunta.obrigatoria = sessaoQuestao.isObrigatoria();
-                        pergunta.peso = sessaoQuestao.getPeso() == null ? null : sessaoQuestao.getPeso().doubleValue();
-                        pergunta.ordem = sessaoQuestao.getOrdem();
-                        dto.questoes.add(pergunta);
-                        i.totalQuestoes++;
-                    }
-                    i.sessoes.add(dto);
-                }
-            }
-            resultado.itens.add(i);
+            resultado.add(i);
         }
         return resultado;
     }
@@ -201,19 +165,19 @@ public class AvaliacaoService {
 
         Map<String, Sessao> sessoes = new LinkedHashMap<>();
         for (Object[] x : instrumentoDao.listarSessoes(id)) {
-            if ("PAGINA".equals(x[2])) {
+            if ("PAGINA".equals(x[1])) {
                 Pagina p = new Pagina();
                 p.id = (String) x[0];
-                p.titulo = (String) x[3];
-                p.descricao = (String) x[4];
-                p.ordem = ((Number) x[5]).intValue();
+                p.titulo = (String) x[2];
+                p.descricao = (String) x[3];
+                p.ordem = ((Number) x[4]).intValue();
                 i.paginas.add(p);
             } else {
                 Sessao s = new Sessao();
                 s.id = (String) x[0];
-                s.titulo = (String) x[3];
-                s.descricao = (String) x[4];
-                s.ordem = ((Number) x[5]).intValue();
+                s.titulo = (String) x[2];
+                s.descricao = (String) x[3];
+                s.ordem = ((Number) x[4]).intValue();
                 sessoes.put(s.id, s);
                 i.sessoes.add(s);
             }

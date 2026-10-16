@@ -83,10 +83,3 @@ export interface InstrumentoAvaliativoDTO {
   paginas: PaginaAv[];
   sessoes: SessaoAv[];
 }
-
-export interface PaginaInstrumentosAv {
-  itens: InstrumentoAvaliativoDTO[];
-  pagina: number;
-  tamanho: number;
-  temProxima: boolean;
-}
