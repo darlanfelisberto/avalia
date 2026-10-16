@@ -1,12 +1,10 @@
-import { carregarTokenAtivo, carregarUsuarioAtivo } from './storage';
+import { carregarUsuarioAtivo } from './storage';
 
 // --- Integração Acadêmica SIGAA ---
 
 function headersAutenticacao(): Record<string, string> {
-  const token = carregarTokenAtivo();
   const usuario = carregarUsuarioAtivo();
-  return token && usuario ? {
-    Authorization: `Bearer ${token}`,
+  return usuario ? {
     'X-Papel-Ativo': usuario.papelAtivo || usuario.papel
   } : {};
 }

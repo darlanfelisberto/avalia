@@ -27,9 +27,9 @@ import java.util.Map;
 @ApplicationScoped
 public class OidcClientService {
     private final String providerUrl = config("AVALIA_OIDC_PROVIDER_URL", "http://localhost:9036/web/auth/realms/feliva");
-    private final String expectedIssuer = System.getenv("AVALIA_OIDC_ISSUER");
+    private final String expectedIssuer = config("AVALIA_OIDC_ISSUER", providerUrl);
     private final String clientId = config("AVALIA_OIDC_CLIENT_ID", "avalia");
-    private final String clientSecret = config("AVALIA_OIDC_CLIENT_SECRET", "3fd70ff4-fe2b-47b6-a8a3-cd1cf281a937");
+    private final String clientSecret = System.getenv("AVALIA_OIDC_CLIENT_SECRET");
     private final String redirectUri = config("AVALIA_OIDC_REDIRECT_URI", "http://localhost:5173");
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
@@ -38,7 +38,17 @@ public class OidcClientService {
         return value == null || value.isBlank() ? fallback : value;
     }
 
+    public String frontendOrigin() {
+        URI uri = URI.create(redirectUri);
+        return uri.getScheme() + "://" + uri.getAuthority();
+    }
+
+    public boolean cookieSecure() {
+        return "https".equalsIgnoreCase(URI.create(redirectUri).getScheme());
+    }
+
     public Map<String, String> configuracaoPublica() throws Exception {
+        exigirClientSecret();
         JsonObject metadata = descobrir();
         return Map.of(
                 "authorizationEndpoint", endpointLocal(metadata, "authorization_endpoint"),
@@ -49,6 +59,7 @@ public class OidcClientService {
     }
 
     public String trocarCodigoPorCpf(OidcCallbackDTO callback) throws Exception {
+        exigirClientSecret();
         if (callback == null || callback.code == null || callback.code.isBlank() || callback.code.length() > 1024
                 || callback.codeVerifier == null || !callback.codeVerifier.matches("[A-Za-z0-9._~-]{43,128}")
                 || callback.nonce == null || !callback.nonce.matches("[A-Za-z0-9_-]{43,128}")
@@ -62,9 +73,7 @@ public class OidcClientService {
                 + "&" + campo("code", callback.code)
                 + "&" + campo("code_verifier", callback.codeVerifier)
                 + "&" + campo("redirect_uri", redirectUri);
-        if (clientSecret != null && !clientSecret.isBlank()) {
-            form += "&" + campo("client_secret", clientSecret);
-        }
+        form += "&" + campo("client_secret", clientSecret);
         HttpRequest request = HttpRequest.newBuilder(URI.create(endpointLocal(metadata, "token_endpoint")))
                 .timeout(Duration.ofSeconds(10))
                 .header("Content-Type", "application/x-www-form-urlencoded")
@@ -123,8 +132,12 @@ public class OidcClientService {
         if (response.statusCode() != 200) throw new IllegalStateException("Descoberta OIDC indisponível.");
         JsonObject metadata = json(response.body());
         String discoveredIssuer = metadata.getString("issuer", null);
-        if (discoveredIssuer == null || discoveredIssuer.isBlank()
-                || (expectedIssuer != null && !expectedIssuer.isBlank() && !expectedIssuer.equals(discoveredIssuer)))
+        URI provider = URI.create(providerUrl);
+        boolean loopback = "localhost".equalsIgnoreCase(provider.getHost())
+                || "127.0.0.1".equals(provider.getHost()) || "::1".equals(provider.getHost());
+        if (discoveredIssuer == null || !expectedIssuer.equals(discoveredIssuer)
+                || (!loopback && (!"https".equalsIgnoreCase(provider.getScheme())
+                || !providerUrl.equals(discoveredIssuer))))
             throw new SecurityException("Issuer OIDC inesperado.");
         return metadata;
     }
@@ -141,6 +154,11 @@ public class OidcClientService {
         try (var reader = Json.createReader(new StringReader(body))) {
             return reader.readObject();
         }
+    }
+
+    private void exigirClientSecret() {
+        if (clientSecret == null || clientSecret.isBlank())
+            throw new IllegalStateException("AVALIA_OIDC_CLIENT_SECRET não configurada.");
     }
 
     private static String campo(String name, String value) {

@@ -1,10 +1,12 @@
 // --- Usuário Ativo e Sessão de Autenticação ---
 
 const STORAGE_KEY_USUARIO = 'iffar_avalia_usuario_oidc';
-const STORAGE_KEY_TOKEN = 'iffar_avalia_token_oidc';
+const STORAGE_KEY_TOKEN_LEGADO = 'iffar_avalia_token_oidc';
 
-export function carregarTokenAtivo(): string | null {
-  return localStorage.getItem(STORAGE_KEY_TOKEN);
+try {
+  localStorage.removeItem(STORAGE_KEY_TOKEN_LEGADO);
+} catch {
+  // Armazenamento indisponível no navegador.
 }
 
 
@@ -14,6 +16,7 @@ export function carregarUsuarioAtivo(): import('../types/avaliacao').UsuarioCont
     if (salvo) {
       const u = JSON.parse(salvo);
       if (u && u.cpf) {
+        delete u.token;
         if (!u.papel && u.papelAtivo) u.papel = u.papelAtivo;
         const papeisValidos = ['CPA', 'ADMIN', 'DOCENTE', 'DISCENTE', 'TAE'];
         if (!papeisValidos.includes(u.papel) || (u.papelAtivo && !papeisValidos.includes(u.papelAtivo))) {
@@ -29,16 +32,12 @@ export function carregarUsuarioAtivo(): import('../types/avaliacao').UsuarioCont
   return null;
 }
 
-export function salvarUsuarioAtivo(usuario: import('../types/avaliacao').UsuarioContexto, token?: string) {
+export function salvarUsuarioAtivo(usuario: import('../types/avaliacao').UsuarioContexto) {
   try {
     if (!usuario.papel && usuario.papelAtivo) {
       usuario.papel = usuario.papelAtivo;
     }
-    const { token: _token, ...usuarioSemToken } = usuario;
-    localStorage.setItem(STORAGE_KEY_USUARIO, JSON.stringify(usuarioSemToken));
-    if (token) {
-      localStorage.setItem(STORAGE_KEY_TOKEN, token);
-    }
+    localStorage.setItem(STORAGE_KEY_USUARIO, JSON.stringify(usuario));
   } catch (e) {
     console.error('Erro ao salvar usuário ativo', e);
   }
@@ -47,7 +46,7 @@ export function salvarUsuarioAtivo(usuario: import('../types/avaliacao').Usuario
 export function limparUsuarioAtivo() {
   try {
     localStorage.removeItem(STORAGE_KEY_USUARIO);
-    localStorage.removeItem(STORAGE_KEY_TOKEN);
+    localStorage.removeItem(STORAGE_KEY_TOKEN_LEGADO);
   } catch (e) {
     console.error('Erro ao limpar sessão', e);
   }

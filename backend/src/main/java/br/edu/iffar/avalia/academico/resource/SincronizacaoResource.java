@@ -36,7 +36,7 @@ public class SincronizacaoResource {
 
     @GET
     @Path("/status")
-    public Response getStatus(@HeaderParam("Authorization") String token,
+    public Response getStatus(@CookieParam("avalia_session") String token,
                               @HeaderParam("X-Papel-Ativo") String papel) {
         if (!autorizado(token, papel)) return Response.status(Response.Status.UNAUTHORIZED).build();
         SincronizacaoStatusDTO status = sincronizacaoService.getStatus();
@@ -46,7 +46,7 @@ public class SincronizacaoResource {
     @POST
     @Path("/executar")
     public Response executar(SincronizacaoRequestDTO req,
-                            @HeaderParam("Authorization") String token,
+                            @CookieParam("avalia_session") String token,
                             @HeaderParam("X-Papel-Ativo") String papel) {
         if (!autorizado(token, papel)) return Response.status(Response.Status.UNAUTHORIZED).build();
         Map<String, Object> resp = sincronizacaoService.executarSincronizacao(req);

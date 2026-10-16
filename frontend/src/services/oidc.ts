@@ -81,16 +81,16 @@ export async function concluirLoginOidc(): Promise<AuthResponseDTO> {
     body: JSON.stringify({ code, codeVerifier: fluxo.verifier, nonce: fluxo.nonce, redirectUri: fluxo.redirectUri })
   });
   const resposta = await res.json() as AuthResponseDTO;
-  if (!res.ok || !resposta.autenticado || !resposta.usuario || !resposta.token) {
+  if (!res.ok || !resposta.autenticado || !resposta.usuario) {
     throw new Error(resposta.mensagem || 'Não foi possível concluir a autenticação.');
   }
   return resposta;
 }
 
-export async function validarSessaoAtual(token: string, papel: string): Promise<UsuarioContexto | null> {
+export async function validarSessaoAtual(papel?: string): Promise<UsuarioContexto | null> {
   try {
     const res = await fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}`, 'X-Papel-Ativo': papel },
+      headers: papel ? { 'X-Papel-Ativo': papel } : {},
       cache: 'no-store'
     });
     return res.ok ? await res.json() as UsuarioContexto : null;
@@ -99,14 +99,9 @@ export async function validarSessaoAtual(token: string, papel: string): Promise<
   }
 }
 
-export async function encerrarLoginOidc(token?: string): Promise<void> {
-  if (token) {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-    } catch {
-      // A sessão local já foi removida; o provedor pode estar indisponível.
-    }
-  }
+export async function encerrarLoginOidc(): Promise<void> {
+  const logout = await fetch('/api/auth/logout', { method: 'POST' });
+  if (!logout.ok) throw new Error('Não foi possível encerrar a sessão. Tente novamente.');
   try {
     const config = await configuracao();
     const url = new URL(config.endSessionEndpoint);

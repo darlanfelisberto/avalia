@@ -1,7 +1,10 @@
 package br.edu.iffar.avalia.core.dto;
 
+import jakarta.json.bind.annotation.JsonbTransient;
+
 public class AuthResponseDTO {
     private boolean autenticado;
+    @JsonbTransient
     private String token;
     private String mensagem;
     private UsuarioDTO usuario;

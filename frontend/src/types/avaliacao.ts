@@ -19,12 +19,10 @@ export interface UsuarioContexto {
   papelAtivo?: PapelUsuario;
   papeis: PapelUsuario[];
   permissoes: PermissaoUsuario[];
-  token?: string;
 }
 
 export interface AuthResponseDTO {
   autenticado: boolean;
-  token?: string;
   mensagem: string;
   usuario?: UsuarioContexto;
 }

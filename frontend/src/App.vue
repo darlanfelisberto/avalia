@@ -9,28 +9,26 @@ import ResponderAvaliacoesView from './components/ResponderAvaliacoesView.vue';
 import LoginView from './components/LoginView.vue';
 
 import type { UsuarioContexto } from './types/avaliacao';
-import { carregarTokenAtivo, carregarUsuarioAtivo, salvarUsuarioAtivo, limparUsuarioAtivo, temPermissao } from './services/storage';
+import { carregarUsuarioAtivo, salvarUsuarioAtivo, limparUsuarioAtivo, temPermissao } from './services/storage';
 import { concluirLoginOidc, encerrarLoginOidc, recebeuRetornoOidc, validarSessaoAtual } from './services/oidc';
 
 const usuarioLogado = ref<UsuarioContexto | null>(carregarUsuarioAtivo());
 
 const visaoAtual = ref<'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
 const menuAbertoMobile = ref(false);
-const processandoRetorno = ref(recebeuRetornoOidc() || !!usuarioLogado.value);
+const processandoRetorno = ref(true);
 const erroLogin = ref('');
+const erroLogout = ref('');
 
 onMounted(async () => {
-  if (!processandoRetorno.value) return;
   try {
     if (recebeuRetornoOidc()) {
       const resposta = await concluirLoginOidc();
-      aoLoginSucesso({ ...resposta.usuario!, papel: resposta.usuario!.papelAtivo || resposta.usuario!.papel, token: resposta.token });
-    } else if (usuarioLogado.value) {
-      const token = carregarTokenAtivo();
-      const usuario = token ? await validarSessaoAtual(token, usuarioLogado.value.papelAtivo || usuarioLogado.value.papel) : null;
+      aoLoginSucesso({ ...resposta.usuario!, papel: resposta.usuario!.papelAtivo || resposta.usuario!.papel });
+    } else {
+      const usuario = await validarSessaoAtual(usuarioLogado.value?.papelAtivo || usuarioLogado.value?.papel);
       if (usuario) {
-        usuarioLogado.value = { ...usuario, papel: usuario.papelAtivo || usuario.papel, token: token! };
-        salvarUsuarioAtivo(usuarioLogado.value, token!);
+        aoLoginSucesso({ ...usuario, papel: usuario.papelAtivo || usuario.papel });
       } else {
         usuarioLogado.value = null;
         limparUsuarioAtivo();
@@ -55,20 +53,24 @@ function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | '
 
 function aoLoginSucesso(usuario: UsuarioContexto) {
   usuarioLogado.value = usuario;
-  salvarUsuarioAtivo(usuario, usuario.token);
+  salvarUsuarioAtivo(usuario);
   visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
 }
 
 async function aoLogout() {
-  const token = carregarTokenAtivo();
-  usuarioLogado.value = null;
-  limparUsuarioAtivo();
-  await encerrarLoginOidc(token || undefined);
+  erroLogout.value = '';
+  try {
+    await encerrarLoginOidc();
+    usuarioLogado.value = null;
+    limparUsuarioAtivo();
+  } catch (e) {
+    erroLogout.value = e instanceof Error ? e.message : 'Não foi possível encerrar a sessão. Tente novamente.';
+  }
 }
 
 function onUsuarioAlterado(usuario: UsuarioContexto) {
   usuarioLogado.value = usuario;
-  salvarUsuarioAtivo(usuario, usuario.token);
+  salvarUsuarioAtivo(usuario);
   // Se a visão atual não for permitida para o novo papel, redireciona
   if ((visaoAtual.value === 'instrumentos' || visaoAtual.value === 'permissoes') && usuario.papelAtivo !== 'CPA' && usuario.papelAtivo !== 'ADMIN') {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
@@ -107,6 +109,7 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
       />
 
       <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8">
+        <p v-if="erroLogout" role="alert" class="mb-4 rounded bg-red-50 p-3 text-red-700">{{ erroLogout }}</p>
         <ResponderAvaliacoesView
           v-if="visaoAtual === 'responder'"
           :key="`${usuarioLogado.cpf}:${usuarioLogado.papelAtivo || usuarioLogado.papel}`"

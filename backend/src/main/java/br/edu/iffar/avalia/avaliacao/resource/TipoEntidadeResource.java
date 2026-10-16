@@ -6,6 +6,7 @@ import br.edu.iffar.avalia.core.dto.UsuarioDTO;
 import br.edu.iffar.avalia.core.service.AuthService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PUT;
@@ -36,7 +37,7 @@ public class TipoEntidadeResource {
 
     @GET
     @Path("/permissoes-tipos-entidade")
-    public Response listarPermissoes(@HeaderParam("Authorization") String token,
+    public Response listarPermissoes(@CookieParam("avalia_session") String token,
                                      @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
             exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR");
@@ -47,7 +48,7 @@ public class TipoEntidadeResource {
     @PUT
     @Path("/permissoes-tipos-entidade")
     public Response salvarPermissoes(List<PermissaoTipoEntidadeDTO> permissoes,
-                                     @HeaderParam("Authorization") String token,
+                                     @CookieParam("avalia_session") String token,
                                      @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
             exigirGestor(token, papel, "INSTRUMENTO_EDITAR");

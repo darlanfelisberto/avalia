@@ -8,6 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
@@ -41,8 +42,12 @@ public class AuthResource {
         try {
             String cpf = oidcClient.trocarCodigoPorCpf(callback);
             AuthResponseDTO resposta = authService.autenticarUsuarioOidc(cpf);
-            return resposta.isAutenticado() ? Response.ok(resposta).header("Cache-Control", "no-store").build()
-                    : Response.status(Response.Status.FORBIDDEN).entity(resposta).header("Cache-Control", "no-store").build();
+            if (!resposta.isAutenticado())
+                return Response.status(Response.Status.FORBIDDEN).entity(resposta).header("Cache-Control", "no-store").build();
+            String sessionToken = resposta.getToken();
+            resposta.setToken(null);
+            return Response.ok(resposta).cookie(sessionCookie(sessionToken, 12 * 60 * 60))
+                    .header("Cache-Control", "no-store").build();
         } catch (SecurityException e) {
             return Response.status(Response.Status.UNAUTHORIZED)
                     .entity(new AuthResponseDTO(false, null, e.getMessage(), null)).header("Cache-Control", "no-store").build();
@@ -54,20 +59,26 @@ public class AuthResource {
 
     @POST
     @Path("/logout")
-    public Response logout(@HeaderParam("Authorization") String authorization) {
-        authService.encerrarSessao(authorization);
-        return Response.noContent().header("Cache-Control", "no-store").build();
+    public Response logout(@CookieParam("avalia_session") String sessionToken) {
+        authService.encerrarSessao(sessionToken);
+        return Response.noContent().cookie(sessionCookie("", 0)).header("Cache-Control", "no-store").build();
     }
 
     @GET
     @Path("/me")
-    public Response sessaoAtual(@HeaderParam("Authorization") String authorization,
+    public Response sessaoAtual(@CookieParam("avalia_session") String sessionToken,
                                @HeaderParam("X-Papel-Ativo") String papel) {
         try {
-            return Response.ok(authService.validarSessao(authorization, papel)).header("Cache-Control", "no-store").build();
+            return Response.ok(authService.validarSessao(sessionToken, papel)).header("Cache-Control", "no-store").build();
         } catch (SecurityException e) {
             return Response.status(Response.Status.UNAUTHORIZED).header("Cache-Control", "no-store").build();
         }
+    }
+
+    private NewCookie sessionCookie(String value, int maxAge) {
+        return new NewCookie.Builder("avalia_session")
+                .value(value).path("/api").maxAge(maxAge).httpOnly(true)
+                .secure(oidcClient.cookieSecure()).sameSite(NewCookie.SameSite.STRICT).build();
     }
 
     @GET

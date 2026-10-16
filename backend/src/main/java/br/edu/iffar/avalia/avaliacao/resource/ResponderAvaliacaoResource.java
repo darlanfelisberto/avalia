@@ -19,7 +19,7 @@ public class ResponderAvaliacaoResource {
     @Inject ResponderAvaliacaoService service;
 
     @GET
-    public Response listar(@HeaderParam("Authorization") String token,
+    public Response listar(@CookieParam("avalia_session") String token,
                            @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> Response.ok(service.listar(usuario(token, papel))).build());
     }
@@ -29,7 +29,7 @@ public class ResponderAvaliacaoResource {
     public Response buscar(@PathParam("instrumentoId") String instrumentoId,
                            @PathParam("alvoId") String alvoId,
                            @QueryParam("contextoId") String contextoId,
-                           @HeaderParam("Authorization") String token,
+                           @CookieParam("avalia_session") String token,
                            @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> Response.ok(service.buscar(usuario(token, papel), instrumentoId, alvoId, contextoId)).build());
     }
@@ -39,7 +39,7 @@ public class ResponderAvaliacaoResource {
     public Response conjuntos(@PathParam("instrumentoId") String instrumentoId,
                              @PathParam("alvoId") String alvoId,
                              @QueryParam("contextoId") String contextoId,
-                             @HeaderParam("Authorization") String token,
+                             @CookieParam("avalia_session") String token,
                              @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> Response.ok(service.listarConjuntos(usuario(token, papel),
                 instrumentoId, alvoId, contextoId)).build());
@@ -48,7 +48,7 @@ public class ResponderAvaliacaoResource {
     @POST
     @Path("/{instrumentoId}/envios")
     public Response enviar(@PathParam("instrumentoId") String instrumentoId, Envio envio,
-                           @HeaderParam("Authorization") String token,
+                           @CookieParam("avalia_session") String token,
                            @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
             service.enviar(usuario(token, papel), instrumentoId, envio);

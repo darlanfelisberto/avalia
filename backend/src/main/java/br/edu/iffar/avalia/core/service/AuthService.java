@@ -118,18 +118,15 @@ public class AuthService {
     }
 
     @Transactional
-    public void encerrarSessao(String authorization) {
-        if (authorization != null && authorization.startsWith("Bearer ")) {
-            dao.encerrarSessao(hashToken(authorization.substring(7).trim()));
-        }
+    public void encerrarSessao(String sessionToken) {
+        if (sessionToken != null && sessionToken.matches("[0-9a-f-]{36}"))
+            dao.encerrarSessao(hashToken(sessionToken));
     }
 
-    public UsuarioDTO validarSessao(String authorization, String papelAtivo) {
-        if (authorization == null || !authorization.startsWith("Bearer "))
+    public UsuarioDTO validarSessao(String sessionToken, String papelAtivo) {
+        if (sessionToken == null || !sessionToken.matches("[0-9a-f-]{36}"))
             throw new SecurityException("Sessão não informada.");
-        String token = authorization.substring(7).trim();
-        if (token.isEmpty()) throw new SecurityException("Sessão não informada.");
-        AuthSessao sessao = dao.buscarSessaoValida(hashToken(token));
+        AuthSessao sessao = dao.buscarSessaoValida(hashToken(sessionToken));
         if (sessao == null) throw new SecurityException("Sessão expirada. Entre novamente.");
         String cpf = sessao.getCpf();
         List<String> papeis = Arrays.asList(sessao.getPapeis().split(","));

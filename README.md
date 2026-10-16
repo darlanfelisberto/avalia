@@ -14,9 +14,9 @@ export AVALIA_OIDC_CLIENT_ID=avalia
 export AVALIA_OIDC_REDIRECT_URI=http://localhost:5173
 ```
 
-O segredo do cliente `avalia` está definido no backend e pode ser substituído pela variável `AVALIA_OIDC_CLIENT_SECRET`. O redirect URI cadastrado no provedor deve ser exatamente `http://localhost:5173`. O login usa Authorization Code com PKCE e identifica o CPF pela claim `preferred_username` do `id_token`. O provedor local publica um `issuer` externo; a aplicação valida esse valor no token e acessa os endpoints pela URL local. Para fixar o valor esperado, configure `AVALIA_OIDC_ISSUER` com o `issuer` publicado na descoberta.
+Guarde `AVALIA_OIDC_CLIENT_SECRET` no arquivo local `backend/.env.local` (ignorado pelo Git, permissão 600) ou injete a variável pelo ambiente. Nesse arquivo, fixe também `AVALIA_OIDC_ISSUER=https://teste-formaliza.teste.com/web/auth/realms/feliva` enquanto o provedor local publicar esse issuer. O redirect URI cadastrado no provedor deve ser exatamente `http://localhost:5173`. O login usa Authorization Code com PKCE e identifica o CPF pela claim `preferred_username` do `id_token`.
 
-Para publicar o sistema, use HTTPS, substitua e rotacione o segredo definido no código e mova a sessão do navegador para um cookie `HttpOnly`, `Secure` e `SameSite`. A implementação atual guarda o token de sessão no `localStorage` e destina-se ao ambiente local.
+A sessão é mantida em cookie `HttpOnly` e `SameSite=Strict`, com `Secure` quando a aplicação usa HTTPS. Todas as chamadas da API devem passar pela mesma origem do frontend em `/api`; requisições que alteram dados exigem o cabeçalho `Origin` correspondente ao redirect URI. Em produção, use HTTPS, um gestor de segredos e um provedor cuja URL de descoberta coincida com o `issuer` publicado. O desvio local só é aceito para `localhost` ou loopback com o issuer esperado configurado explicitamente.
 
 Use terminais separados para iniciar as partes do sistema.
 
@@ -24,7 +24,7 @@ Use terminais separados para iniciar as partes do sistema.
 
 ```bash
 cd backend
-mvn clean liberty:dev
+./dev.sh
 ```
 
 A API fica em `http://localhost:9081`. Na inicialização, o Flyway aplica as migrações pendentes e invalida as sessões antigas do login por CPF.
