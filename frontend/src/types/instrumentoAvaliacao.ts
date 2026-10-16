@@ -25,6 +25,7 @@ export interface OpcaoQuestaoDTO {
 export interface ConjuntoOpcaoDTO {
   id?: string;
   nome: string;
+  reutilizavel?: boolean;
   opcoes: OpcaoQuestaoDTO[];
 }
 

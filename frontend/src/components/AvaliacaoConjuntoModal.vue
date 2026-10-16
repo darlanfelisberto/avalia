@@ -42,14 +42,17 @@ const input = 'form-field';
         <p class="dialog-card__description">Fica disponível para reutilização em qualquer questão.</p>
       </div>
 
-      <input v-model="conjunto.nome" placeholder="Nome (ex.: Frequência: Nunca … Sempre)" :class="[input, 'form-field--emphasis']" />
+      <label class="form-label">
+        <span class="form-label__caption">Nome do conjunto <span class="required-mark" aria-hidden="true">*</span></span>
+        <input v-model="conjunto.nome" required placeholder="Ex.: Frequência: Nunca … Sempre" :class="[input, 'form-field--emphasis']" />
+      </label>
 
       <div class="dialog-options">
         <div class="dialog-options__header">
-          <span class="dialog-options__text">Texto</span><span class="dialog-options__value">Valor</span><span class="dialog-options__correct">Correta</span><span></span>
+          <span class="dialog-options__text">Texto <span class="required-mark" aria-hidden="true">*</span></span><span class="dialog-options__value">Valor</span><span class="dialog-options__correct">Correta</span><span></span>
         </div>
         <div v-for="(o, i) in conjunto.opcoes" :key="i" class="dialog-options__row">
-          <input v-model="o.texto" placeholder="Texto da opção" class="form-field dialog-options__text" />
+          <input v-model="o.texto" required :aria-label="`Texto da opção ${i + 1} (obrigatório)`" placeholder="Texto da opção" class="form-field dialog-options__text" />
           <input v-model.number="o.valor" type="number" step="0.5" class="form-field dialog-options__value" />
           <input v-model="o.correta" type="checkbox" class="dialog-options__checkbox" />
           <button type="button" class="dialog-options__remove" :disabled="conjunto.opcoes.length <= 2" @click="conjunto.opcoes.splice(i, 1)">✕</button>

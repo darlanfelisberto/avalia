@@ -38,12 +38,14 @@ public final class AvaliacaoDTO {
     public static class ConjuntoOpcaoDTO {
         public String id;
         public String nome;
+        public boolean reutilizavel;
         public List<OpcaoQuestaoDTO> opcoes = new ArrayList<>();
 
         public static ConjuntoOpcaoDTO create(br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao entidade) {
             ConjuntoOpcaoDTO dto = new ConjuntoOpcaoDTO();
             dto.id = entidade.getId().toString();
             dto.nome = entidade.getNome();
+            dto.reutilizavel = !entidade.isExclusivo();
             for (var opcao : entidade.getOpcoes()) dto.opcoes.add(OpcaoQuestaoDTO.create(opcao));
             return dto;
         }

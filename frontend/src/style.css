@@ -49,6 +49,7 @@ button, input, select, textarea { font: inherit; }
 .button--danger { border: 1px solid #fecdd3; background: white; color: #be123c; }
 .button--danger:hover:not(:disabled) { border-color: #fda4af; background: #fff1f2; }
 .form-field { width: 100%; padding: .625rem .75rem; border: 1px solid var(--color-border); border-radius: .625rem; background: white; color: var(--color-ink); font-size: .75rem; outline: none; }
+.form-field::placeholder { color: #cbd5e1; opacity: 1; }
 .form-field:focus { border-color: #059669; box-shadow: 0 0 0 3px rgb(16 185 129 / 18%); }
 .form-field:disabled { background: #f8fafc; color: #64748b; }
 .form-field--emphasis { font-weight: 600; }
@@ -123,6 +124,8 @@ button, input, select, textarea { font: inherit; }
 .form-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .form-grid__wide { grid-column: 1 / -1; }
 .form-label { display: grid; gap: .375rem; color: #334155; font-size: .75rem; font-weight: 700; }
+.form-label__caption { display: block; }
+.required-mark { color: #e11d48; font-weight: 800; }
 .form-checkboxes { display: flex; flex-wrap: wrap; gap: 1.5rem; }
 .form-checkbox-label { display: flex; align-items: center; gap: .5rem; color: #1e293b; font-size: .75rem; font-weight: 500; cursor: pointer; }
 .form-checkbox { width: 1rem; height: 1rem; }
@@ -201,7 +204,8 @@ button, input, select, textarea { font: inherit; }
 .page-editor__heading { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .75rem 1rem; border-bottom: 1px solid var(--color-border); background: #f8fafc; }
 .page-editor__badge, .session-editor__badge { padding: .125rem .5rem; border-radius: 999px; color: white; font-size: .625rem; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
 .page-editor__badge { background: #1e293b; }
-.structure-editor__title-input { flex: 1; min-width: 12rem; font-weight: 600; }
+.structure-editor__title-field { flex: 1; min-width: 12rem; }
+.structure-editor__title-input { font-weight: 600; }
 .page-editor__description { width: calc(100% - 2rem); margin: 1rem; }
 .session-editor { display: grid; gap: .75rem; padding: .875rem; border: 1px solid #e9d5ff; border-radius: .75rem; background: rgb(250 245 255 / 70%); }
 .session-editor__heading { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
@@ -216,6 +220,7 @@ button, input, select, textarea { font: inherit; }
 .icon-button-control:disabled { opacity: .3; cursor: not-allowed; }
 .structure-control--remove { color: #e11d48; }
 .question-editor__settings { display: grid; gap: .5rem; padding-left: 2rem; }
+.question-editor__options-warning { padding-left: 2rem; color: #b45309; font-size: .75rem; }
 .question-options { display: grid; gap: .5rem; margin-left: 2rem; padding: .75rem; border: 1px solid var(--color-border); border-radius: .5rem; background: #f8fafc; }
 .question-options__title { color: #475569; font-size: .6875rem; font-weight: 700; }
 .question-options__row { display: grid; grid-template-columns: minmax(0, 1fr) 5rem; align-items: end; gap: .5rem; }
@@ -389,9 +394,9 @@ button, input, select, textarea { font: inherit; }
   .sync-stats-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .question-editor__settings { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .question-editor__type { grid-column: span 4; }
-  .question-editor__source, .question-editor__set { grid-column: span 4; }
+  .question-editor__set { grid-column: span 8; }
   .question-editor__subject { grid-column: span 9; }
-  .question-editor__subject--descriptive { grid-column: span 5; }
+  .question-editor__subject--without-set { grid-column: span 5; }
   .question-editor__weight { grid-column: span 3; }
 }
 @media (min-width: 1024px) {

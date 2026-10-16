@@ -20,7 +20,8 @@ const TIPOS: { valor: TipoQuestaoDTO; rotulo: string }[] = [
   { valor: 'DESCRITIVA', rotulo: 'Resposta descritiva' }
 ];
 
-const mapaConjuntos = computed(() => new Map(props.conjuntos.map(c => [c.id, c])));
+const conjuntosReutilizaveis = computed(() => props.conjuntos.filter(c => c.reutilizavel === true));
+const mapaConjuntos = computed(() => new Map(conjuntosReutilizaveis.value.map(c => [c.id, c])));
 
 function mover<T>(lista: T[], i: number, delta: number) {
   const j = i + delta;
@@ -30,8 +31,8 @@ function mover<T>(lista: T[], i: number, delta: number) {
 
 const novaOpcao = () => ({ texto: '', valor: null, correta: false });
 const novaQuestao = (): SessaoQuestaoDTO => ({
-  enunciado: '', tipo: 'ESCALA', conjuntoOpcaoId: props.conjuntos[0]?.id ?? null,
-  opcoes: props.conjuntos.length ? [] : [novaOpcao(), novaOpcao()], obrigatoria: true, peso: null
+  enunciado: '', tipo: 'ESCALA', conjuntoOpcaoId: conjuntosReutilizaveis.value[0]?.id ?? null,
+  opcoes: [], obrigatoria: true, peso: null
 });
 const novaSessao = (): InstrumentoSessaoDTO => ({ titulo: '', descricao: '', questoes: [novaQuestao()] });
 
@@ -47,20 +48,17 @@ function aoMudarTipo(q: SessaoQuestaoDTO) {
   if (q.tipo === 'DESCRITIVA') {
     q.conjuntoOpcaoId = null;
     q.opcoes = [];
-  } else if (!q.conjuntoOpcaoId && !q.opcoes?.length) {
-    q.conjuntoOpcaoId = props.conjuntos[0]?.id ?? null;
-    if (!q.conjuntoOpcaoId) q.opcoes = [novaOpcao(), novaOpcao()];
-  }
-}
-
-function alterarOrigemOpcoes(q: SessaoQuestaoDTO, evento: Event) {
-  const origem = (evento.target as HTMLSelectElement).value;
-  if (origem === 'EXCLUSIVAS') {
-    q.conjuntoOpcaoId = null;
-    q.opcoes = [novaOpcao(), novaOpcao()];
-  } else {
+  } else if (q.tipo === 'ESCALA') {
+    q.conjuntoOpcaoId = conjuntosReutilizaveis.value.find(c => c.id === q.conjuntoOpcaoId)?.id
+      ?? conjuntosReutilizaveis.value[0]?.id ?? null;
     q.opcoes = [];
-    q.conjuntoOpcaoId = props.conjuntos[0]?.id ?? null;
+  } else {
+    if (!q.opcoes?.length) {
+      const conjunto = mapaConjuntos.value.get(q.conjuntoOpcaoId ?? undefined);
+      q.opcoes = conjunto ? conjunto.opcoes.map(o => ({ texto: o.texto, valor: o.valor ?? null, correta: o.correta }))
+        : [novaOpcao(), novaOpcao()];
+    }
+    q.conjuntoOpcaoId = null;
   }
 }
 
@@ -99,14 +97,16 @@ const btnIcone = 'icon-button-control';
       <article v-for="(pag, pi) in paginas" :key="pi" class="page-editor">
       <header class="page-editor__heading">
         <span class="page-editor__badge">Página {{ pi + 1 }}</span>
-        <input v-model="pag.titulo" :disabled="somenteLeitura" placeholder="Título da página" :class="[input, 'structure-editor__title-input']" />
+        <label class="form-label structure-editor__title-field"><span class="form-label__caption">Título da página <span class="required-mark" aria-hidden="true">*</span></span>
+          <input v-model="pag.titulo" :disabled="somenteLeitura" required placeholder="Informe o título" :class="[input, 'structure-editor__title-input']" />
+        </label>
         <template v-if="!somenteLeitura">
           <button type="button" :class="btnIcone" :disabled="pi === 0" @click="mover(paginas, pi, -1)">↑</button>
           <button type="button" :class="btnIcone" :disabled="pi === paginas.length - 1" @click="mover(paginas, pi, 1)">↓</button>
           <button type="button" :class="[btnIcone, 'structure-control--remove']" @click="paginas.splice(pi, 1)">Remover</button>
         </template>
       </header>
-      <textarea v-model="pag.descricao" :disabled="somenteLeitura" rows="2" placeholder="Descrição da página (opcional)" class="form-field page-editor__description" />
+      <textarea v-model="pag.descricao" :disabled="somenteLeitura" rows="2" placeholder="Descrição da página" class="form-field page-editor__description" />
       </article>
     </section>
 
@@ -116,20 +116,22 @@ const btnIcone = 'icon-button-control';
       <div v-for="(ses, si) in sessoes" :key="si" class="session-editor">
           <div class="session-editor__heading">
             <span class="session-editor__badge">Sessão {{ si + 1 }}</span>
-            <input v-model="ses.titulo" :disabled="somenteLeitura" placeholder="Título da sessão (ex.: Didática)" :class="[input, 'structure-editor__title-input']" />
+            <label class="form-label structure-editor__title-field"><span class="form-label__caption">Título da sessão <span class="required-mark" aria-hidden="true">*</span></span>
+              <input v-model="ses.titulo" :disabled="somenteLeitura" required placeholder="Ex.: Didática" :class="[input, 'structure-editor__title-input']" />
+            </label>
             <template v-if="!somenteLeitura">
               <button type="button" :class="btnIcone" :disabled="si === 0" @click="mover(sessoes, si, -1)">↑</button>
               <button type="button" :class="btnIcone" :disabled="si === sessoes.length - 1" @click="mover(sessoes, si, 1)">↓</button>
               <button type="button" :class="[btnIcone, 'structure-control--remove']" @click="sessoes.splice(si, 1)">Remover</button>
             </template>
           </div>
-          <input v-model="ses.descricao" :disabled="somenteLeitura" placeholder="Descrição / instruções da sessão (opcional)" :class="input" />
+          <input v-model="ses.descricao" :disabled="somenteLeitura" placeholder="Descrição / instruções da sessão" :class="input" />
 
           <article v-for="(q, qi) in ses.questoes" :key="qi" class="question-editor">
             <div class="question-editor__heading">
               <span class="question-editor__number">{{ qi + 1 }}.</span>
-              <label class="form-label question-editor__prompt">Enunciado
-                <textarea v-model="q.enunciado" :disabled="somenteLeitura" rows="2" placeholder="Escreva a pergunta" :class="input"></textarea>
+              <label class="form-label question-editor__prompt"><span class="form-label__caption">Enunciado <span class="required-mark" aria-hidden="true">*</span></span>
+                <textarea v-model="q.enunciado" :disabled="somenteLeitura" required rows="2" placeholder="Escreva a pergunta" :class="input"></textarea>
               </label>
               <div v-if="!somenteLeitura" class="question-editor__move">
                 <button type="button" :class="btnIcone" :disabled="qi === 0" @click="mover(ses.questoes, qi, -1)">↑</button>
@@ -138,42 +140,41 @@ const btnIcone = 'icon-button-control';
             </div>
 
             <div class="question-editor__settings">
-              <label class="form-label question-editor__type">Tipo de questão
-                <select v-model="q.tipo" :disabled="somenteLeitura" @change="aoMudarTipo(q)" :class="input">
+              <label :class="['form-label', 'question-editor__subject', q.tipo !== 'ESCALA' ? 'question-editor__subject--without-set' : '']">Assunto
+                <input v-model="q.assunto" :disabled="somenteLeitura" placeholder="Ex.: Didática" :class="input" />
+              </label>
+              <label class="form-label question-editor__weight">Peso
+                <input v-model.number="q.peso" :disabled="somenteLeitura" type="number" step="0.5" min="0" placeholder="Ex.: 1" :class="input" />
+              </label>
+              <label class="form-label question-editor__type"><span class="form-label__caption">Tipo de questão <span class="required-mark" aria-hidden="true">*</span></span>
+                <select v-model="q.tipo" :disabled="somenteLeitura" required @change="aoMudarTipo(q)" :class="input">
                   <option v-for="t in TIPOS" :key="t.valor" :value="t.valor">{{ t.rotulo }}</option>
                 </select>
               </label>
-              <label v-if="q.tipo !== 'DESCRITIVA'" class="form-label question-editor__source">Origem das opções
-                <select :value="q.opcoes?.length ? 'EXCLUSIVAS' : 'CONJUNTO'" :disabled="somenteLeitura" @change="alterarOrigemOpcoes(q, $event)" :class="input">
-                  <option value="CONJUNTO" :disabled="conjuntos.length === 0">Conjunto reutilizável</option>
-                  <option value="EXCLUSIVAS">Opções exclusivas desta questão</option>
-                </select>
-              </label>
-              <label v-if="q.tipo !== 'DESCRITIVA' && !q.opcoes?.length" class="form-label question-editor__set">Conjunto de opções
-                <select v-model="q.conjuntoOpcaoId" :disabled="somenteLeitura" :class="input">
+              <label v-if="q.tipo === 'ESCALA'" class="form-label question-editor__set"><span class="form-label__caption">Conjunto de opções<span class="required-mark" aria-hidden="true">*</span></span>
+                <select v-model="q.conjuntoOpcaoId" :disabled="somenteLeitura" required @change="q.opcoes = []" :class="input">
                   <option :value="null" disabled>Selecione as opções…</option>
-                  <option v-for="c in conjuntos" :key="c.id" :value="c.id">{{ c.nome }}</option>
+                  <option v-for="c in conjuntosReutilizaveis" :key="c.id" :value="c.id">{{ c.nome }}</option>
                 </select>
               </label>
-              <label :class="['form-label', 'question-editor__subject', q.tipo === 'DESCRITIVA' ? 'question-editor__subject--descriptive' : '']">Assunto (opcional)
-                <input v-model="q.assunto" :disabled="somenteLeitura" placeholder="Ex.: Didática" :class="input" />
-              </label>
-              <label class="form-label question-editor__weight">Peso (opcional)
-                <input v-model.number="q.peso" :disabled="somenteLeitura" type="number" step="0.5" min="0" placeholder="Ex.: 1" :class="input" />
-              </label>
+
             </div>
 
-            <div v-if="q.tipo !== 'DESCRITIVA' && q.opcoes?.length" class="question-options">
+            <p v-if="q.tipo === 'ESCALA' && conjuntosReutilizaveis.length === 0" class="question-editor__options-warning">
+              Cadastre um conjunto de opções reutilizável para usar nesta escala.
+            </p>
+
+            <div v-if="q.tipo === 'ESCOLHA_UNICA' || q.tipo === 'MULTIPLA_ESCOLHA'" class="question-options">
               <p class="question-options__title">Opções desta questão</p>
               <div v-for="(opcao, oi) in q.opcoes" :key="oi" class="question-options__row">
-                <label class="form-label">Texto da opção {{ oi + 1 }}
-                  <input v-model="opcao.texto" :disabled="somenteLeitura" class="form-field" placeholder="Ex.: Sim" />
+                <label class="form-label"><span class="form-label__caption">Texto da opção {{ oi + 1 }} <span class="required-mark" aria-hidden="true">*</span></span>
+                  <input v-model="opcao.texto" :disabled="somenteLeitura" required class="form-field" placeholder="Ex.: Sim" />
                 </label>
                 <label class="form-label">Valor
                   <input :value="opcao.valor ?? ''" @input="atualizarValorOpcao(opcao, $event)" :disabled="somenteLeitura" type="number" step="0.5" class="form-field" placeholder="Ex.: 1" />
                 </label>
                 <label class="question-options__correct"><input v-model="opcao.correta" :disabled="somenteLeitura" type="checkbox" /> Correta</label>
-                <button v-if="!somenteLeitura" type="button" class="button button--danger question-options__remove" :disabled="q.opcoes.length <= 2" :aria-label="`Remover opção ${oi + 1}`" @click="q.opcoes.splice(oi, 1)">×</button>
+                <button v-if="!somenteLeitura" type="button" class="button button--danger question-options__remove" :disabled="(q.opcoes?.length ?? 0) <= 2" :aria-label="`Remover opção ${oi + 1}`" @click="q.opcoes?.splice(oi, 1)">×</button>
               </div>
               <button v-if="!somenteLeitura" type="button" class="button button--secondary question-options__add" @click="adicionarOpcao(q)">+ Adicionar opção</button>
             </div>

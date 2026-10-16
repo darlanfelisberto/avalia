@@ -68,6 +68,22 @@ function normalizarRespondentes(respondentes?: InstrumentoAvaliativoDTO['respond
   return (respondentes || []).map(r => ({ ...r, tipoVinculo: r.tipoVinculo ?? '' }));
 }
 
+function normalizarSessoes(sessoes: InstrumentoAvaliativoDTO['sessoes']) {
+  return sessoes.map(sessao => ({
+    ...sessao,
+    questoes: sessao.questoes.map(questao => {
+      if (questao.tipo === 'ESCALA' || questao.tipo === 'DESCRITIVA' || questao.opcoes?.length || !questao.conjuntoOpcaoId) return questao;
+      const conjunto = conjuntos.value.find(item => item.id === questao.conjuntoOpcaoId && item.reutilizavel === true);
+      if (!conjunto) return questao;
+      return {
+        ...questao,
+        conjuntoOpcaoId: null,
+        opcoes: conjunto.opcoes.map(opcao => ({ texto: opcao.texto, valor: opcao.valor ?? null, correta: opcao.correta }))
+      };
+    })
+  }));
+}
+
 const form = reactive<InstrumentoAvaliativoDTO>(novoInstrumento());
 const semPermissaoDeEdicao = computed(() => idRota.value ? (!form.id || !podeEditar) : !podeCriar);
 const somenteLeitura = computed(() => (!!form.status && form.status !== 'RASCUNHO') || semPermissaoDeEdicao.value);
@@ -77,7 +93,8 @@ function aplicar(i: InstrumentoAvaliativoDTO) {
   Object.assign(form, i, {
     inicioAplicacao: isoParaLocal(i.inicioAplicacao),
     fimAplicacao: isoParaLocal(i.fimAplicacao),
-    respondentes: normalizarRespondentes(i.respondentes)
+    respondentes: normalizarRespondentes(i.respondentes),
+    sessoes: normalizarSessoes(i.sessoes)
   });
 }
 
@@ -228,23 +245,23 @@ function voltarDaPrevia() {
           <h3 class="form-panel__title">1. Dados Gerais</h3>
         </div>
         <div class="form-grid">
-          <label class="form-label form-grid__wide">Título
-            <input v-model="form.titulo" :disabled="semPermissaoDeEdicao" :class="[input, 'form-field--emphasis']" placeholder="Ex.: ADPD 2026/1 – Avaliação Docente" />
+          <label class="form-label form-grid__wide"><span class="form-label__caption">Título <span class="required-mark" aria-hidden="true">*</span></span>
+            <input v-model="form.titulo" :disabled="semPermissaoDeEdicao" required :class="[input, 'form-field--emphasis']" placeholder="Ex.: ADPD 2026/1 – Avaliação Docente" />
           </label>
           <label class="form-label form-grid__wide">Descrição
             <textarea v-model="form.descricao" :disabled="semPermissaoDeEdicao" rows="2" :class="input" placeholder="Orientações exibidas ao respondente"></textarea>
           </label>
-          <label class="form-label">Ciclo de referência
-            <input v-model="form.cicloReferencia" :disabled="semPermissaoDeEdicao" :class="input" placeholder="2026/1" />
+          <label class="form-label"><span class="form-label__caption">Ciclo de referência <span class="required-mark" aria-hidden="true">*</span></span>
+            <input v-model="form.cicloReferencia" :disabled="semPermissaoDeEdicao" required :class="input" placeholder="2026/1" />
           </label>
-          <label class="form-label">Início da aplicação
-            <input v-model="form.inicioAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" :class="input" />
+          <label class="form-label"><span class="form-label__caption">Início da aplicação <span class="required-mark" aria-hidden="true">*</span></span>
+            <input v-model="form.inicioAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" required :class="input" />
           </label>
-          <label class="form-label">Término da aplicação
-            <input v-model="form.fimAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" :class="input" />
+          <label class="form-label"><span class="form-label__caption">Término da aplicação <span class="required-mark" aria-hidden="true">*</span></span>
+            <input v-model="form.fimAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" required :class="input" />
           </label>
-          <label class="form-label form-grid__wide">O que será avaliado
-            <select v-model="form.tipoEntidadeAvaliadaId" :disabled="somenteLeitura" :class="input" @change="contextoAlterado">
+          <label class="form-label form-grid__wide"><span class="form-label__caption">O que será avaliado <span class="required-mark" aria-hidden="true">*</span></span>
+            <select v-model="form.tipoEntidadeAvaliadaId" :disabled="somenteLeitura" required :class="input" @change="contextoAlterado">
               <option value="" disabled>Selecione…</option>
               <option v-for="t in tiposAvaliaveis" :key="t.id" :value="t.id">{{ t.nome }}</option>
             </select>
@@ -263,7 +280,7 @@ function voltarDaPrevia() {
       <!-- 2. Respondentes -->
       <div class="surface-card form-panel form-panel--respondents">
         <div class="form-panel__heading">
-          <h3 class="form-panel__title">2. Quem Responde</h3>
+          <h3 class="form-panel__title">2. Quem Responde <span class="required-mark" aria-hidden="true">*</span></h3>
           <p class="form-panel__description">Marque os públicos autorizados a responder ao instrumento.</p>
         </div>
         <div class="respondent-grid">
