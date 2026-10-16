@@ -1,16 +1,17 @@
 package br.edu.iffar.avalia.avaliacao.model;
 
+import br.com.feliva.sharedClass.db.Model;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
 @Table(name = "resposta_instrumento", schema = "avaliacao")
-public class RespostaInstrumento {
+public class RespostaInstrumento extends Model<UUID> {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "resposta_instrumento_id")
-    private UUID id;
+    private UUID respostaInstrumentoId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instrumento_avaliativo_id", nullable = false)
@@ -34,7 +35,9 @@ public class RespostaInstrumento {
     @Column(name = "data_envio")
     private LocalDate dataEnvio;
 
-    public UUID getId() { return id; }
+    public UUID getId() { return respostaInstrumentoId; }
+    public UUID getRespostaInstrumentoId() { return respostaInstrumentoId; }
+    public void setRespostaInstrumentoId(UUID respostaInstrumentoId) { this.respostaInstrumentoId = respostaInstrumentoId; }
     public InstrumentoAvaliativo getInstrumento() { return instrumento; }
     public void setInstrumento(InstrumentoAvaliativo instrumento) { this.instrumento = instrumento; }
     public Entidade getAvaliada() { return avaliada; }
@@ -47,4 +50,9 @@ public class RespostaInstrumento {
     public void setStatus(String status) { this.status = status; }
     public LocalDate getDataEnvio() { return dataEnvio; }
     public void setDataEnvio(LocalDate dataEnvio) { this.dataEnvio = dataEnvio; }
+
+    @Override
+    public UUID getMMId() {
+        return this.respostaInstrumentoId;
+    }
 }

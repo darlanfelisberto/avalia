@@ -37,10 +37,9 @@
            signatureAlgorithm="RS256" tokenHeader="Cookie" cookieName="avalia_access"
            userNameAttribute="preferred_username" groupNameAttribute="groups"/>
 
-    <!-- Para exibir logs detalhados de SQL no messages.log e console (descomente abaixo):
+    <!-- Exibir logs de SQL gerados no console e messages.log -->
     <logging traceSpecification="*=info:eclipselink=fine:eclipselink.sql=fine:org.eclipse.persistence=fine"
              consoleLogLevel="INFO"/>
-    -->
 
     <webApplication location="avalia.war" contextRoot="/">
     </webApplication>

@@ -55,7 +55,7 @@ public class ResponderAvaliacaoDao {
                          and er.referencia_externa = ?2
                    )
             from avaliacao.instrumento_avaliativo i
-            join avaliacao.instrumento_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+            join avaliacao.instrumento_tipo_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
             join avaliacao.tipo_entidade t on t.tipo_entidade_id = ir.tipo_entidade_respondente_id
             join avaliacao.instrumento_entidade_avaliada ia on ia.instrumento_avaliativo_id = i.instrumento_avaliativo_id
             join avaliacao.entidade alvo on alvo.entidade_id = ia.entidade_id
@@ -126,7 +126,7 @@ public class ResponderAvaliacaoDao {
                 and tipo_alvo.codigo = 'INSTITUICAO'
             join lateral (
                 select tr.codigo
-                from avaliacao.instrumento_respondente ir
+                from avaliacao.instrumento_tipo_respondente ir
                 join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = ir.tipo_entidade_respondente_id
                 join avaliacao.tipo_entidade_permissao permissao
                     on permissao.tipo_respondente_id = tr.tipo_entidade_id
@@ -154,7 +154,7 @@ public class ResponderAvaliacaoDao {
                     and p.entidade_avaliada_id = alvo.entidade_id and p.entidade_contexto_id = turma.entidade_id
                     and er.tipo_entidade_id = ir.tipo_entidade_respondente_id and er.referencia_externa = ?1)
                     from avaliacao.instrumento_avaliativo i
-                    join avaliacao.instrumento_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+                    join avaliacao.instrumento_tipo_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
                     join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = ir.tipo_entidade_respondente_id
                     join avaliacao.instrumento_tipo_alvo ita on ita.instrumento_avaliativo_id = i.instrumento_avaliativo_id
                     join avaliacao.tipo_entidade ta on ta.tipo_entidade_id = ita.tipo_entidade_alvo_id
@@ -198,7 +198,7 @@ public class ResponderAvaliacaoDao {
                     )
                 from avaliacao.instrumento_avaliativo i
                 join avaliacao.tipo_entidade contexto on contexto.tipo_entidade_id = i.tipo_entidade_avaliada_id
-                join avaliacao.instrumento_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+                join avaliacao.instrumento_tipo_respondente ir on ir.instrumento_avaliativo_id = i.instrumento_avaliativo_id
                 join avaliacao.tipo_entidade tr on tr.tipo_entidade_id = ir.tipo_entidade_respondente_id
                 join avaliacao.instrumento_entidade_avaliada ia on ia.instrumento_avaliativo_id = i.instrumento_avaliativo_id
                 join avaliacao.entidade alvo on alvo.entidade_id = ia.entidade_id

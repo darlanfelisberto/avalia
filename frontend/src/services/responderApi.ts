@@ -1,4 +1,4 @@
-import type { ConjuntoOpcao, InstrumentoAv } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcao, InstrumentoAvaliativoDTO } from '../types/instrumentoAvaliacao';
 
 export interface AvaliacaoDisponivel {
   instrumentoId: string;
@@ -33,7 +33,7 @@ async function chamar<T>(caminho: string, init?: RequestInit): Promise<T> {
 export const responderApi = {
   listar: () => chamar<AvaliacaoDisponivel[]>(''),
   buscar: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>
-    chamar<InstrumentoAv>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
+    chamar<InstrumentoAvaliativoDTO>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
   conjuntos: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>
     chamar<ConjuntoOpcao[]>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}/conjuntos-opcao${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
   enviar: (instrumentoId: string, dados: RespostaEnvio) =>

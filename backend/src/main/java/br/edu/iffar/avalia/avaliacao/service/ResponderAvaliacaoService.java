@@ -1,6 +1,6 @@
 package br.edu.iffar.avalia.avaliacao.service;
 
-import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.Instrumento;
+import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.InstrumentoAvaliativoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcao;
 import br.edu.iffar.avalia.avaliacao.dto.RespostaAvaliacaoDTO.*;
 import br.edu.iffar.avalia.avaliacao.dao.AvaliacaoDao;
@@ -136,13 +136,13 @@ public class ResponderAvaliacaoService {
                 .findFirst().orElseThrow(() -> new SecurityException("Avaliação indisponível para este perfil."));
     }
 
-    public Instrumento buscar(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
+    public InstrumentoAvaliativoDTO buscar(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
         elegivel(usuario, instrumentoId, alvoId, contextoId);
         return instrumentos.buscarInstrumento(instrumentoId);
     }
 
     public List<ConjuntoOpcao> listarConjuntos(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
-        Instrumento instrumento = buscar(usuario, instrumentoId, alvoId, contextoId);
+        InstrumentoAvaliativoDTO instrumento = buscar(usuario, instrumentoId, alvoId, contextoId);
         Set<String> ids = new HashSet<>();
         instrumento.sessoes.forEach(s -> s.questoes.forEach(q -> {
             if (q.conjuntoOpcaoId != null) ids.add(q.conjuntoOpcaoId);

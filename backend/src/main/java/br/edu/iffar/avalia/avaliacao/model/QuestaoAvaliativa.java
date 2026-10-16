@@ -1,16 +1,17 @@
 package br.edu.iffar.avalia.avaliacao.model;
 
+import br.com.feliva.sharedClass.db.Model;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "questao", schema = "avaliacao")
-public class QuestaoAvaliativa {
+public class QuestaoAvaliativa extends Model<UUID> {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "questao_id")
-    private UUID id;
+    private UUID questaoId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conjunto_opcao_id")
@@ -31,7 +32,9 @@ public class QuestaoAvaliativa {
     @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm = OffsetDateTime.now();
 
-    public UUID getId() { return id; }
+    public UUID getId() { return questaoId; }
+    public UUID getQuestaoId() { return questaoId; }
+    public void setQuestaoId(UUID questaoId) { this.questaoId = questaoId; }
     public ConjuntoOpcao getConjunto() { return conjunto; }
     public void setConjunto(ConjuntoOpcao conjunto) { this.conjunto = conjunto; }
     public String getEnunciado() { return enunciado; }
@@ -42,4 +45,9 @@ public class QuestaoAvaliativa {
     public void setAssunto(String assunto) { this.assunto = assunto; }
     public String getCriadoPor() { return criadoPor; }
     public void setCriadoPor(String criadoPor) { this.criadoPor = criadoPor; }
+
+    @Override
+    public UUID getMMId() {
+        return this.questaoId;
+    }
 }

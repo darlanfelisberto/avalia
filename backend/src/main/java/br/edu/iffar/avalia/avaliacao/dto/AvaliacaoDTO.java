@@ -1,12 +1,17 @@
 package br.edu.iffar.avalia.avaliacao.dto;
 
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/** DTOs do schema "avaliacao" (páginas e sessões do instrumento; questões nas sessões). Datas em ISO-8601 (UTC). */
+/**
+ * DTOs do schema "avaliacao" (páginas e sessões do instrumento; questões nas sessões). Datas em ISO-8601 (UTC).
+ */
 public final class AvaliacaoDTO {
 
-    private AvaliacaoDTO() {}
+    private AvaliacaoDTO() {
+    }
 
     public static class Opcao {
         public String id;
@@ -22,16 +27,21 @@ public final class AvaliacaoDTO {
         public List<Opcao> opcoes = new ArrayList<>();
     }
 
-    public static class Respondente {
+    public static class InstrumentoTipoRespondente {
         public String tipoEntidadeId;
         public String tipoVinculo;
+    }
+
+    public static class Respondente extends InstrumentoTipoRespondente {
     }
 
     public static class Questao {
         public String questaoId;
         public String sessaoQuestaoId;
         public String enunciado;
-        /** ESCOLHA_UNICA, MULTIPLA_ESCOLHA, ESCALA ou DESCRITIVA */
+        /**
+         * ESCOLHA_UNICA, MULTIPLA_ESCOLHA, ESCALA ou DESCRITIVA
+         */
         public String tipo;
         public String assunto;
         public String conjuntoOpcaoId;
@@ -55,7 +65,7 @@ public final class AvaliacaoDTO {
         public int ordem;
     }
 
-    public static class Instrumento {
+    public static class InstrumentoAvaliativoDTO {
         public String id;
         public String tipoEntidadeAvaliadaId;
         public String tipoEntidadeAvaliadaNome;
@@ -68,18 +78,37 @@ public final class AvaliacaoDTO {
         public String fimAplicacao;
         public boolean anonimo;
         public boolean permiteEdicao = true;
-        /** RASCUNHO, PUBLICADO, ENCERRADO ou CONSOLIDADO */
+        /**
+         * RASCUNHO, PUBLICADO, ENCERRADO ou CONSOLIDADO
+         */
         public String status;
         public String criadoPor;
         public String atualizadoEm;
         public int totalQuestoes;
-        public List<Respondente> respondentes = new ArrayList<>();
+        public List<InstrumentoTipoRespondente> respondentes = new ArrayList<>();
         public List<Pagina> paginas = new ArrayList<>();
         public List<Sessao> sessoes = new ArrayList<>();
+
+        public static InstrumentoAvaliativoDTO create(InstrumentoAvaliativo entidade) {
+            InstrumentoAvaliativoDTO i = new InstrumentoAvaliativoDTO();
+            i.id = entidade.getId().toString();
+            i.tipoEntidadeAvaliadaId = entidade.getTipoEntidadeAvaliada().getId().toString();
+            i.tipoEntidadeAvaliadaNome = entidade.getTipoEntidadeAvaliada().getNome();
+            i.titulo = entidade.getTitulo();
+            i.cicloReferencia = entidade.getCicloReferencia();
+            i.status = entidade.getStatus();
+            i.inicioAplicacao = entidade.getInicioAplicacao().toString();
+            i.fimAplicacao = entidade.getFimAplicacao().toString();
+            i.anonimo = entidade.isAnonimo();
+            i.permiteEdicao = entidade.isPermiteEdicao();
+            i.criadoPor = entidade.getCriadoPor();
+            i.atualizadoEm = entidade.getAtualizadoEm().toString();
+            return i;
+        }
     }
 
     public static class PaginaInstrumentos {
-        public List<Instrumento> itens = new ArrayList<>();
+        public List<InstrumentoAvaliativoDTO> itens = new ArrayList<>();
         public int pagina;
         public int tamanho;
         public boolean temProxima;

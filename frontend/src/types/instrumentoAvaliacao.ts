@@ -28,10 +28,14 @@ export interface ConjuntoOpcao {
   opcoes: OpcaoAv[];
 }
 
-export interface RespondenteAv {
+export interface InstrumentoTipoRespondente {
   tipoEntidadeId: string;
   tipoVinculo?: string | null;
 }
+
+export type InstrumentoTipoRespondenteAv = InstrumentoTipoRespondente;
+export type RespondenteAv = InstrumentoTipoRespondente;
+export type InstrumentoRespondente = InstrumentoTipoRespondente;
 
 export interface QuestaoAv {
   questaoId?: string;
@@ -58,7 +62,7 @@ export interface PaginaAv {
   descricao?: string | null;
 }
 
-export interface InstrumentoAv {
+export interface InstrumentoAvaliativoDTO {
   id?: string;
   tipoEntidadeAvaliadaId: string;
   tipoEntidadeAvaliadaNome?: string;
@@ -75,13 +79,13 @@ export interface InstrumentoAv {
   permiteEdicao: boolean;
   status?: StatusInstrumento;
   totalQuestoes?: number;
-  respondentes: RespondenteAv[];
+  respondentes: InstrumentoTipoRespondente[];
   paginas: PaginaAv[];
   sessoes: SessaoAv[];
 }
 
 export interface PaginaInstrumentosAv {
-  itens: InstrumentoAv[];
+  itens: InstrumentoAvaliativoDTO[];
   pagina: number;
   tamanho: number;
   temProxima: boolean;

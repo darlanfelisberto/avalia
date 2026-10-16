@@ -73,6 +73,11 @@
             <version>2.1</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>br.com.feliva</groupId>
+            <artifactId>sharedClass</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

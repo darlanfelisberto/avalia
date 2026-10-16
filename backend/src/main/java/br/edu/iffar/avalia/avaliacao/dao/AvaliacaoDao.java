@@ -95,7 +95,7 @@ public class AvaliacaoDao {
     }
 
     public void removerRespondentes(UUID instrumentoId) {
-        exec("delete from avaliacao.instrumento_respondente where instrumento_avaliativo_id = cast(?1 as uuid)",
+        exec("delete from avaliacao.instrumento_tipo_respondente where instrumento_avaliativo_id = cast(?1 as uuid)",
                 instrumentoId.toString());
     }
 

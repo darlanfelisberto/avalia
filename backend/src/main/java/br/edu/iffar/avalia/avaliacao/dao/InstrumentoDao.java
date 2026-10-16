@@ -4,7 +4,7 @@ import br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao;
 import br.edu.iffar.avalia.avaliacao.model.Entidade;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoEntidadeAvaliada;
-import br.edu.iffar.avalia.avaliacao.model.InstrumentoRespondente;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo;
 import br.edu.iffar.avalia.avaliacao.model.QuestaoAvaliativa;
@@ -34,6 +34,18 @@ public class InstrumentoDao {
 
     private static String ts(String coluna) {
         return String.format(TS, coluna);
+    }
+
+    public List<InstrumentoAvaliativo> listInstrumentos(int pagina, int tamanho) {
+        return em.createQuery("""
+                    select i from InstrumentoAvaliativo i
+                    left join fetch i.tiposAlvo
+                    left join fetch i.entidadesAvaliadas
+                    order by i.atualizadoEm desc, i.id desc
+                """, InstrumentoAvaliativo.class)
+                .setFirstResult((pagina - 1) * tamanho)
+                .setMaxResults(tamanho)
+                .getResultList();
     }
 
     public PaginaEntidades listarInstrumentosBase(int pagina, int tamanho) {
@@ -117,7 +129,7 @@ public class InstrumentoDao {
     public List<Object[]> listarRespondentes(String id) {
         return dao.rows("""
             select cast(tipo_entidade_respondente_id as text), tipo_vinculo
-            from avaliacao.instrumento_respondente where instrumento_avaliativo_id = cast(?1 as uuid)
+            from avaliacao.instrumento_tipo_respondente where instrumento_avaliativo_id = cast(?1 as uuid)
             """, id);
     }
 

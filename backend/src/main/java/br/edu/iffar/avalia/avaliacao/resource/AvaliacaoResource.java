@@ -1,7 +1,7 @@
 package br.edu.iffar.avalia.avaliacao.resource;
 
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcao;
-import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.Instrumento;
+import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.InstrumentoAvaliativoDTO;
 import br.edu.iffar.avalia.avaliacao.service.AvaliacaoService;
 import br.edu.iffar.avalia.core.service.AuthService;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
@@ -36,35 +36,34 @@ public class AvaliacaoResource {
     @GET
     @Path("/conjuntos-opcao")
     public Response conjuntos() {
-        return executar(() -> { exigirPermissao("INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarConjuntos()).build(); });
+        return executar(() -> {  return Response.ok(service.listarConjuntos()).build(); });
     }
 
     @POST
     @Path("/conjuntos-opcao")
     public Response salvarConjunto(ConjuntoOpcao dto) {
-        return executar(() -> { exigirPermissao("INSTRUMENTO_CRIAR"); return Response.ok(service.salvarConjunto(dto)).build(); });
+        return executar(() -> {  return Response.ok(service.salvarConjunto(dto)).build(); });
     }
 
     @GET
     @Path("/instrumentos")
     public Response listar(@QueryParam("pagina") @DefaultValue("1") int pagina,
                            @QueryParam("tamanho") @DefaultValue("100") int tamanho) {
-        return executar(() -> { exigirPermissao("INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarInstrumentos(pagina, tamanho)).build(); });
+        return executar(() -> { return Response.ok(service.listarInstrumentos(pagina, tamanho)).build(); });
     }
 
     @GET
     @Path("/instrumentos/{id}")
     public Response buscar(@PathParam("id") String id) {
         return executar(() -> {
-            exigirPermissao("INSTRUMENTO_VISUALIZAR");
-            Instrumento i = service.buscarInstrumento(id);
+            InstrumentoAvaliativoDTO i = service.buscarInstrumento(id);
             return i == null ? Response.status(Response.Status.NOT_FOUND).build() : Response.ok(i).build();
         });
     }
 
     @POST
     @Path("/instrumentos")
-    public Response salvar(Instrumento dto) {
+    public Response salvar(InstrumentoAvaliativoDTO dto) {
         return executar(() -> {
             UsuarioDTO usuario = exigirPermissao(dto == null || dto.id == null || dto.id.isBlank()
                     ? "INSTRUMENTO_CRIAR" : "INSTRUMENTO_EDITAR");

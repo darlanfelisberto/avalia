@@ -1,5 +1,6 @@
 package br.edu.iffar.avalia.avaliacao.model;
 
+import br.com.feliva.sharedClass.db.Model;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Objects;
@@ -8,7 +9,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "instrumento_tipo_alvo", schema = "avaliacao")
 @IdClass(InstrumentoTipoAlvo.Chave.class)
-public class InstrumentoTipoAlvo {
+public class InstrumentoTipoAlvo extends Model<InstrumentoTipoAlvo.Chave> {
     @Id
     @Column(name = "instrumento_avaliativo_id")
     private UUID instrumentoId;
@@ -35,6 +36,11 @@ public class InstrumentoTipoAlvo {
     public UUID getInstrumentoId() { return instrumentoId; }
     public UUID getTipoAlvoId() { return tipoAlvoId; }
     public TipoEntidade getTipoAlvo() { return tipoAlvo; }
+
+    @Override
+    public Chave getMMId() {
+        return new Chave(instrumentoId, tipoAlvoId);
+    }
 
     public static class Chave implements Serializable {
         private UUID instrumentoId;

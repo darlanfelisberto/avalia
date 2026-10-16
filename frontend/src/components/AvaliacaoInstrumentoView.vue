@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import type { ConjuntoOpcao, InstrumentoAv, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcao, InstrumentoAvaliativoDTO, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
 import { avaliacaoApi } from '../services/avaliacaoApi';
 import { carregarUsuarioAtivo, temPermissao } from '../services/storage';
 import AvaliacaoEstruturaEditor from './AvaliacaoEstruturaEditor.vue';
@@ -18,7 +18,7 @@ const VINCULOS = [
 // ---------------------------------------------------------------- estado
 const modo = ref<'lista' | 'form'>('lista');
 const previsualizando = ref(false);
-const instrumentos = ref<InstrumentoAv[]>([]);
+const instrumentos = ref<InstrumentoAvaliativoDTO[]>([]);
 const paginaAtual = ref(1);
 const temProximaPagina = ref(false);
 const TAMANHO_PAGINA = 10;
@@ -62,7 +62,7 @@ function isoParaLocal(iso?: string): string {
 }
 const localParaIso = (s: string) => (s ? new Date(s).toISOString() : '');
 
-function novoInstrumento(): InstrumentoAv {
+function novoInstrumento(): InstrumentoAvaliativoDTO {
   const hoje = new Date();
   const fim = new Date(Date.now() + 30 * 86400000);
   return {
@@ -81,13 +81,13 @@ function novoInstrumento(): InstrumentoAv {
   };
 }
 
-function normalizarRespondentes(respondentes?: InstrumentoAv['respondentes']) {
+function normalizarRespondentes(respondentes?: InstrumentoAvaliativoDTO['respondentes']) {
   // O banco persiste o vínculo sem exigência como NULL. O select usa string vazia
   // para essa opção, então convertemos o valor ao carregar o instrumento.
   return (respondentes || []).map(r => ({ ...r, tipoVinculo: r.tipoVinculo ?? '' }));
 }
 
-function normalizarTiposAlvo(i: InstrumentoAv) {
+function normalizarTiposAlvo(i: InstrumentoAvaliativoDTO) {
   return i.tiposEntidadeAlvoIds?.length ? [...i.tiposEntidadeAlvoIds] : (i.tipoEntidadeAvaliadaId ? [i.tipoEntidadeAvaliadaId] : []);
 }
 
@@ -116,7 +116,7 @@ function ajustarRespondentesPermitidos() {
   form.respondentes = form.respondentes.filter(r => tiposPermitidos.has(r.tipoEntidadeId));
 }
 
-const form = reactive<InstrumentoAv>(novoInstrumento());
+const form = reactive<InstrumentoAvaliativoDTO>(novoInstrumento());
 const semPermissaoDeEdicao = computed(() => form.id ? !podeEditar : !podeCriar);
 const somenteLeitura = computed(() => (!!form.status && form.status !== 'RASCUNHO') || semPermissaoDeEdicao.value);
 
@@ -174,7 +174,7 @@ async function editar(id: string) {
   modo.value = 'form';
 }
 
-function aplicar(i: InstrumentoAv) {
+function aplicar(i: InstrumentoAvaliativoDTO) {
   Object.assign(form, i, {
     inicioAplicacao: isoParaLocal(i.inicioAplicacao),
     fimAplicacao: isoParaLocal(i.fimAplicacao),
@@ -186,7 +186,7 @@ function aplicar(i: InstrumentoAv) {
 async function salvar(): Promise<boolean> {
   erro.value = sucesso.value = null;
   salvando.value = true;
-  const payload: InstrumentoAv = JSON.parse(JSON.stringify(form));
+  const payload: InstrumentoAvaliativoDTO = JSON.parse(JSON.stringify(form));
   payload.inicioAplicacao = localParaIso(form.inicioAplicacao);
   payload.fimAplicacao = localParaIso(form.fimAplicacao);
   const u = carregarUsuarioAtivo();

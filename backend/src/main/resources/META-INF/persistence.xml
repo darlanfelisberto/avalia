@@ -13,14 +13,12 @@
             <!-- Validar schema existente gerenciado pelo Flyway sem modificar tabelas em runtime -->
             <property name="jakarta.persistence.schema-generation.database.action" value="none"/>
 
-            <!-- Para habilitar a exibição de SQL e parâmetros no log (descomente as linhas abaixo):
+            <!-- Exibir SQLs gerados e parâmetros (equivalente ao show_sql) -->
             <property name="eclipselink.logging.level.sql" value="FINE"/>
             <property name="eclipselink.logging.parameters" value="true"/>
-            <property name="eclipselink.logging.level" value="FINE"/>
             <property name="eclipselink.logging.logger" value="DefaultLogger"/>
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
-            -->
         </properties>
     </persistence-unit>
 </persistence>

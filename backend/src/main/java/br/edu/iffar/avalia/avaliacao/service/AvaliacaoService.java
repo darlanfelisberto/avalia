@@ -1,5 +1,6 @@
 package br.edu.iffar.avalia.avaliacao.service;
 
+import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.*;
 import br.edu.iffar.avalia.avaliacao.dao.AvaliacaoDao;
 import br.edu.iffar.avalia.avaliacao.dao.EntidadeAcademicaDao;
@@ -7,7 +8,7 @@ import br.edu.iffar.avalia.avaliacao.dao.InstrumentoDao;
 import br.edu.iffar.avalia.avaliacao.dao.TipoEntidadeDao;
 import br.edu.iffar.avalia.avaliacao.model.TipoEntidade;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
-import br.edu.iffar.avalia.avaliacao.model.InstrumentoRespondente;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo;
 import br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao;
@@ -35,7 +36,7 @@ public class AvaliacaoService {
     private EntidadeAcademicaDao entidadeAcademicaDao;
 
     @Inject
-    private InstrumentoDao consultas;
+    private InstrumentoDao instrumentoDao;
 
     @Inject
     private TipoEntidadeDao tiposEntidadeDao;
@@ -96,30 +97,19 @@ public class AvaliacaoService {
     // ------------------------------------------------------------------ instrumento
 
     public PaginaInstrumentos listarInstrumentos(int paginaSolicitada, int tamanhoSolicitado) {
-        if (paginaSolicitada < 1) throw new IllegalArgumentException("A página deve ser maior que zero.");
         if (tamanhoSolicitado < 1 || tamanhoSolicitado > 100)
             throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e 100.");
 
-        InstrumentoDao.PaginaEntidades paginaEntidades = consultas.listarInstrumentosBase(paginaSolicitada, tamanhoSolicitado);
+        List<InstrumentoAvaliativo> instrumentoAvaliativoList = instrumentoDao.listInstrumentos(paginaSolicitada, tamanhoSolicitado);
+
+        InstrumentoDao.PaginaEntidades paginaEntidades = instrumentoDao.listarInstrumentosBase(paginaSolicitada, tamanhoSolicitado);
         PaginaInstrumentos resultado = new PaginaInstrumentos();
         resultado.tamanho = tamanhoSolicitado;
         resultado.pagina = paginaSolicitada;
         resultado.temProxima = paginaEntidades.temProxima();
 
         for (InstrumentoAvaliativo entidade : paginaEntidades.itens()) {
-            Instrumento i = new Instrumento();
-            i.id = entidade.getId().toString();
-            i.tipoEntidadeAvaliadaId = entidade.getTipoEntidadeAvaliada().getId().toString();
-            i.tipoEntidadeAvaliadaNome = entidade.getTipoEntidadeAvaliada().getNome();
-            i.titulo = entidade.getTitulo();
-            i.cicloReferencia = entidade.getCicloReferencia();
-            i.status = entidade.getStatus();
-            i.inicioAplicacao = entidade.getInicioAplicacao().toString();
-            i.fimAplicacao = entidade.getFimAplicacao().toString();
-            i.anonimo = entidade.isAnonimo();
-            i.permiteEdicao = entidade.isPermiteEdicao();
-            i.criadoPor = entidade.getCriadoPor();
-            i.atualizadoEm = entidade.getAtualizadoEm().toString();
+            InstrumentoAvaliativoDTO i = InstrumentoAvaliativoDTO.create(entidade);
 
             for (InstrumentoTipoAlvo alvo : entidade.getTiposAlvo()) {
                 i.tiposEntidadeAlvoIds.add(alvo.getTipoAlvo().getId().toString());
@@ -130,8 +120,8 @@ public class AvaliacaoService {
                 i.tiposEntidadeAlvoNomes.add(i.tipoEntidadeAvaliadaNome);
             }
 
-            for (InstrumentoRespondente respondente : entidade.getRespondentes()) {
-                Respondente dto = new Respondente();
+            for (InstrumentoTipoRespondente respondente : entidade.getRespondentes()) {
+                AvaliacaoDTO.InstrumentoTipoRespondente dto = new AvaliacaoDTO.InstrumentoTipoRespondente();
                 dto.tipoEntidadeId = respondente.getTipoEntidadeRespondente().getId().toString();
                 dto.tipoVinculo = respondente.getTipoVinculo();
                 i.respondentes.add(dto);
@@ -173,12 +163,12 @@ public class AvaliacaoService {
         return resultado;
     }
 
-    public Instrumento buscarInstrumento(String id) {
-        List<Object[]> base = consultas.buscarInstrumentoBase(id);
+    public InstrumentoAvaliativoDTO buscarInstrumento(String id) {
+        List<Object[]> base = instrumentoDao.buscarInstrumentoBase(id);
         if (base.isEmpty()) return null;
 
         Object[] r = base.get(0);
-        Instrumento i = new Instrumento();
+        InstrumentoAvaliativoDTO i = new InstrumentoAvaliativoDTO();
         i.id = (String) r[0];
         i.tipoEntidadeAvaliadaId = (String) r[1];
         i.tipoEntidadeAvaliadaNome = (String) r[2];
@@ -193,7 +183,7 @@ public class AvaliacaoService {
         i.criadoPor = (String) r[11];
         i.atualizadoEm = (String) r[12];
 
-        for (Object[] x : consultas.listarTiposAlvo(id)) {
+        for (Object[] x : instrumentoDao.listarTiposAlvo(id)) {
             i.tiposEntidadeAlvoIds.add((String) x[0]);
             i.tiposEntidadeAlvoNomes.add((String) x[1]);
         }
@@ -202,7 +192,7 @@ public class AvaliacaoService {
             i.tiposEntidadeAlvoNomes.add(i.tipoEntidadeAvaliadaNome);
         }
 
-        for (Object[] x : consultas.listarRespondentes(id)) {
+        for (Object[] x : instrumentoDao.listarRespondentes(id)) {
             Respondente resp = new Respondente();
             resp.tipoEntidadeId = (String) x[0];
             resp.tipoVinculo = (String) x[1];
@@ -210,7 +200,7 @@ public class AvaliacaoService {
         }
 
         Map<String, Sessao> sessoes = new LinkedHashMap<>();
-        for (Object[] x : consultas.listarSessoes(id)) {
+        for (Object[] x : instrumentoDao.listarSessoes(id)) {
             if ("PAGINA".equals(x[2])) {
                 Pagina p = new Pagina();
                 p.id = (String) x[0];
@@ -228,7 +218,7 @@ public class AvaliacaoService {
                 i.sessoes.add(s);
             }
         }
-        for (Object[] x : consultas.listarQuestoes(id)) {
+        for (Object[] x : instrumentoDao.listarQuestoes(id)) {
             Sessao s = sessoes.get((String) x[0]);
             if (s == null) continue;
             Questao q = new Questao();
@@ -247,7 +237,7 @@ public class AvaliacaoService {
         return i;
     }
 
-    public Instrumento salvarInstrumento(Instrumento dto, String usuario) {
+    public InstrumentoAvaliativoDTO salvarInstrumento(InstrumentoAvaliativoDTO dto, String usuario) {
         if (dto == null) throw new IllegalArgumentException("Dados do instrumento não informados.");
         InstrumentoAvaliativo entidade = blank(dto.id) ? null : dao.buscarInstrumento(UUID.fromString(dto.id));
         if (!blank(dto.id) && entidade == null) throw new IllegalArgumentException("Instrumento não encontrado.");
@@ -284,8 +274,8 @@ public class AvaliacaoService {
         return buscarInstrumento(id);
     }
 
-    public Instrumento publicar(String id) {
-        Instrumento i = buscarInstrumento(id);
+    public InstrumentoAvaliativoDTO publicar(String id) {
+        InstrumentoAvaliativoDTO i = buscarInstrumento(id);
         if (i == null) throw new IllegalArgumentException("Instrumento não encontrado.");
         if (!"RASCUNHO".equals(i.status)) throw new IllegalArgumentException("Apenas rascunhos podem ser publicados.");
         if (i.totalQuestoes == 0) throw new IllegalArgumentException("Inclua ao menos uma questão antes de publicar.");
@@ -296,15 +286,15 @@ public class AvaliacaoService {
         dao.flush();
         String tipoContextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(i.tipoEntidadeAvaliadaId));
         if ("INSTITUICAO".equals(tipoContextoCodigo) && i.tiposEntidadeAlvoIds.contains(i.tipoEntidadeAvaliadaId)) {
-            consultas.criarEntidadeInstitucional(i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
-            consultas.vincularEntidadeInstitucional(id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
+            instrumentoDao.criarEntidadeInstitucional(i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
+            instrumentoDao.vincularEntidadeInstitucional(id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
         }
-        consultas.popularAlvos(id);
+        instrumentoDao.popularAlvos(id);
         return buscarInstrumento(id);
     }
 
     public boolean excluir(String id) {
-        Instrumento i = buscarInstrumento(id);
+        InstrumentoAvaliativoDTO i = buscarInstrumento(id);
         if (i == null) return false;
         if (!"RASCUNHO".equals(i.status)) throw new IllegalArgumentException("Só é possível excluir instrumentos em rascunho.");
         List<String> questoes = idsQuestoes(id);
@@ -316,12 +306,12 @@ public class AvaliacaoService {
 
     // ------------------------------------------------------------------ internos
 
-    private void substituirRespondentes(String id, List<Respondente> respondentes) {
+    private void substituirRespondentes(String id, List<AvaliacaoDTO.InstrumentoTipoRespondente> respondentes) {
         UUID instrumentoId = UUID.fromString(id);
         dao.removerRespondentes(instrumentoId);
         InstrumentoAvaliativo instrumento = dao.referencia(InstrumentoAvaliativo.class, instrumentoId);
-        for (Respondente r : respondentes) {
-            InstrumentoRespondente entidade = new InstrumentoRespondente();
+        for (AvaliacaoDTO.InstrumentoTipoRespondente r : respondentes) {
+            InstrumentoTipoRespondente entidade = new InstrumentoTipoRespondente();
             entidade.setInstrumento(instrumento);
             entidade.setTipoEntidadeRespondente(tiposEntidadeDao.referencia(UUID.fromString(r.tipoEntidadeId)));
             entidade.setTipoVinculo(blank(r.tipoVinculo) ? null : r.tipoVinculo.trim());
@@ -330,7 +320,7 @@ public class AvaliacaoService {
         dao.flush();
     }
 
-    private void substituirTiposAlvo(String id, Instrumento dto) {
+    private void substituirTiposAlvo(String id, InstrumentoAvaliativoDTO dto) {
         List<String> tiposAlvo = dto.tiposEntidadeAlvoIds == null || dto.tiposEntidadeAlvoIds.isEmpty()
                 ? List.of(dto.tipoEntidadeAvaliadaId) : dto.tiposEntidadeAlvoIds;
         UUID instrumentoId = UUID.fromString(id);
@@ -404,7 +394,7 @@ public class AvaliacaoService {
 
     private List<String> idsQuestoes(String instrumentoId) {
         List<String> ids = new ArrayList<>();
-        for (Object[] r : consultas.listarIdsQuestoes(instrumentoId)) {
+        for (Object[] r : instrumentoDao.listarIdsQuestoes(instrumentoId)) {
             ids.add((String) r[0]);
         }
         return ids;
@@ -413,11 +403,11 @@ public class AvaliacaoService {
     /** Remove questões que deixaram de ser usadas por qualquer instrumento. */
     private void removerQuestoesOrfas(List<String> candidatas) {
         for (String qid : candidatas) {
-            consultas.removerQuestaoOrfa(qid);
+            instrumentoDao.removerQuestaoOrfa(qid);
         }
     }
 
-    private void validar(Instrumento d, boolean validarRespondentes) {
+    private void validar(InstrumentoAvaliativoDTO d, boolean validarRespondentes) {
         if (d == null) throw new IllegalArgumentException("Dados do instrumento não informados.");
         if (blank(d.titulo)) throw new IllegalArgumentException("Informe o título do instrumento.");
         if (blank(d.cicloReferencia)) throw new IllegalArgumentException("Informe o ciclo de referência (ex.: 2026/1).");
@@ -453,7 +443,7 @@ public class AvaliacaoService {
         } else if (d.tiposEntidadeAlvoIds.size() != 1 || !d.tiposEntidadeAlvoIds.contains(d.tipoEntidadeAvaliadaId)) {
             throw new IllegalArgumentException("Selecione o próprio tipo avaliado como alvo.");
         }
-        if (validarRespondentes) for (Respondente r : d.respondentes) {
+        if (validarRespondentes) for (AvaliacaoDTO.InstrumentoTipoRespondente r : d.respondentes) {
             if (blank(r.tipoEntidadeId)) throw new IllegalArgumentException("Respondente sem tipo definido.");
             if (!vistos.add(r.tipoEntidadeId)) throw new IllegalArgumentException("Público respondente repetido.");
             TipoEntidade tipoRespondente = tiposEntidadeDao.buscar(UUID.fromString(r.tipoEntidadeId));

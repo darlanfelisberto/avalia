@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { ConjuntoOpcao, InstrumentoAv, QuestaoAv } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcao, InstrumentoAvaliativoDTO, QuestaoAv } from '../types/instrumentoAvaliacao';
 
 const props = defineProps<{
-  instrumento: InstrumentoAv;
+  instrumento: InstrumentoAvaliativoDTO;
   conjuntos: ConjuntoOpcao[];
 }>();
 
