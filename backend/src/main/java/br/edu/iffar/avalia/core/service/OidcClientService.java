@@ -27,7 +27,8 @@ import java.util.Map;
 
 @ApplicationScoped
 public class OidcClientService {
-    public record IdentidadeOidc(String cpf, String sub, List<String> grupos, Instant expiraEm) {}
+    public record IdentidadeOidc(String cpf, String nome, String email, String sub,
+                                 List<String> grupos, Instant expiraEm) {}
     public record TokensOidc(IdentidadeOidc identidade, String accessToken) {}
 
     private final String providerUrl = config("AVALIA_OIDC_PROVIDER_URL", "http://localhost:9036/web/auth/realms/feliva");
@@ -120,7 +121,8 @@ public class OidcClientService {
         String cpf = claims.getStringClaim("preferred_username");
         if (cpf == null || !cpf.matches("\\d{11}"))
             throw new SecurityException("O provedor não retornou um CPF válido.");
-        return new IdentidadeOidc(cpf, claims.getSubject(), List.of(), expiry.toInstant());
+        return new IdentidadeOidc(cpf, claims.getStringClaim("name"), claims.getStringClaim("email"),
+                claims.getSubject(), List.of(), expiry.toInstant());
     }
 
     private IdentidadeOidc verificarAccessToken(String accessToken, IdentidadeOidc identidade,
@@ -142,7 +144,8 @@ public class OidcClientService {
         List<String> grupos = claims.getStringListClaim("groups");
         if (grupos == null || grupos.isEmpty())
             throw new SecurityException("O provedor não retornou as permissões do usuário.");
-        return new IdentidadeOidc(identidade.cpf(), identidade.sub(), List.copyOf(grupos), expiry.toInstant());
+        return new IdentidadeOidc(identidade.cpf(), claims.getStringClaim("name"),
+                claims.getStringClaim("email"), identidade.sub(), List.copyOf(grupos), expiry.toInstant());
     }
 
     private JWTClaimsSet verificarAssinatura(String token, String jwksUri) throws Exception {

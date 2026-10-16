@@ -2,25 +2,18 @@ package br.edu.iffar.avalia.core.service;
 
 import br.edu.iffar.avalia.core.dto.AuthResponseDTO;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
-import br.edu.iffar.avalia.core.dao.AuthDao;
-import br.edu.iffar.avalia.core.model.UsuarioPermissao;
-import br.edu.iffar.avalia.academico.model.PessoaAcademica;
-import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.*;
 
-@ApplicationScoped
+@RequestScoped
 public class AuthService {
     private static final List<String> PAPEIS_OIDC = List.of("ADMIN", "CPA", "DOCENTE", "DISCENTE", "TAE");
     private static final List<String> PERMISSOES_OIDC = List.of(
             "INSTRUMENTO_CRIAR", "INSTRUMENTO_EDITAR", "INSTRUMENTO_EXCLUIR",
             "INSTRUMENTO_VISUALIZAR", "AVALIACAO_RESPONDER", "SIGAA_SINCRONIZAR");
-
-    @Inject
-    private AuthDao dao;
 
     @Inject
     private JsonWebToken jwt;
@@ -46,130 +39,39 @@ public class AuthService {
         return cpf != null ? cpf : "";
     }
 
-    @Transactional
     public AuthResponseDTO autenticarUsuarioOidc(OidcClientService.IdentidadeOidc identidade) {
-        String cpfLimpo = normalizarCpf(identidade.cpf());
-        if (cpfLimpo.isEmpty()) {
-            return new AuthResponseDTO(false, "Informe o CPF para identificação.", null);
-        }
-
-        // O cadastro local fornece dados institucionais; a autorização vem do access token validado.
-        UsuarioPermissao up = dao.buscarUsuarioAtivo(cpfLimpo);
-        if (up != null) {
-            UsuarioDTO dto = montarUsuarioDTO(up);
-            return criarSessaoOidc(dto, identidade);
-        }
-
-        // 2. Consulta de fallback no espelho acadêmico (academico.pessoa)
-        PessoaAcademica pessoa = dao.buscarPessoaPorCpf(cpfLimpo);
-        if (pessoa != null) {
-            Integer pessoaId = pessoa.getId();
-            String nome = pessoa.getNome();
-            String email = pessoa.getEmail();
-
-            // Identificar papéis e vínculos institucionais
-            List<String> papeis = identificarPapeisAcademicos(pessoaId);
-            if (papeis.isEmpty()) {
-                return new AuthResponseDTO(false, "CPF sem vínculo acadêmico identificado para acesso ao AVALIA.", null);
-            }
-            String campus = identificarCampusPessoa(pessoaId);
-
-            String papelPrincipal = definirPapelPrincipal(papeis);
-            // Cadastrar automaticamente em usuario_permissao para persistência
-            UsuarioPermissao novo = new UsuarioPermissao(
-                    cpfLimpo,
-                    nome,
-                    papelPrincipal,
-                    campus != null ? campus : "Reitoria",
-                    ""
-            );
-            novo.setEmail(email);
-
-            UsuarioDTO dto = new UsuarioDTO();
-            dto.setCpf(cpfLimpo);
-            dto.setCpfFormatado(formatarCpf(cpfLimpo));
-            dto.setNome(nome);
-            dto.setEmail(email);
-            dto.setCampus(novo.getCampus());
-            dto.setPapelAtivo(papelPrincipal);
-            dto.setPapeis(papeis);
-            aplicarAutorizacaoOidc(dto, identidade.grupos());
-            if (dto.getPermissoes().isEmpty())
-                return new AuthResponseDTO(false, "Usuário sem permissões no provedor OIDC.", null);
-            dao.persistirUsuario(novo);
-            return new AuthResponseDTO(true, "Login realizado com sucesso.", dto);
-        }
-
-        return new AuthResponseDTO(false, "CPF não localizado no cadastro institucional do IFFar.", null);
-    }
-
-    private AuthResponseDTO criarSessaoOidc(UsuarioDTO usuario, OidcClientService.IdentidadeOidc identidade) {
-        aplicarAutorizacaoOidc(usuario, identidade.grupos());
-        if (usuario.getPermissoes().isEmpty())
-            return new AuthResponseDTO(false, "Usuário sem permissões no provedor OIDC.", null);
+        UsuarioDTO usuario = montarUsuario(identidade.cpf(), identidade.nome(), identidade.email(), identidade.grupos());
         return new AuthResponseDTO(true, "Login realizado com sucesso.", usuario);
     }
 
-    private void aplicarAutorizacaoOidc(UsuarioDTO usuario, List<String> grupos) {
+    private UsuarioDTO montarUsuario(String cpfEntrada, String nome, String email, List<String> grupos) {
+        String cpf = normalizarCpf(cpfEntrada);
+        if (!cpf.matches("\\d{11}")) throw new SecurityException("O token não contém um CPF válido.");
         Set<String> gruposConfiaveis = new HashSet<>(grupos);
         List<String> papeis = new ArrayList<>();
         for (String papel : PAPEIS_OIDC)
             if (gruposConfiaveis.contains(papel)) papeis.add(papel);
-        String papelLocal = usuario.getPapelAtivo();
-        if (List.of("DOCENTE", "DISCENTE", "TAE").contains(papelLocal) && !papeis.contains(papelLocal))
-            papeis.add(papelLocal);
-        if (papeis.isEmpty()) papeis.add("TAE");
+        if (papeis.isEmpty()) throw new SecurityException("O token não contém um perfil institucional reconhecido.");
+        List<String> permissoes = PERMISSOES_OIDC.stream().filter(gruposConfiaveis::contains).toList();
+        if (permissoes.isEmpty()) throw new SecurityException("Usuário sem permissões no provedor OIDC.");
+
+        UsuarioDTO usuario = new UsuarioDTO();
+        usuario.setCpf(cpf);
+        usuario.setCpfFormatado(formatarCpf(cpf));
+        usuario.setNome(nome == null || nome.isBlank() ? cpf : nome);
+        usuario.setEmail(email);
+        usuario.setCampus("Geral");
         usuario.setPapeis(papeis);
         usuario.setPapelAtivo(papeis.get(0));
-        usuario.setPermissoes(PERMISSOES_OIDC.stream().filter(gruposConfiaveis::contains).toList());
-    }
-
-    public UsuarioDTO validarJwt() {
-        String cpf = jwt == null ? null : jwt.getClaim("preferred_username");
-        if (cpf == null || !cpf.matches("\\d{11}"))
-            throw new SecurityException("Token de acesso inválido.");
-        UsuarioPermissao up = dao.buscarUsuarioAtivo(cpf);
-        if (up == null) throw new SecurityException("Usuário sem cadastro ativo.");
-        UsuarioDTO usuario = montarUsuarioDTO(up);
-        aplicarAutorizacaoOidc(usuario, new ArrayList<>(jwt.getGroups()));
-        if (usuario.getPermissoes().isEmpty())
-            throw new SecurityException("Usuário sem permissões no provedor OIDC.");
+        usuario.setPermissoes(permissoes);
         return usuario;
     }
 
-    private UsuarioDTO montarUsuarioDTO(UsuarioPermissao up) {
-        UsuarioDTO dto = new UsuarioDTO();
-        dto.setCpf(up.getCpf());
-        dto.setCpfFormatado(formatarCpf(up.getCpf()));
-        dto.setNome(up.getNome());
-        dto.setEmail(up.getEmail());
-        dto.setCampus(up.getCampus() != null ? up.getCampus() : "Reitoria");
-        dto.setPapelAtivo(up.getPapel());
-
-        dto.setPapeis(List.of(up.getPapel()));
-        return dto;
-    }
-
-    private List<String> identificarPapeisAcademicos(Integer pessoaId) {
-        Set<String> papeis = new LinkedHashSet<>();
-        if (dao.existeAluno(pessoaId)) papeis.add("DISCENTE");
-        if (dao.existeDocenteTurma(pessoaId)) papeis.add("DOCENTE");
-        if (dao.existeServidor(pessoaId) && !papeis.contains("DOCENTE")) papeis.add("TAE");
-        return new ArrayList<>(papeis);
-    }
-
-    private String identificarCampusPessoa(Integer pessoaId) {
-        String campus = dao.campusServidor(pessoaId);
-        if (campus == null) campus = dao.campusAluno(pessoaId);
-        return campus == null ? "Reitoria" : campus;
-    }
-
-    private String definirPapelPrincipal(List<String> papeis) {
-        if (papeis.contains("CPA")) return "CPA";
-        if (papeis.contains("DOCENTE")) return "DOCENTE";
-        if (papeis.contains("DISCENTE")) return "DISCENTE";
-        if (papeis.contains("TAE")) return "TAE";
-        return "DISCENTE";
+    public UsuarioDTO validarJwt() {
+        if (jwt == null)
+            throw new SecurityException("Token de acesso inválido.");
+        return montarUsuario(jwt.getClaim("preferred_username"), jwt.getClaim("name"),
+                jwt.getClaim("email"), new ArrayList<>(jwt.getGroups()));
     }
 
 }

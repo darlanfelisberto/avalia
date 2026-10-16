@@ -17,7 +17,7 @@ export AVALIA_OIDC_REDIRECT_URI=http://localhost:5173
 
 Guarde `AVALIA_OIDC_CLIENT_SECRET` no arquivo local `backend/.env.local` (ignorado pelo Git, permissão 600) ou injete a variável pelo ambiente. Nesse arquivo, fixe também `AVALIA_OIDC_ISSUER=https://teste-formaliza.teste.com/web/auth/realms/feliva` enquanto o provedor local publicar esse issuer; sem essa configuração a API recusa JWTs. O redirect URI cadastrado no provedor deve ser exatamente `http://localhost:5173`. O login usa Authorization Code com PKCE e identifica o CPF pela claim `preferred_username` do `id_token`.
 
-O backend valida o `id_token` no login e confere se o `access_token` pertence ao mesmo usuário e ao cliente `avalia`. Os papéis e as permissões vêm da claim `groups` do `access_token`. O cadastro local fornece nome, campus, vínculo acadêmico e estado ativo; seus papéis privilegiados e permissões antigas não autorizam operações. Mudanças de permissões no provedor entram em vigor quando o usuário faz novo login.
+O backend valida o `id_token` no login e confere se o `access_token` pertence ao mesmo usuário e ao cliente `avalia`. CPF, nome, e-mail, papéis e permissões vêm das claims `preferred_username`, `name`, `email` e `groups` do `access_token`. O provedor não envia campus; a interface exibe “Geral”. Para entrar, o token precisa conter ao menos um papel institucional reconhecido e uma permissão do AVALIA. Mudanças de permissões entram em vigor quando o usuário recebe um novo token.
 
 O `access_token` é mantido em cookie `HttpOnly` e `SameSite=Strict`, com `Secure` quando a aplicação usa HTTPS. O Open Liberty valida assinatura, issuer, audiência e expiração do JWT em cada rota protegida por MicroProfile JWT. Todas as chamadas da API devem passar pela mesma origem do frontend em `/api`; requisições que alteram dados exigem o cabeçalho `Origin` correspondente ao redirect URI. O logout remove o cookie no navegador, mas o token emitido continua válido até expirar. Em produção, use HTTPS, um gestor de segredos e um provedor cuja URL de descoberta coincida com o `issuer` publicado. O desvio local só é aceito para `localhost` ou loopback com o issuer esperado configurado explicitamente.
 
@@ -30,7 +30,7 @@ cd backend
 ./dev.sh
 ```
 
-A API fica em `http://localhost:9081`. Na inicialização, o Flyway aplica as migrações pendentes; a V29 remove a tabela de sessões locais.
+A API fica em `http://localhost:9081`. Na inicialização, o Flyway aplica as migrações pendentes. A V29 remove sessões locais e a V30 remove as tabelas antigas `usuario_permissao`, `usuario_credencial` e `oidc_codigo`.
 
 ### Frontend
 
