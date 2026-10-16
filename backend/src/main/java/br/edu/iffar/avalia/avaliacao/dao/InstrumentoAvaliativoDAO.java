@@ -1,40 +1,26 @@
 package br.edu.iffar.avalia.avaliacao.dao;
 
-import br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao;
-import br.edu.iffar.avalia.avaliacao.model.Entidade;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
-import br.edu.iffar.avalia.avaliacao.model.InstrumentoEntidadeAvaliada;
-import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
-import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo;
-import br.edu.iffar.avalia.avaliacao.model.QuestaoAvaliativa;
-import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /** Projeções e operações em lote dos instrumentos que exigem SQL PostgreSQL. */
 @ApplicationScoped
-public class InstrumentoDao {
+public class InstrumentoAvaliativoDAO {
     public record PaginaEntidades(List<InstrumentoAvaliativo> itens, boolean temProxima) {}
-
-    private static final String TS = "to_char(%s at time zone 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')";
 
     @Inject
     private AvaliacaoDao dao;
 
     @PersistenceContext(unitName = "avaliaPU")
     private EntityManager em;
-
-    private static String ts(String coluna) {
-        return String.format(TS, coluna);
-    }
 
     public List<InstrumentoAvaliativo> listInstrumentos(int pagina, int tamanho) {
         return em.createQuery("""
@@ -45,6 +31,54 @@ public class InstrumentoDao {
                 .setFirstResult((pagina - 1) * tamanho)
                 .setMaxResults(tamanho)
                 .getResultList();
+    }
+
+    @Transactional
+    public InstrumentoAvaliativo findInstrumentosById(UUID id) {
+
+        // Inicialize cada coleção em sua própria consulta. Buscar várias List ao
+        // mesmo tempo pode gerar MultipleBagFetchException no Hibernate.
+        InstrumentoAvaliativo instrumento = em.createQuery("""
+                    select distinct i from InstrumentoAvaliativo i
+                    left join fetch i.origem
+                    left join fetch i.tipoEntidadeAvaliada
+                    left join fetch i.instrumentoTipoRespondenteList r
+                    left join fetch r.tipoEntidade
+                    where i.instrumentoAvaliativoId = :id
+                """, InstrumentoAvaliativo.class)
+                .setParameter("id", id)
+                .getSingleResult();
+
+        em.createQuery("""
+                    select distinct i from InstrumentoAvaliativo i
+                    left join fetch i.instrumentoSessoesList s
+                    where i.instrumentoAvaliativoId = :id
+                """, InstrumentoAvaliativo.class)
+                .setParameter("id", id)
+                .getSingleResult();
+
+        em.createQuery("""
+                    select distinct s from InstrumentoSessao s
+                    left join fetch s.sessaoQuestoesList sq
+                    left join fetch sq.questao q
+                    left join fetch q.conjuntoOpcao
+                    where s.instrumentoAvaliativo.instrumentoAvaliativoId = :id
+                """, InstrumentoSessao.class)
+                .setParameter("id", id)
+                .getResultList();
+
+        em.createQuery("""
+                    select distinct i from InstrumentoAvaliativo i
+                    left join fetch i.entidadesAvaliadasList ea
+                    left join fetch ea.tipoAlvo
+                    left join fetch ea.entidade e
+                    left join fetch e.tipo
+                    where i.instrumentoAvaliativoId = :id
+                """, InstrumentoAvaliativo.class)
+                .setParameter("id", id)
+                .getSingleResult();
+
+        return instrumento;
     }
 
     public PaginaEntidades listarInstrumentosBase(int pagina, int tamanho) {
@@ -61,8 +95,6 @@ public class InstrumentoDao {
         if (instrumentos.isEmpty()) return new PaginaEntidades(instrumentos, temProxima);
         List<UUID> ids = instrumentos.stream().map(InstrumentoAvaliativo::getId).toList();
 
-        // Busca cada coleção em uma consulta separada para carregar o grafo sem gerar
-        // multiplicação de linhas nem conflito entre várias coleções List no Hibernate.
         em.createQuery("""
                 select distinct i from InstrumentoAvaliativo i
                 left join fetch i.respondentes r
@@ -93,60 +125,6 @@ public class InstrumentoDao {
                 where i.id in :ids
                 """, InstrumentoAvaliativo.class).setParameter("ids", ids).getResultList();
         return new PaginaEntidades(instrumentos, temProxima);
-    }
-
-    public List<Object[]> listarTiposAlvo(String id) {
-        return dao.rows("""
-            select cast(ita.tipo_entidade_alvo_id as text), te.nome
-            from avaliacao.instrumento_tipo_alvo ita join avaliacao.tipo_entidade te
-            on te.tipo_entidade_id = ita.tipo_entidade_alvo_id
-            where ita.instrumento_avaliativo_id = cast(?1 as uuid) order by te.nome
-            """, id);
-    }
-
-    public List<Object[]> listarTodosTiposAlvo() {
-        return dao.rows("""
-            select cast(ita.instrumento_avaliativo_id as text),
-            cast(ita.tipo_entidade_alvo_id as text), te.nome
-            from avaliacao.instrumento_tipo_alvo ita join avaliacao.tipo_entidade te
-            on te.tipo_entidade_id = ita.tipo_entidade_alvo_id order by te.nome
-            """);
-    }
-
-    public List<Object[]> buscarInstrumentoBase(String id) {
-        return dao.rows("""
-                select cast(i.instrumento_avaliativo_id as text), cast(i.tipo_entidade_avaliada_id as text), t.nome,
-                    i.titulo, i.descricao, i.ciclo_referencia,
-                    %s, %s, i.anonimo, i.permite_edicao, i.status, i.criado_por, %s
-                from avaliacao.instrumento_avaliativo i
-                join avaliacao.tipo_entidade t on t.tipo_entidade_id = i.tipo_entidade_avaliada_id
-                where i.instrumento_avaliativo_id = cast(?1 as uuid)
-                """.formatted(ts("i.inicio_aplicacao"), ts("i.fim_aplicacao"), ts("i.atualizado_em")), id);
-    }
-
-    public List<Object[]> listarRespondentes(String id) {
-        return dao.rows("""
-            select cast(tipo_entidade_respondente_id as text), tipo_vinculo
-            from avaliacao.instrumento_tipo_respondente where instrumento_avaliativo_id = cast(?1 as uuid)
-            """, id);
-    }
-
-    public List<Object[]> listarSessoes(String id) {
-        return dao.rows("""
-            select cast(instrumento_sessao_id as text), tipo, titulo, descricao, ordem
-            from avaliacao.instrumento_sessao where instrumento_avaliativo_id = cast(?1 as uuid) order by ordem
-            """, id);
-    }
-
-    public List<Object[]> listarQuestoes(String id) {
-        return dao.rows("""
-            select cast(sq.instrumento_sessao_id as text), cast(q.questao_id as text), q.enunciado, q.tipo, q.assunto,
-            cast(q.conjunto_opcao_id as text), sq.obrigatoria, sq.peso, sq.ordem, cast(sq.sessao_questao_id as text)
-            from avaliacao.sessao_questao sq
-            join avaliacao.questao q on q.questao_id = sq.questao_id
-            join avaliacao.instrumento_sessao s on s.instrumento_sessao_id = sq.instrumento_sessao_id
-            where s.instrumento_avaliativo_id = cast(?1 as uuid) order by sq.ordem
-            """, id);
     }
 
     public List<Object[]> listarIdsQuestoes(String id) {

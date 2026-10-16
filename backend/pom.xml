@@ -107,6 +107,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-jcache</artifactId>
+            <version>${version.hibernate}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>jcache</artifactId>
+            <version>3.2.0</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -147,6 +159,14 @@
                         <dependency>
                             <groupId>org.hibernate.orm</groupId>
                             <artifactId>hibernate-core</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.hibernate.orm</groupId>
+                            <artifactId>hibernate-jcache</artifactId>
+                        </dependency>
+                        <dependency>
+                            <groupId>com.github.ben-manes.caffeine</groupId>
+                            <artifactId>jcache</artifactId>
                         </dependency>
                     </dependencyGroup>
                     </copyDependencies>

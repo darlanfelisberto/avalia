@@ -16,14 +16,14 @@ public class InstrumentoSessao extends Model<UUID> {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instrumento_avaliativo_id", nullable = false)
-    private InstrumentoAvaliativo instrumento;
+    private InstrumentoAvaliativo instrumentoAvaliativo;
 
-    @OneToMany(mappedBy = "sessao")
+    @OneToMany(mappedBy = "instrumentoSessao")
     @OrderBy("ordem ASC")
-    private List<SessaoQuestao> questoes = new ArrayList<>();
+    private List<SessaoQuestao> sessaoQuestoesList = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
-    private TipoSessao tipo;
+    private TipoSessao tipoSessao;
 
     @Column(nullable = false, length = 200)
     private String titulo;
@@ -37,13 +37,12 @@ public class InstrumentoSessao extends Model<UUID> {
     public UUID getId() { return instrumentoSessaoId; }
     public UUID getInstrumentoSessaoId() { return instrumentoSessaoId; }
     public void setInstrumentoSessaoId(UUID instrumentoSessaoId) { this.instrumentoSessaoId = instrumentoSessaoId; }
-    public InstrumentoAvaliativo getInstrumento() { return instrumento; }
-    public void setInstrumento(InstrumentoAvaliativo instrumento) { this.instrumento = instrumento; }
-    public List<SessaoQuestao> getQuestoes() { return questoes; }
-    public String getTipo() { return tipo != null ? tipo.name() : null; }
-    public void setTipo(String tipo) { this.tipo = tipo != null ? TipoSessao.valueOf(tipo) : null; }
-    public TipoSessao getTipoSessao() { return tipo; }
-    public void setTipoSessao(TipoSessao tipo) { this.tipo = tipo; }
+    public InstrumentoAvaliativo getInstrumentoAvaliativo() { return instrumentoAvaliativo; }
+    public void setInstrumentoAvaliativo(InstrumentoAvaliativo instrumento) { this.instrumentoAvaliativo = instrumento; }
+    public List<SessaoQuestao> getSessaoQuestoesList() { return sessaoQuestoesList; }
+    public void setTipoSessao(String tipo) { this.tipoSessao = tipo != null ? TipoSessao.valueOf(tipo) : null; }
+    public TipoSessao getTipoSessao() { return tipoSessao; }
+    public void setTipoSessao(TipoSessao tipo) { this.tipoSessao = tipo; }
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
     public String getDescricao() { return descricao; }

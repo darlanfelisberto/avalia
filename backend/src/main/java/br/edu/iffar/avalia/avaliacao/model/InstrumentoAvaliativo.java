@@ -30,18 +30,18 @@ public class InstrumentoAvaliativo extends Model<UUID> {
     /**
      * é o tipo de entidade que pode responder esse instrumento
      */
-    @OneToMany(mappedBy = "instrumento")
-    private List<InstrumentoTipoRespondente> respondentes = new ArrayList<>();
+    @OneToMany(mappedBy = "instrumentoAvaliativo")
+    private List<InstrumentoTipoRespondente> instrumentoTipoRespondenteList = new ArrayList<>();
 
-    @OneToMany(mappedBy = "instrumento")
+    @OneToMany(mappedBy = "instrumentoAvaliativo")
     @OrderBy("ordem ASC")
-    private List<InstrumentoSessao> sessoes = new ArrayList<>();
+    private List<InstrumentoSessao> instrumentoSessoesList = new ArrayList<>();
+
+//    @OneToMany(mappedBy = "instrumento")
+//    private List<InstrumentoTipoAlvo> tiposAlvoList = new ArrayList<>();
 
     @OneToMany(mappedBy = "instrumento")
-    private List<InstrumentoTipoAlvo> tiposAlvo = new ArrayList<>();
-
-    @OneToMany(mappedBy = "instrumento")
-    private List<InstrumentoEntidadeAvaliada> entidadesAvaliadas = new ArrayList<>();
+    private List<InstrumentoEntidadeAvaliada> entidadesAvaliadasList = new ArrayList<>();
 
     @Column(nullable = false, length = 200)
     private String titulo;
@@ -107,36 +107,36 @@ public class InstrumentoAvaliativo extends Model<UUID> {
         this.tipoEntidadeAvaliada = tipoEntidadeAvaliada;
     }
 
-    public List<InstrumentoTipoRespondente> getRespondentes() {
-        return respondentes;
+    public List<InstrumentoTipoRespondente> getInstrumentoTipoRespondenteList() {
+        return instrumentoTipoRespondenteList;
     }
 
-    public void setRespondentes(List<InstrumentoTipoRespondente> respondentes) {
-        this.respondentes = respondentes;
+    public void setInstrumentoTipoRespondenteList(List<InstrumentoTipoRespondente> respondentes) {
+        this.instrumentoTipoRespondenteList = respondentes;
     }
 
-    public List<InstrumentoSessao> getSessoes() {
-        return sessoes;
+    public List<InstrumentoSessao> getInstrumentoSessoesList() {
+        return instrumentoSessoesList;
     }
 
-    public void setSessoes(List<InstrumentoSessao> sessoes) {
-        this.sessoes = sessoes;
+    public void setInstrumentoSessoesList(List<InstrumentoSessao> sessoes) {
+        this.instrumentoSessoesList = sessoes;
     }
 
-    public List<InstrumentoTipoAlvo> getTiposAlvo() {
-        return tiposAlvo;
+//    public List<InstrumentoTipoAlvo> getTiposAlvoList() {
+//        return tiposAlvoList;
+//    }
+//
+//    public void setTiposAlvoList(List<InstrumentoTipoAlvo> tiposAlvo) {
+//        this.tiposAlvoList = tiposAlvo;
+//    }
+
+    public List<InstrumentoEntidadeAvaliada> getEntidadesAvaliadasList() {
+        return entidadesAvaliadasList;
     }
 
-    public void setTiposAlvo(List<InstrumentoTipoAlvo> tiposAlvo) {
-        this.tiposAlvo = tiposAlvo;
-    }
-
-    public List<InstrumentoEntidadeAvaliada> getEntidadesAvaliadas() {
-        return entidadesAvaliadas;
-    }
-
-    public void setEntidadesAvaliadas(List<InstrumentoEntidadeAvaliada> entidadesAvaliadas) {
-        this.entidadesAvaliadas = entidadesAvaliadas;
+    public void setEntidadesAvaliadasList(List<InstrumentoEntidadeAvaliada> entidadesAvaliadas) {
+        this.entidadesAvaliadasList = entidadesAvaliadas;
     }
 
     public String getTitulo() {

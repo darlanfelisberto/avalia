@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "questao", schema = "avaliacao")
-public class QuestaoAvaliativa extends Model<UUID> {
+public class Questao extends Model<UUID> {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "questao_id")
@@ -15,7 +15,7 @@ public class QuestaoAvaliativa extends Model<UUID> {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conjunto_opcao_id")
-    private ConjuntoOpcao conjunto;
+    private ConjuntoOpcao conjuntoOpcao;
 
     @Column(nullable = false, columnDefinition = "text")
     private String enunciado;
@@ -35,8 +35,8 @@ public class QuestaoAvaliativa extends Model<UUID> {
     public UUID getId() { return questaoId; }
     public UUID getQuestaoId() { return questaoId; }
     public void setQuestaoId(UUID questaoId) { this.questaoId = questaoId; }
-    public ConjuntoOpcao getConjunto() { return conjunto; }
-    public void setConjunto(ConjuntoOpcao conjunto) { this.conjunto = conjunto; }
+    public ConjuntoOpcao getConjuntoOpcao() { return conjuntoOpcao; }
+    public void setConjuntoOpcao(ConjuntoOpcao conjunto) { this.conjuntoOpcao = conjunto; }
     public String getEnunciado() { return enunciado; }
     public void setEnunciado(String enunciado) { this.enunciado = enunciado; }
     public String getTipo() { return tipo; }

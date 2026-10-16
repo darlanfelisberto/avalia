@@ -26,13 +26,7 @@ public class TipoEntidadeService {
     public List<TipoEntidadeDTO> listar() {
         List<TipoEntidadeDTO> resultado = new ArrayList<>();
         for (var tipo : dao.listar()) {
-            TipoEntidadeDTO dto = new TipoEntidadeDTO();
-            dto.id = tipo.getId().toString();
-            dto.codigo = tipo.getCodigo();
-            dto.nome = tipo.getNome();
-            dto.podeSerAvaliada = tipo.isPodeSerAvaliada();
-            dto.podeResponder = tipo.isPodeResponder();
-            resultado.add(dto);
+            resultado.add(TipoEntidadeDTO.create(tipo));
         }
         return resultado;
     }
@@ -40,10 +34,7 @@ public class TipoEntidadeService {
     public List<PermissaoTipoEntidadeDTO> listarPermissoes() {
         List<PermissaoTipoEntidadeDTO> resultado = new ArrayList<>();
         for (var permissao : dao.listarPermissoes()) {
-            PermissaoTipoEntidadeDTO dto = new PermissaoTipoEntidadeDTO();
-            dto.tipoRespondenteId = permissao.getRespondente().getId().toString();
-            dto.tipoAvaliadoId = permissao.getAvaliado().getId().toString();
-            resultado.add(dto);
+            resultado.add(PermissaoTipoEntidadeDTO.create(permissao));
         }
         return resultado;
     }

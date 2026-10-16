@@ -4,7 +4,7 @@ import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.*;
 import br.edu.iffar.avalia.avaliacao.dao.AvaliacaoDao;
 import br.edu.iffar.avalia.avaliacao.dao.EntidadeAcademicaDao;
-import br.edu.iffar.avalia.avaliacao.dao.InstrumentoDao;
+import br.edu.iffar.avalia.avaliacao.dao.InstrumentoAvaliativoDAO;
 import br.edu.iffar.avalia.avaliacao.dao.TipoEntidadeDao;
 import br.edu.iffar.avalia.avaliacao.model.TipoEntidade;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
@@ -12,7 +12,7 @@ import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo;
 import br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao;
-import br.edu.iffar.avalia.avaliacao.model.QuestaoAvaliativa;
+import br.edu.iffar.avalia.avaliacao.model.Questao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -36,7 +36,7 @@ public class AvaliacaoService {
     private EntidadeAcademicaDao entidadeAcademicaDao;
 
     @Inject
-    private InstrumentoDao instrumentoDao;
+    private InstrumentoAvaliativoDAO instrumentoDao;
 
     @Inject
     private TipoEntidadeDao tiposEntidadeDao;
@@ -51,19 +51,7 @@ public class AvaliacaoService {
     public List<ConjuntoOpcao> listarConjuntos() {
         List<ConjuntoOpcao> resultado = new ArrayList<>();
         for (br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao entidade : dao.listarConjuntos()) {
-            ConjuntoOpcao c = new ConjuntoOpcao();
-            c.id = entidade.getId().toString();
-            c.nome = entidade.getNome();
-            for (br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao opcao : entidade.getOpcoes()) {
-                Opcao o = new Opcao();
-                o.id = opcao.getId().toString();
-                o.texto = opcao.getTexto();
-                o.valor = opcao.getValor() == null ? null : opcao.getValor().doubleValue();
-                o.correta = opcao.isCorreta();
-                o.ordem = opcao.getOrdem();
-                c.opcoes.add(o);
-            }
-            resultado.add(c);
+            resultado.add(ConjuntoOpcao.create(entidade));
         }
         return resultado;
     }
@@ -91,7 +79,7 @@ public class AvaliacaoService {
             dao.persistir(opcao);
         }
         dao.flush();
-        return listarConjuntos().stream().filter(c -> c.id.equals(conjunto.getId().toString())).findFirst().orElseThrow();
+        return ConjuntoOpcao.create(conjunto);
     }
 
     // ------------------------------------------------------------------ instrumento
@@ -100,103 +88,25 @@ public class AvaliacaoService {
         if (tamanhoSolicitado < 1 || tamanhoSolicitado > 100)
             throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e 100.");
 
-        List<InstrumentoAvaliativo> instrumentoAvaliativoList = instrumentoDao.listInstrumentos(paginaSolicitada, tamanhoSolicitado);
         List<InstrumentoAvaliativoDTO> resultado = new ArrayList<>();
-
-        for (InstrumentoAvaliativo entidade : instrumentoAvaliativoList) {
-            InstrumentoAvaliativoDTO i = InstrumentoAvaliativoDTO.create(entidade);
-
-
-            for (InstrumentoTipoAlvo alvo : entidade.getTiposAlvo()) {
-                i.tiposEntidadeAlvoIds.add(alvo.getTipoAlvo().getId().toString());
-                i.tiposEntidadeAlvoNomes.add(alvo.getTipoAlvo().getNome());
-            }
-            if (i.tiposEntidadeAlvoIds.isEmpty()) {
-                i.tiposEntidadeAlvoIds.add(i.tipoEntidadeAvaliadaId);
-                i.tiposEntidadeAlvoNomes.add(i.tipoEntidadeAvaliadaNome);
-            }
-
-            for (InstrumentoTipoRespondente respondente : entidade.getRespondentes()) {
-                AvaliacaoDTO.InstrumentoTipoRespondente dto = new AvaliacaoDTO.InstrumentoTipoRespondente();
-                dto.tipoEntidadeId = respondente.getTipoEntidadeRespondente().getId().toString();
-                dto.tipoVinculo = respondente.getTipoVinculo();
-                i.respondentes.add(dto);
-            }
-            resultado.add(i);
+        for (InstrumentoAvaliativo entidade : instrumentoDao.listInstrumentos(paginaSolicitada, tamanhoSolicitado)) {
+            resultado.add(InstrumentoAvaliativoDTO.create(entidade));
         }
         return resultado;
     }
 
     public InstrumentoAvaliativoDTO buscarInstrumento(String id) {
-        List<Object[]> base = instrumentoDao.buscarInstrumentoBase(id);
-        if (base.isEmpty()) return null;
-
-        Object[] r = base.get(0);
-        InstrumentoAvaliativoDTO i = new InstrumentoAvaliativoDTO();
-        i.id = (String) r[0];
-        i.tipoEntidadeAvaliadaId = (String) r[1];
-        i.tipoEntidadeAvaliadaNome = (String) r[2];
-        i.titulo = (String) r[3];
-        i.descricao = (String) r[4];
-        i.cicloReferencia = (String) r[5];
-        i.inicioAplicacao = (String) r[6];
-        i.fimAplicacao = (String) r[7];
-        i.anonimo = (Boolean) r[8];
-        i.permiteEdicao = (Boolean) r[9];
-        i.status = (String) r[10];
-        i.criadoPor = (String) r[11];
-        i.atualizadoEm = (String) r[12];
-
-        for (Object[] x : instrumentoDao.listarTiposAlvo(id)) {
-            i.tiposEntidadeAlvoIds.add((String) x[0]);
-            i.tiposEntidadeAlvoNomes.add((String) x[1]);
-        }
-        if (i.tiposEntidadeAlvoIds.isEmpty()) {
-            i.tiposEntidadeAlvoIds.add(i.tipoEntidadeAvaliadaId);
-            i.tiposEntidadeAlvoNomes.add(i.tipoEntidadeAvaliadaNome);
-        }
-
-        for (Object[] x : instrumentoDao.listarRespondentes(id)) {
-            Respondente resp = new Respondente();
-            resp.tipoEntidadeId = (String) x[0];
-            resp.tipoVinculo = (String) x[1];
-            i.respondentes.add(resp);
-        }
-
-        Map<String, Sessao> sessoes = new LinkedHashMap<>();
-        for (Object[] x : instrumentoDao.listarSessoes(id)) {
-            if ("PAGINA".equals(x[1])) {
-                Pagina p = new Pagina();
-                p.id = (String) x[0];
-                p.titulo = (String) x[2];
-                p.descricao = (String) x[3];
-                p.ordem = ((Number) x[4]).intValue();
-                i.paginas.add(p);
+        InstrumentoAvaliativo inst = instrumentoDao.findInstrumentosById(UUID.fromString(id));
+        if (inst == null) return null;
+        InstrumentoAvaliativoDTO i = InstrumentoAvaliativoDTO.create(inst);
+        for (InstrumentoSessao sessao : inst.getInstrumentoSessoesList()) {
+            if ("PAGINA".equals(sessao.getTipoSessao())) {
+                i.paginas.add(Pagina.create(sessao));
             } else {
-                Sessao s = new Sessao();
-                s.id = (String) x[0];
-                s.titulo = (String) x[2];
-                s.descricao = (String) x[3];
-                s.ordem = ((Number) x[4]).intValue();
-                sessoes.put(s.id, s);
-                i.sessoes.add(s);
+                Sessao dto = Sessao.create(sessao);
+                i.totalQuestoes += dto.questoes.size();
+                i.sessoes.add(dto);
             }
-        }
-        for (Object[] x : instrumentoDao.listarQuestoes(id)) {
-            Sessao s = sessoes.get((String) x[0]);
-            if (s == null) continue;
-            Questao q = new Questao();
-            q.questaoId = (String) x[1];
-            q.enunciado = (String) x[2];
-            q.tipo = (String) x[3];
-            q.assunto = (String) x[4];
-            q.conjuntoOpcaoId = (String) x[5];
-            q.obrigatoria = (Boolean) x[6];
-            q.peso = x[7] == null ? null : ((Number) x[7]).doubleValue();
-            q.ordem = ((Number) x[8]).intValue();
-            q.sessaoQuestaoId = (String) x[9];
-            s.questoes.add(q);
-            i.totalQuestoes++;
         }
         return i;
     }
@@ -276,9 +186,8 @@ public class AvaliacaoService {
         InstrumentoAvaliativo instrumento = dao.referencia(InstrumentoAvaliativo.class, instrumentoId);
         for (AvaliacaoDTO.InstrumentoTipoRespondente r : respondentes) {
             InstrumentoTipoRespondente entidade = new InstrumentoTipoRespondente();
-            entidade.setInstrumento(instrumento);
-            entidade.setTipoEntidadeRespondente(tiposEntidadeDao.referencia(UUID.fromString(r.tipoEntidadeId)));
-            entidade.setTipoVinculo(blank(r.tipoVinculo) ? null : r.tipoVinculo.trim());
+            entidade.setInstrumentoAvaliativo(instrumento);
+            entidade.setTipoEntidade(tiposEntidadeDao.referencia(UUID.fromString(r.tipoEntidadeId)));
             dao.persistir(entidade);
         }
         dao.flush();
@@ -304,8 +213,8 @@ public class AvaliacaoService {
         int ordemPagina = 1;
         for (Pagina p : paginas) {
             InstrumentoSessao pagina = new InstrumentoSessao();
-            pagina.setInstrumento(instrumento);
-            pagina.setTipo("PAGINA");
+            pagina.setInstrumentoAvaliativo(instrumento);
+            pagina.setTipoSessao("PAGINA");
             pagina.setTitulo(p.titulo.trim());
             pagina.setDescricao(p.descricao);
             pagina.setOrdem(ordemPagina++);
@@ -314,18 +223,18 @@ public class AvaliacaoService {
         int ordemSessao = 1;
         for (Sessao s : sessoes) {
             InstrumentoSessao sessao = new InstrumentoSessao();
-            sessao.setInstrumento(instrumento);
-            sessao.setTipo("SESSAO");
+            sessao.setInstrumentoAvaliativo(instrumento);
+            sessao.setTipoSessao("SESSAO");
             sessao.setTitulo(s.titulo.trim());
             sessao.setDescricao(s.descricao);
             sessao.setOrdem(ordemSessao++);
             dao.persistir(sessao);
             int ordemQuestao = 1;
-            for (Questao q : s.questoes) {
+            for (AvaliacaoDTO.Questao q : s.questoes) {
                 String questaoId = upsertQuestao(q, usuario);
                 SessaoQuestao posicao = new SessaoQuestao();
-                posicao.setSessao(sessao);
-                posicao.setQuestao(dao.referencia(QuestaoAvaliativa.class,
+                posicao.setInstrumentoSessao(sessao);
+                posicao.setQuestao(dao.referencia(Questao.class,
                         UUID.fromString(questaoId)));
                 posicao.setOrdem(ordemQuestao++);
                 posicao.setObrigatoria(q.obrigatoria);
@@ -337,16 +246,16 @@ public class AvaliacaoService {
         removerQuestoesOrfas(anteriores);
     }
 
-    private String upsertQuestao(Questao q, String usuario) {
+    private String upsertQuestao(AvaliacaoDTO.Questao q, String usuario) {
         String conjunto = "DESCRITIVA".equals(q.tipo) ? null : q.conjuntoOpcaoId;
-        QuestaoAvaliativa entidade = blank(q.questaoId) ? null :
-                dao.buscar(QuestaoAvaliativa.class, UUID.fromString(q.questaoId));
+        Questao entidade = blank(q.questaoId) ? null :
+                dao.buscar(Questao.class, UUID.fromString(q.questaoId));
         boolean nova = entidade == null;
         if (nova) {
-            entidade = new QuestaoAvaliativa();
+            entidade = new Questao();
             entidade.setCriadoPor(usuario);
         }
-        entidade.setConjunto(conjunto == null ? null : dao.referencia(
+        entidade.setConjuntoOpcao(conjunto == null ? null : dao.referencia(
                 br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao.class, UUID.fromString(conjunto)));
         entidade.setEnunciado(q.enunciado.trim());
         entidade.setTipo(q.tipo);
@@ -441,7 +350,7 @@ public class AvaliacaoService {
         for (Sessao s : d.sessoes) {
             if (blank(s.titulo)) throw new IllegalArgumentException("Toda sessão precisa de um título.");
             if (s.questoes == null) s.questoes = new ArrayList<>();
-            for (Questao q : s.questoes) {
+            for (AvaliacaoDTO.Questao q : s.questoes) {
                 if (blank(q.enunciado)) throw new IllegalArgumentException("Toda questão precisa de um enunciado (sessão \"" + s.titulo + "\").");
                 if (q.tipo == null || !TIPOS_QUESTAO.contains(q.tipo)) throw new IllegalArgumentException("Tipo de questão inválido.");
                 if (!"DESCRITIVA".equals(q.tipo) && blank(q.conjuntoOpcaoId)) {

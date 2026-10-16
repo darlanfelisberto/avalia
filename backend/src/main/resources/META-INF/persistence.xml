@@ -19,16 +19,21 @@
         <class>br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente</class>
         <class>br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao</class>
         <class>br.edu.iffar.avalia.avaliacao.model.Participacao</class>
-        <class>br.edu.iffar.avalia.avaliacao.model.QuestaoAvaliativa</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.Questao</class>
         <class>br.edu.iffar.avalia.avaliacao.model.RespostaInstrumento</class>
         <class>br.edu.iffar.avalia.avaliacao.model.RespostaQuestao</class>
         <class>br.edu.iffar.avalia.avaliacao.model.SessaoQuestao</class>
         <class>br.edu.iffar.avalia.avaliacao.model.TipoEntidade</class>
         <class>br.edu.iffar.avalia.avaliacao.model.TipoEntidadePermissao</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
+        <shared-cache-mode>ENABLE_SELECTIVE</shared-cache-mode>
 
         <properties>
             <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.cache.use_second_level_cache" value="true"/>
+            <property name="hibernate.cache.region.factory_class" value="jcache"/>
+            <property name="hibernate.javax.cache.provider" value="com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider"/>
+            <property name="hibernate.javax.cache.missing_cache_strategy" value="create"/>
 
             <!-- Exibir SQLs gerados e parâmetros (equivalente ao show_sql) -->
             <property name="hibernate.show_sql" value="true"/>

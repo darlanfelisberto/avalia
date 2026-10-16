@@ -4,6 +4,10 @@ import br.com.feliva.sharedClass.db.Model;
 import jakarta.persistence.*;
 import java.util.UUID;
 
+/**
+ * esta entidade existe para facilitar para a api a remoção e adicao dos tipos de entidades
+ * respondentes do intrumento
+ */
 @Entity
 @Table(name = "instrumento_tipo_respondente", schema = "avaliacao")
 public class InstrumentoTipoRespondente extends Model<UUID> {
@@ -14,24 +18,19 @@ public class InstrumentoTipoRespondente extends Model<UUID> {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instrumento_avaliativo_id", nullable = false)
-    private InstrumentoAvaliativo instrumento;
+    private InstrumentoAvaliativo instrumentoAvaliativo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "tipo_entidade_respondente_id", nullable = false)
-    private TipoEntidade tipoEntidadeRespondente;
-
-    @Column(name = "tipo_vinculo", length = 30)
-    private String tipoVinculo;
+    @JoinColumn(name = "tipo_entidade_id", nullable = false)
+    private TipoEntidade tipoEntidade;
 
     public UUID getId() { return instrumentoTipoRespondenteId; }
     public UUID getInstrumentoTipoRespondenteId() { return instrumentoTipoRespondenteId; }
     public void setInstrumentoTipoRespondenteId(UUID instrumentoTipoRespondenteId) { this.instrumentoTipoRespondenteId = instrumentoTipoRespondenteId; }
-    public InstrumentoAvaliativo getInstrumento() { return instrumento; }
-    public void setInstrumento(InstrumentoAvaliativo instrumento) { this.instrumento = instrumento; }
-    public TipoEntidade getTipoEntidadeRespondente() { return tipoEntidadeRespondente; }
-    public void setTipoEntidadeRespondente(TipoEntidade tipoEntidadeRespondente) { this.tipoEntidadeRespondente = tipoEntidadeRespondente; }
-    public String getTipoVinculo() { return tipoVinculo; }
-    public void setTipoVinculo(String tipoVinculo) { this.tipoVinculo = tipoVinculo; }
+    public InstrumentoAvaliativo getInstrumentoAvaliativo() { return instrumentoAvaliativo; }
+    public void setInstrumentoAvaliativo(InstrumentoAvaliativo instrumento) { this.instrumentoAvaliativo = instrumento; }
+    public TipoEntidade getTipoEntidade() { return tipoEntidade; }
+    public void setTipoEntidade(TipoEntidade tipoEntidadeRespondente) { this.tipoEntidade = tipoEntidadeRespondente; }
 
     @Override
     public UUID getMMId() {

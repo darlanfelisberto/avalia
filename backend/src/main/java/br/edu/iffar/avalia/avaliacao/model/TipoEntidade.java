@@ -1,16 +1,13 @@
 package br.edu.iffar.avalia.avaliacao.model;
 
 import br.com.feliva.sharedClass.db.Model;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.util.UUID;
 
 @Entity
 @Table(name = "tipo_entidade", schema = "avaliacao")
+@Cacheable
 public class TipoEntidade extends Model<UUID> {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
