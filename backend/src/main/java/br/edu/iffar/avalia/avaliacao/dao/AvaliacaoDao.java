@@ -60,7 +60,7 @@ public class AvaliacaoDao {
     }
 
     public List<ConjuntoOpcao> listarConjuntos() {
-        return em.createQuery("select distinct c from ConjuntoOpcao c left join fetch c.opcoes order by c.nome", ConjuntoOpcao.class)
+        return em.createQuery("select distinct c from ConjuntoOpcao c left join fetch c.opcoes where c.exclusivo is null or c.exclusivo = false order by c.nome", ConjuntoOpcao.class)
                 .getResultList();
     }
 

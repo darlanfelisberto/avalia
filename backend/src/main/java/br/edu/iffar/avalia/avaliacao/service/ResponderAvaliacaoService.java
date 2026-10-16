@@ -138,7 +138,10 @@ public class ResponderAvaliacaoService {
 
     public InstrumentoAvaliativoDTO buscar(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
         elegivel(usuario, instrumentoId, alvoId, contextoId);
-        return instrumentos.buscarInstrumento(instrumentoId);
+        InstrumentoAvaliativoDTO instrumento = instrumentos.buscarInstrumento(instrumentoId);
+        instrumento.sessoes.forEach(s -> s.questoes.forEach(q ->
+                q.opcoes.forEach(o -> o.correta = false)));
+        return instrumento;
     }
 
     public List<ConjuntoOpcaoDTO> listarConjuntos(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {

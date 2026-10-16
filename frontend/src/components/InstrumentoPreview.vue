@@ -20,7 +20,7 @@ function chaveQuestao(q: SessaoQuestaoDTO, sessaoIndex: number, questaoIndex: nu
 }
 
 function opcoes(q: SessaoQuestaoDTO) {
-  return props.conjuntos.find(c => c.id === q.conjuntoOpcaoId)?.opcoes || [];
+  return q.opcoes?.length ? q.opcoes : props.conjuntos.find(c => c.id === q.conjuntoOpcaoId)?.opcoes || [];
 }
 
 function finalizar() {

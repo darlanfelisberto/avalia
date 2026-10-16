@@ -7,6 +7,7 @@ import br.edu.iffar.avalia.avaliacao.dao.EntidadeAcademicaDao;
 import br.edu.iffar.avalia.avaliacao.dao.InstrumentoAvaliativoDAO;
 import br.edu.iffar.avalia.avaliacao.dao.TipoEntidadeDao;
 import br.edu.iffar.avalia.avaliacao.model.TipoEntidade;
+import br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
@@ -232,7 +233,6 @@ public class AvaliacaoService {
     }
 
     private String upsertQuestao(AvaliacaoDTO.SessaoQuestaoDTO q, String usuario) {
-        String conjunto = "DESCRITIVA".equals(q.tipo) ? null : q.conjuntoOpcaoId;
         Questao entidade = blank(q.questaoId) ? null :
                 dao.buscar(Questao.class, UUID.fromString(q.questaoId));
         boolean nova = entidade == null;
@@ -240,13 +240,45 @@ public class AvaliacaoService {
             entidade = new Questao();
             entidade.setCriadoPor(usuario);
         }
-        entidade.setConjuntoOpcao(conjunto == null ? null : dao.referencia(
-                br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao.class, UUID.fromString(conjunto)));
+        ConjuntoOpcao anterior = entidade.getConjuntoOpcao();
         entidade.setEnunciado(q.enunciado.trim());
         entidade.setTipo(q.tipo);
         entidade.setAssunto(q.assunto);
         if (nova) dao.persistir(entidade);
         dao.flush();
+
+        ConjuntoOpcao conjunto = null;
+        if (!"DESCRITIVA".equals(q.tipo)) {
+            if (q.opcoes != null && !q.opcoes.isEmpty()) {
+                conjunto = anterior != null && anterior.isExclusivo() ? anterior : new ConjuntoOpcao();
+                if (conjunto.getId() == null) {
+                    conjunto.setNome("Questão " + entidade.getId());
+                    conjunto.setExclusivo(true);
+                    dao.persistir(conjunto);
+                } else {
+                    conjunto.getOpcoes().clear();
+                    dao.flush();
+                }
+                int ordem = 1;
+                for (AvaliacaoDTO.OpcaoQuestaoDTO o : q.opcoes) {
+                    OpcaoQuestao opcao = new OpcaoQuestao();
+                    opcao.setConjunto(conjunto);
+                    opcao.setTexto(o.texto.trim());
+                    opcao.setValor(o.valor == null ? null : BigDecimal.valueOf(o.valor));
+                    opcao.setCorreta(o.correta);
+                    opcao.setOrdem(ordem++);
+                    conjunto.getOpcoes().add(opcao);
+                    dao.persistir(opcao);
+                }
+            } else {
+                conjunto = dao.buscar(ConjuntoOpcao.class, UUID.fromString(q.conjuntoOpcaoId));
+                if (conjunto == null || conjunto.isExclusivo())
+                    throw new IllegalArgumentException("Conjunto de opções inválido para esta questão.");
+            }
+        }
+        entidade.setConjuntoOpcao(conjunto);
+        dao.flush();
+        if (anterior != null && anterior.isExclusivo() && anterior != conjunto) dao.remover(anterior);
         return entidade.getId().toString();
     }
 
@@ -314,8 +346,20 @@ public class AvaliacaoService {
             for (AvaliacaoDTO.SessaoQuestaoDTO q : s.questoes) {
                 if (blank(q.enunciado)) throw new IllegalArgumentException("Toda questão precisa de um enunciado (sessão \"" + s.titulo + "\").");
                 if (q.tipo == null || !TIPOS_QUESTAO.contains(q.tipo)) throw new IllegalArgumentException("Tipo de questão inválido.");
-                if (!"DESCRITIVA".equals(q.tipo) && blank(q.conjuntoOpcaoId)) {
-                    throw new IllegalArgumentException("A questão \"" + q.enunciado + "\" precisa de um conjunto de opções.");
+                boolean temConjunto = !blank(q.conjuntoOpcaoId);
+                boolean temOpcoesExclusivas = q.opcoes != null && !q.opcoes.isEmpty();
+                if ("DESCRITIVA".equals(q.tipo) && (temConjunto || temOpcoesExclusivas)) {
+                    throw new IllegalArgumentException("Questão descritiva não pode ter opções.");
+                }
+                if (!"DESCRITIVA".equals(q.tipo) && temConjunto == temOpcoesExclusivas) {
+                    throw new IllegalArgumentException("A questão \"" + q.enunciado + "\" precisa de um conjunto ou de opções exclusivas.");
+                }
+                if (temOpcoesExclusivas) {
+                    if (q.opcoes.size() < 2) throw new IllegalArgumentException("Cadastre ao menos duas opções para a questão \"" + q.enunciado + "\".");
+                    for (AvaliacaoDTO.OpcaoQuestaoDTO o : q.opcoes) {
+                        if (o == null || blank(o.texto) || o.texto.trim().length() > 300)
+                            throw new IllegalArgumentException("Toda opção exclusiva precisa de um texto de até 300 caracteres.");
+                    }
                 }
             }
         }

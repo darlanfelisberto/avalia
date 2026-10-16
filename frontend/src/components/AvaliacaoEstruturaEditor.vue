@@ -28,7 +28,11 @@ function mover<T>(lista: T[], i: number, delta: number) {
   [lista[i], lista[j]] = [lista[j], lista[i]];
 }
 
-const novaQuestao = (): SessaoQuestaoDTO => ({ enunciado: '', tipo: 'ESCALA', conjuntoOpcaoId: props.conjuntos[0]?.id ?? null, obrigatoria: true, peso: null });
+const novaOpcao = () => ({ texto: '', valor: null, correta: false });
+const novaQuestao = (): SessaoQuestaoDTO => ({
+  enunciado: '', tipo: 'ESCALA', conjuntoOpcaoId: props.conjuntos[0]?.id ?? null,
+  opcoes: props.conjuntos.length ? [] : [novaOpcao(), novaOpcao()], obrigatoria: true, peso: null
+});
 const novaSessao = (): InstrumentoSessaoDTO => ({ titulo: '', descricao: '', questoes: [novaQuestao()] });
 
 function addPagina() {
@@ -40,8 +44,33 @@ function addSessao() {
 }
 
 function aoMudarTipo(q: SessaoQuestaoDTO) {
-  if (q.tipo === 'DESCRITIVA') q.conjuntoOpcaoId = null;
-  else if (!q.conjuntoOpcaoId) q.conjuntoOpcaoId = props.conjuntos[0]?.id ?? null;
+  if (q.tipo === 'DESCRITIVA') {
+    q.conjuntoOpcaoId = null;
+    q.opcoes = [];
+  } else if (!q.conjuntoOpcaoId && !q.opcoes?.length) {
+    q.conjuntoOpcaoId = props.conjuntos[0]?.id ?? null;
+    if (!q.conjuntoOpcaoId) q.opcoes = [novaOpcao(), novaOpcao()];
+  }
+}
+
+function alterarOrigemOpcoes(q: SessaoQuestaoDTO, evento: Event) {
+  const origem = (evento.target as HTMLSelectElement).value;
+  if (origem === 'EXCLUSIVAS') {
+    q.conjuntoOpcaoId = null;
+    q.opcoes = [novaOpcao(), novaOpcao()];
+  } else {
+    q.opcoes = [];
+    q.conjuntoOpcaoId = props.conjuntos[0]?.id ?? null;
+  }
+}
+
+function adicionarOpcao(q: SessaoQuestaoDTO) {
+  (q.opcoes ??= []).push(novaOpcao());
+}
+
+function atualizarValorOpcao(opcao: NonNullable<SessaoQuestaoDTO['opcoes']>[number], evento: Event) {
+  const valor = (evento.target as HTMLInputElement).value;
+  opcao.valor = valor === '' ? null : Number(valor);
 }
 
 const input = 'form-field';
@@ -99,7 +128,9 @@ const btnIcone = 'icon-button-control';
           <article v-for="(q, qi) in ses.questoes" :key="qi" class="question-editor">
             <div class="question-editor__heading">
               <span class="question-editor__number">{{ qi + 1 }}.</span>
-              <textarea v-model="q.enunciado" :disabled="somenteLeitura" rows="2" placeholder="Enunciado da questão" :class="input"></textarea>
+              <label class="form-label question-editor__prompt">Enunciado
+                <textarea v-model="q.enunciado" :disabled="somenteLeitura" rows="2" placeholder="Escreva a pergunta" :class="input"></textarea>
+              </label>
               <div v-if="!somenteLeitura" class="question-editor__move">
                 <button type="button" :class="btnIcone" :disabled="qi === 0" @click="mover(ses.questoes, qi, -1)">↑</button>
                 <button type="button" :class="btnIcone" :disabled="qi === ses.questoes.length - 1" @click="mover(ses.questoes, qi, 1)">↓</button>
@@ -107,16 +138,44 @@ const btnIcone = 'icon-button-control';
             </div>
 
             <div class="question-editor__settings">
-              <select v-model="q.tipo" :disabled="somenteLeitura" @change="aoMudarTipo(q)" :class="[input, 'question-editor__type']">
-                <option v-for="t in TIPOS" :key="t.valor" :value="t.valor">{{ t.rotulo }}</option>
-              </select>
-              <select v-if="q.tipo !== 'DESCRITIVA'" v-model="q.conjuntoOpcaoId" :disabled="somenteLeitura" :class="[input, 'question-editor__options']">
-                <option :value="null" disabled>Selecione as opções…</option>
-                <option v-for="c in conjuntos" :key="c.id" :value="c.id">{{ c.nome }}</option>
-              </select>
-              <input v-model="q.assunto" :disabled="somenteLeitura" placeholder="Assunto (opcional)"
-                :class="[input, 'question-editor__subject', q.tipo === 'DESCRITIVA' ? 'question-editor__subject--descriptive' : '']" />
-              <input v-model.number="q.peso" :disabled="somenteLeitura" type="number" step="0.5" min="0" placeholder="Peso (opcional)" :class="[input, 'question-editor__weight']" />
+              <label class="form-label question-editor__type">Tipo de questão
+                <select v-model="q.tipo" :disabled="somenteLeitura" @change="aoMudarTipo(q)" :class="input">
+                  <option v-for="t in TIPOS" :key="t.valor" :value="t.valor">{{ t.rotulo }}</option>
+                </select>
+              </label>
+              <label v-if="q.tipo !== 'DESCRITIVA'" class="form-label question-editor__source">Origem das opções
+                <select :value="q.opcoes?.length ? 'EXCLUSIVAS' : 'CONJUNTO'" :disabled="somenteLeitura" @change="alterarOrigemOpcoes(q, $event)" :class="input">
+                  <option value="CONJUNTO" :disabled="conjuntos.length === 0">Conjunto reutilizável</option>
+                  <option value="EXCLUSIVAS">Opções exclusivas desta questão</option>
+                </select>
+              </label>
+              <label v-if="q.tipo !== 'DESCRITIVA' && !q.opcoes?.length" class="form-label question-editor__set">Conjunto de opções
+                <select v-model="q.conjuntoOpcaoId" :disabled="somenteLeitura" :class="input">
+                  <option :value="null" disabled>Selecione as opções…</option>
+                  <option v-for="c in conjuntos" :key="c.id" :value="c.id">{{ c.nome }}</option>
+                </select>
+              </label>
+              <label :class="['form-label', 'question-editor__subject', q.tipo === 'DESCRITIVA' ? 'question-editor__subject--descriptive' : '']">Assunto (opcional)
+                <input v-model="q.assunto" :disabled="somenteLeitura" placeholder="Ex.: Didática" :class="input" />
+              </label>
+              <label class="form-label question-editor__weight">Peso (opcional)
+                <input v-model.number="q.peso" :disabled="somenteLeitura" type="number" step="0.5" min="0" placeholder="Ex.: 1" :class="input" />
+              </label>
+            </div>
+
+            <div v-if="q.tipo !== 'DESCRITIVA' && q.opcoes?.length" class="question-options">
+              <p class="question-options__title">Opções desta questão</p>
+              <div v-for="(opcao, oi) in q.opcoes" :key="oi" class="question-options__row">
+                <label class="form-label">Texto da opção {{ oi + 1 }}
+                  <input v-model="opcao.texto" :disabled="somenteLeitura" class="form-field" placeholder="Ex.: Sim" />
+                </label>
+                <label class="form-label">Valor
+                  <input :value="opcao.valor ?? ''" @input="atualizarValorOpcao(opcao, $event)" :disabled="somenteLeitura" type="number" step="0.5" class="form-field" placeholder="Ex.: 1" />
+                </label>
+                <label class="question-options__correct"><input v-model="opcao.correta" :disabled="somenteLeitura" type="checkbox" /> Correta</label>
+                <button v-if="!somenteLeitura" type="button" class="button button--danger question-options__remove" :disabled="q.opcoes.length <= 2" :aria-label="`Remover opção ${oi + 1}`" @click="q.opcoes.splice(oi, 1)">×</button>
+              </div>
+              <button v-if="!somenteLeitura" type="button" class="button button--secondary question-options__add" @click="adicionarOpcao(q)">+ Adicionar opção</button>
             </div>
 
             <div class="question-editor__footer">
@@ -127,6 +186,7 @@ const btnIcone = 'icon-button-control';
                 <span v-if="q.tipo !== 'DESCRITIVA' && q.conjuntoOpcaoId" class="question-editor__options-preview">
                   {{ mapaConjuntos.get(q.conjuntoOpcaoId)?.opcoes.map(o => o.texto).join(' · ') }}
                 </span>
+                <span v-else-if="q.opcoes?.length" class="question-editor__options-preview">{{ q.opcoes.map(o => o.texto || '…').join(' · ') }}</span>
               </div>
               <button v-if="!somenteLeitura" type="button" class="button button--danger question-editor__remove" @click="ses.questoes.splice(qi, 1)">
                 <span aria-hidden="true">×</span> Remover questão

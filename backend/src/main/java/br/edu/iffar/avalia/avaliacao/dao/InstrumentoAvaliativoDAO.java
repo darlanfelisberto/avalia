@@ -69,6 +69,18 @@ public class InstrumentoAvaliativoDAO {
                 .getResultList();
 
         em.createQuery("""
+                    select distinct c from ConjuntoOpcao c
+                    left join fetch c.opcoes
+                    where c.exclusivo = true and exists (
+                        select 1 from SessaoQuestao sq
+                        where sq.questao.conjuntoOpcao = c
+                        and sq.instrumentoSessao.instrumentoAvaliativo.instrumentoAvaliativoId = :id
+                    )
+                """, br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao.class)
+                .setParameter("id", id)
+                .getResultList();
+
+        em.createQuery("""
                     select distinct i from InstrumentoAvaliativo i
                     left join fetch i.tiposAlvoList ta
                     left join fetch ta.tipoAlvo
@@ -169,9 +181,15 @@ public class InstrumentoAvaliativoDAO {
     }
 
     public void removerQuestaoOrfa(String id) {
-        dao.exec("""
-            delete from avaliacao.questao where questao_id = cast(?1 as uuid)
-            and not exists (select 1 from avaliacao.sessao_questao where questao_id = cast(?1 as uuid))
-            """, id);
+        if (dao.count("""
+                select count(*) from avaliacao.sessao_questao
+                where questao_id = cast(?1 as uuid)
+                """, id) != 0) return;
+        var questao = dao.buscar(br.edu.iffar.avalia.avaliacao.model.Questao.class, UUID.fromString(id));
+        if (questao == null) return;
+        var conjunto = questao.getConjuntoOpcao();
+        dao.remover(questao);
+        dao.flush();
+        if (conjunto != null && conjunto.isExclusivo()) dao.remover(conjunto);
     }
 }

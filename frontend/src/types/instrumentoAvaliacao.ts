@@ -40,6 +40,7 @@ export interface SessaoQuestaoDTO {
   tipo: TipoQuestaoDTO;
   assunto?: string | null;
   conjuntoOpcaoId?: string | null;
+  opcoes?: OpcaoQuestaoDTO[];
   obrigatoria: boolean;
   peso?: number | null;
   ordem?: number;

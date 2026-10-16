@@ -33,7 +33,7 @@ const grupos = computed(() => {
 });
 
 function opcoes(q: SessaoQuestaoDTO) {
-  return conjuntos.value.find(c => c.id === q.conjuntoOpcaoId)?.opcoes || [];
+  return q.opcoes?.length ? q.opcoes : conjuntos.value.find(c => c.id === q.conjuntoOpcaoId)?.opcoes || [];
 }
 
 async function carregar() {

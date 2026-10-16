@@ -70,6 +70,7 @@ public final class AvaliacaoDTO {
         public String tipo;
         public String assunto;
         public String conjuntoOpcaoId;
+        public List<OpcaoQuestaoDTO> opcoes = new ArrayList<>();
         public boolean obrigatoria;
         public Double peso;
         public int ordem;
@@ -82,7 +83,14 @@ public final class AvaliacaoDTO {
             dto.enunciado = questao.getEnunciado();
             dto.tipo = questao.getTipo();
             dto.assunto = questao.getAssunto();
-            dto.conjuntoOpcaoId = questao.getConjuntoOpcao() == null ? null : questao.getConjuntoOpcao().getId().toString();
+            var conjunto = questao.getConjuntoOpcao();
+            if (conjunto != null) {
+                if (conjunto.isExclusivo()) {
+                    for (var opcao : conjunto.getOpcoes()) dto.opcoes.add(OpcaoQuestaoDTO.create(opcao));
+                } else {
+                    dto.conjuntoOpcaoId = conjunto.getId().toString();
+                }
+            }
             dto.obrigatoria = entidade.isObrigatoria();
             dto.peso = entidade.getPeso() == null ? null : entidade.getPeso().doubleValue();
             dto.ordem = entidade.getOrdem();
