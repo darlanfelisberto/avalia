@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
-import type { ConjuntoOpcao } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcaoDTO } from '../types/instrumentoAvaliacao';
 import { avaliacaoApi } from '../services/avaliacaoApi';
 
 const emit = defineEmits<{
-  (e: 'salvo', conjunto: ConjuntoOpcao): void;
+  (e: 'salvo', conjunto: ConjuntoOpcaoDTO): void;
   (e: 'fechar'): void;
 }>();
 
-const conjunto = reactive<ConjuntoOpcao>({
+const conjunto = reactive<ConjuntoOpcaoDTO>({
   nome: '',
   opcoes: [
     { texto: '', valor: 1, correta: false },

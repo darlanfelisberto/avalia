@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { avaliacaoApi } from '../services/avaliacaoApi';
-import type { PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import type { PermissaoTipoEntidadeDTO, TipoEntidadeDTO } from '../types/instrumentoAvaliacao';
 import { carregarUsuarioAtivo, temPermissao } from '../services/storage';
 
 const podeEditar = temPermissao(carregarUsuarioAtivo(), 'INSTRUMENTO_EDITAR');
 
-const tipos = ref<TipoEntidade[]>([]);
+const tipos = ref<TipoEntidadeDTO[]>([]);
 const permissoes = ref(new Set<string>());
 const carregando = ref(true);
 const salvando = ref(false);
@@ -55,7 +55,7 @@ async function carregar() {
 async function salvar() {
   salvando.value = true;
   erro.value = sucesso.value = '';
-  const payload: PermissaoTipoEntidadeAv[] = [...permissoes.value].map(par => {
+  const payload: PermissaoTipoEntidadeDTO[] = [...permissoes.value].map(par => {
     const [tipoRespondenteId, tipoAvaliadoId] = par.split(':');
     return { tipoRespondenteId, tipoAvaliadoId };
   });

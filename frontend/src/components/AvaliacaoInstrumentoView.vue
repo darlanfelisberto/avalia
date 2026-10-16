@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import type { ConjuntoOpcao, InstrumentoAvaliativoDTO, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcaoDTO, InstrumentoAvaliativoDTO, PermissaoTipoEntidadeDTO, TipoEntidadeDTO } from '../types/instrumentoAvaliacao';
 import { avaliacaoApi } from '../services/avaliacaoApi';
 import { carregarUsuarioAtivo, temPermissao } from '../services/storage';
 import AvaliacaoEstruturaEditor from './AvaliacaoEstruturaEditor.vue';
@@ -22,9 +22,9 @@ const instrumentos = ref<InstrumentoAvaliativoDTO[]>([]);
 const paginaAtual = ref(1);
 const temProximaPagina = ref(false);
 const TAMANHO_PAGINA = 10;
-const tipos = ref<TipoEntidade[]>([]);
-const permissoesTipos = ref<PermissaoTipoEntidadeAv[]>([]);
-const conjuntos = ref<ConjuntoOpcao[]>([]);
+const tipos = ref<TipoEntidadeDTO[]>([]);
+const permissoesTipos = ref<PermissaoTipoEntidadeDTO[]>([]);
+const conjuntos = ref<ConjuntoOpcaoDTO[]>([]);
 const carregando = ref(false);
 const salvando = ref(false);
 const modalConjunto = ref(false);
@@ -222,7 +222,7 @@ function vinculosParaRespondente(tipoId: string) {
   return VINCULOS;
 }
 
-function aoSalvarConjunto(c: ConjuntoOpcao) {
+function aoSalvarConjunto(c: ConjuntoOpcaoDTO) {
   conjuntos.value.push(c);
   conjuntos.value.sort((a, b) => a.nome.localeCompare(b.nome));
   modalConjunto.value = false;

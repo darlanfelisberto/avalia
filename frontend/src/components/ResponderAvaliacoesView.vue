@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import type { ConjuntoOpcao, InstrumentoAvaliativoDTO, QuestaoAv } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcaoDTO, InstrumentoAvaliativoDTO, SessaoQuestaoDTO } from '../types/instrumentoAvaliacao';
 import { responderApi, type AvaliacaoDisponivel, type RespostaEnvio } from '../services/responderApi';
 
 const disponiveis = ref<AvaliacaoDisponivel[]>([]);
 const instrumento = ref<InstrumentoAvaliativoDTO | null>(null);
 const selecionada = ref<AvaliacaoDisponivel | null>(null);
-const conjuntos = ref<ConjuntoOpcao[]>([]);
+const conjuntos = ref<ConjuntoOpcaoDTO[]>([]);
 const escolhas = ref<Record<string, string>>({});
 const multiplas = ref<Record<string, string[]>>({});
 const textos = ref<Record<string, string>>({});
@@ -32,7 +32,7 @@ const grupos = computed(() => {
   return [...mapa.values()];
 });
 
-function opcoes(q: QuestaoAv) {
+function opcoes(q: SessaoQuestaoDTO) {
   return conjuntos.value.find(c => c.id === q.conjuntoOpcaoId)?.opcoes || [];
 }
 

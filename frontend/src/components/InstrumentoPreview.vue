@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { ConjuntoOpcao, InstrumentoAvaliativoDTO, QuestaoAv } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcaoDTO, InstrumentoAvaliativoDTO, SessaoQuestaoDTO } from '../types/instrumentoAvaliacao';
 
 const props = defineProps<{
   instrumento: InstrumentoAvaliativoDTO;
-  conjuntos: ConjuntoOpcao[];
+  conjuntos: ConjuntoOpcaoDTO[];
 }>();
 
 const emit = defineEmits<{ voltar: [] }>();
@@ -15,11 +15,11 @@ const textos = ref<Record<string, string>>({});
 const erro = ref('');
 const concluida = ref(false);
 
-function chaveQuestao(q: QuestaoAv, sessaoIndex: number, questaoIndex: number): string {
+function chaveQuestao(q: SessaoQuestaoDTO, sessaoIndex: number, questaoIndex: number): string {
   return q.sessaoQuestaoId || q.questaoId || `sessao-${sessaoIndex}-questao-${questaoIndex}`;
 }
 
-function opcoes(q: QuestaoAv) {
+function opcoes(q: SessaoQuestaoDTO) {
   return props.conjuntos.find(c => c.id === q.conjuntoOpcaoId)?.opcoes || [];
 }
 

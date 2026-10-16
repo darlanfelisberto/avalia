@@ -1,6 +1,6 @@
 package br.edu.iffar.avalia.avaliacao.resource;
 
-import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcao;
+import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcaoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.InstrumentoAvaliativoDTO;
 import br.edu.iffar.avalia.avaliacao.service.AvaliacaoService;
 import br.edu.iffar.avalia.core.service.AuthService;
@@ -41,7 +41,7 @@ public class AvaliacaoResource {
 
     @POST
     @Path("/conjuntos-opcao")
-    public Response salvarConjunto(ConjuntoOpcao dto) {
+    public Response salvarConjunto(ConjuntoOpcaoDTO dto) {
         return executar(() -> {  return Response.ok(service.salvarConjunto(dto)).build(); });
     }
 

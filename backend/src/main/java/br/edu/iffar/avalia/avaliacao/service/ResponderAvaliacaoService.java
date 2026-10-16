@@ -1,7 +1,7 @@
 package br.edu.iffar.avalia.avaliacao.service;
 
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.InstrumentoAvaliativoDTO;
-import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcao;
+import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcaoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.RespostaAvaliacaoDTO.*;
 import br.edu.iffar.avalia.avaliacao.dao.AvaliacaoDao;
 import br.edu.iffar.avalia.avaliacao.dao.ResponderAvaliacaoDao;
@@ -141,7 +141,7 @@ public class ResponderAvaliacaoService {
         return instrumentos.buscarInstrumento(instrumentoId);
     }
 
-    public List<ConjuntoOpcao> listarConjuntos(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
+    public List<ConjuntoOpcaoDTO> listarConjuntos(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
         InstrumentoAvaliativoDTO instrumento = buscar(usuario, instrumentoId, alvoId, contextoId);
         Set<String> ids = new HashSet<>();
         instrumento.sessoes.forEach(s -> s.questoes.forEach(q -> {

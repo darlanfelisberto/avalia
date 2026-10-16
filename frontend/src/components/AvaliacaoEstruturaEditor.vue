@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ConjuntoOpcao, PaginaAv, QuestaoAv, SessaoAv, TipoQuestaoAv } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcaoDTO, InstrumentoSessaoPaginaDTO, SessaoQuestaoDTO, InstrumentoSessaoDTO, TipoQuestaoDTO } from '../types/instrumentoAvaliacao';
 
-const paginas = defineModel<PaginaAv[]>('paginas', { required: true });
-const sessoes = defineModel<SessaoAv[]>('sessoes', { required: true });
+const paginas = defineModel<InstrumentoSessaoPaginaDTO[]>('paginas', { required: true });
+const sessoes = defineModel<InstrumentoSessaoDTO[]>('sessoes', { required: true });
 
 const props = defineProps<{
-  conjuntos: ConjuntoOpcao[];
+  conjuntos: ConjuntoOpcaoDTO[];
   somenteLeitura?: boolean;
   podeCriarConjunto?: boolean;
 }>();
 
 const emit = defineEmits<{ (e: 'novoConjunto'): void }>();
 
-const TIPOS: { valor: TipoQuestaoAv; rotulo: string }[] = [
+const TIPOS: { valor: TipoQuestaoDTO; rotulo: string }[] = [
   { valor: 'ESCALA', rotulo: 'Escala (ex.: concordância)' },
   { valor: 'ESCOLHA_UNICA', rotulo: 'Escolha única' },
   { valor: 'MULTIPLA_ESCOLHA', rotulo: 'Múltipla escolha' },
@@ -28,8 +28,8 @@ function mover<T>(lista: T[], i: number, delta: number) {
   [lista[i], lista[j]] = [lista[j], lista[i]];
 }
 
-const novaQuestao = (): QuestaoAv => ({ enunciado: '', tipo: 'ESCALA', conjuntoOpcaoId: props.conjuntos[0]?.id ?? null, obrigatoria: true, peso: null });
-const novaSessao = (): SessaoAv => ({ titulo: '', descricao: '', questoes: [novaQuestao()] });
+const novaQuestao = (): SessaoQuestaoDTO => ({ enunciado: '', tipo: 'ESCALA', conjuntoOpcaoId: props.conjuntos[0]?.id ?? null, obrigatoria: true, peso: null });
+const novaSessao = (): InstrumentoSessaoDTO => ({ titulo: '', descricao: '', questoes: [novaQuestao()] });
 
 function addPagina() {
   paginas.value.push({ titulo: `Página ${paginas.value.length + 1}`, descricao: '' });
@@ -39,7 +39,7 @@ function addSessao() {
   sessoes.value.push({ ...novaSessao(), titulo: `Sessão ${sessoes.value.length + 1}` });
 }
 
-function aoMudarTipo(q: QuestaoAv) {
+function aoMudarTipo(q: SessaoQuestaoDTO) {
   if (q.tipo === 'DESCRITIVA') q.conjuntoOpcaoId = null;
   else if (!q.conjuntoOpcaoId) q.conjuntoOpcaoId = props.conjuntos[0]?.id ?? null;
 }

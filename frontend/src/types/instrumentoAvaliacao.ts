@@ -1,7 +1,7 @@
 export type StatusInstrumento = 'RASCUNHO' | 'PUBLICADO' | 'ENCERRADO' | 'CONSOLIDADO';
-export type TipoQuestaoAv = 'ESCOLHA_UNICA' | 'MULTIPLA_ESCOLHA' | 'ESCALA' | 'DESCRITIVA';
+export type TipoQuestaoDTO = 'ESCOLHA_UNICA' | 'MULTIPLA_ESCOLHA' | 'ESCALA' | 'DESCRITIVA';
 
-export interface TipoEntidade {
+export interface TipoEntidadeDTO {
   id: string;
   codigo: string;
   nome: string;
@@ -9,12 +9,12 @@ export interface TipoEntidade {
   podeResponder: boolean;
 }
 
-export interface PermissaoTipoEntidadeAv {
+export interface PermissaoTipoEntidadeDTO {
   tipoRespondenteId: string;
   tipoAvaliadoId: string;
 }
 
-export interface OpcaoAv {
+export interface OpcaoQuestaoDTO {
   id?: string;
   texto: string;
   valor?: number | null;
@@ -22,26 +22,22 @@ export interface OpcaoAv {
   ordem?: number;
 }
 
-export interface ConjuntoOpcao {
+export interface ConjuntoOpcaoDTO {
   id?: string;
   nome: string;
-  opcoes: OpcaoAv[];
+  opcoes: OpcaoQuestaoDTO[];
 }
 
-export interface InstrumentoTipoRespondente {
+export interface InstrumentoTipoRespondenteDTO {
   tipoEntidadeId: string;
   tipoVinculo?: string | null;
 }
 
-export type InstrumentoTipoRespondenteAv = InstrumentoTipoRespondente;
-export type RespondenteAv = InstrumentoTipoRespondente;
-export type InstrumentoRespondente = InstrumentoTipoRespondente;
-
-export interface QuestaoAv {
+export interface SessaoQuestaoDTO {
   questaoId?: string;
   sessaoQuestaoId?: string;
   enunciado: string;
-  tipo: TipoQuestaoAv;
+  tipo: TipoQuestaoDTO;
   assunto?: string | null;
   conjuntoOpcaoId?: string | null;
   obrigatoria: boolean;
@@ -49,14 +45,14 @@ export interface QuestaoAv {
   ordem?: number;
 }
 
-export interface SessaoAv {
+export interface InstrumentoSessaoDTO {
   id?: string;
   titulo: string;
   descricao?: string | null;
-  questoes: QuestaoAv[];
+  questoes: SessaoQuestaoDTO[];
 }
 
-export interface PaginaAv {
+export interface InstrumentoSessaoPaginaDTO {
   id?: string;
   titulo: string;
   descricao?: string | null;
@@ -76,7 +72,7 @@ export interface InstrumentoAvaliativoDTO {
   permiteEdicao: boolean;
   status?: StatusInstrumento;
   totalQuestoes?: number;
-  respondentes: InstrumentoTipoRespondente[];
-  paginas: PaginaAv[];
-  sessoes: SessaoAv[];
+  respondentes: InstrumentoTipoRespondenteDTO[];
+  paginas: InstrumentoSessaoPaginaDTO[];
+  sessoes: InstrumentoSessaoDTO[];
 }

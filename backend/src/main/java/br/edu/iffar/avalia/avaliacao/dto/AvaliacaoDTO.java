@@ -17,15 +17,15 @@ public final class AvaliacaoDTO {
     private AvaliacaoDTO() {
     }
 
-    public static class Opcao {
+    public static class OpcaoQuestaoDTO {
         public String id;
         public String texto;
         public Double valor;
         public boolean correta;
         public int ordem;
 
-        public static Opcao create(br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao entidade) {
-            Opcao dto = new Opcao();
+        public static OpcaoQuestaoDTO create(br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao entidade) {
+            OpcaoQuestaoDTO dto = new OpcaoQuestaoDTO();
             dto.id = entidade.getId().toString();
             dto.texto = entidade.getTexto();
             dto.valor = entidade.getValor() == null ? null : entidade.getValor().doubleValue();
@@ -35,32 +35,32 @@ public final class AvaliacaoDTO {
         }
     }
 
-    public static class ConjuntoOpcao {
+    public static class ConjuntoOpcaoDTO {
         public String id;
         public String nome;
-        public List<Opcao> opcoes = new ArrayList<>();
+        public List<OpcaoQuestaoDTO> opcoes = new ArrayList<>();
 
-        public static ConjuntoOpcao create(br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao entidade) {
-            ConjuntoOpcao dto = new ConjuntoOpcao();
+        public static ConjuntoOpcaoDTO create(br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao entidade) {
+            ConjuntoOpcaoDTO dto = new ConjuntoOpcaoDTO();
             dto.id = entidade.getId().toString();
             dto.nome = entidade.getNome();
-            for (var opcao : entidade.getOpcoes()) dto.opcoes.add(Opcao.create(opcao));
+            for (var opcao : entidade.getOpcoes()) dto.opcoes.add(OpcaoQuestaoDTO.create(opcao));
             return dto;
         }
     }
 
-    public static class InstrumentoTipoRespondente {
+    public static class InstrumentoTipoRespondenteDTO {
         public String tipoEntidadeId;
         public String tipoVinculo;
 
-        public static InstrumentoTipoRespondente create(br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente entidade) {
-            InstrumentoTipoRespondente dto = new InstrumentoTipoRespondente();
+        public static InstrumentoTipoRespondenteDTO create(br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente entidade) {
+            InstrumentoTipoRespondenteDTO dto = new InstrumentoTipoRespondenteDTO();
             dto.tipoEntidadeId = entidade.getTipoEntidade().getId().toString();
             return dto;
         }
     }
 
-    public static class Questao {
+    public static class SessaoQuestaoDTO {
         public String questaoId;
         public String sessaoQuestaoId;
         public String enunciado;
@@ -74,9 +74,9 @@ public final class AvaliacaoDTO {
         public Double peso;
         public int ordem;
 
-        public static Questao create(SessaoQuestao entidade) {
+        public static SessaoQuestaoDTO create(SessaoQuestao entidade) {
             var questao = entidade.getQuestao();
-            Questao dto = new Questao();
+            SessaoQuestaoDTO dto = new SessaoQuestaoDTO();
             dto.questaoId = questao.getId().toString();
             dto.sessaoQuestaoId = entidade.getId().toString();
             dto.enunciado = questao.getEnunciado();
@@ -90,32 +90,32 @@ public final class AvaliacaoDTO {
         }
     }
 
-    public static class Sessao {
+    public static class InstrumentoSessaoDTO {
         public String id;
         public String titulo;
         public String descricao;
         public int ordem;
-        public List<Questao> questoes = new ArrayList<>();
+        public List<SessaoQuestaoDTO> questoes = new ArrayList<>();
 
-        public static Sessao create(InstrumentoSessao entidade) {
-            Sessao dto = new Sessao();
+        public static InstrumentoSessaoDTO create(InstrumentoSessao entidade) {
+            InstrumentoSessaoDTO dto = new InstrumentoSessaoDTO();
             dto.id = entidade.getId().toString();
             dto.titulo = entidade.getTitulo();
             dto.descricao = entidade.getDescricao();
             dto.ordem = entidade.getOrdem();
-            for (SessaoQuestao questao : entidade.getSessaoQuestoesList()) dto.questoes.add(Questao.create(questao));
+            for (SessaoQuestao questao : entidade.getSessaoQuestoesList()) dto.questoes.add(SessaoQuestaoDTO.create(questao));
             return dto;
         }
     }
 
-    public static class Pagina {
+    public static class InstrumentoSessaoPaginaDTO {
         public String id;
         public String titulo;
         public String descricao;
         public int ordem;
 
-        public static Pagina create(InstrumentoSessao entidade) {
-            Pagina dto = new Pagina();
+        public static InstrumentoSessaoPaginaDTO create(InstrumentoSessao entidade) {
+            InstrumentoSessaoPaginaDTO dto = new InstrumentoSessaoPaginaDTO();
             dto.id = entidade.getId().toString();
             dto.titulo = entidade.getTitulo();
             dto.descricao = entidade.getDescricao();
@@ -142,9 +142,9 @@ public final class AvaliacaoDTO {
         public String criadoPor;
         public String atualizadoEm;
         public int totalQuestoes;
-        public List<InstrumentoTipoRespondente> respondentes = new ArrayList<>();
-        public List<Pagina> paginas = new ArrayList<>();
-        public List<Sessao> sessoes = new ArrayList<>();
+        public List<InstrumentoTipoRespondenteDTO> respondentes = new ArrayList<>();
+        public List<InstrumentoSessaoPaginaDTO> paginas = new ArrayList<>();
+        public List<InstrumentoSessaoDTO> sessoes = new ArrayList<>();
 
         public InstrumentoAvaliativoDTO createResumo(InstrumentoAvaliativo ia) {
             return comDadosBasicos(ia);
@@ -178,7 +178,7 @@ public final class AvaliacaoDTO {
         public InstrumentoAvaliativoDTO comRespondentes(InstrumentoAvaliativo ia) {
             respondentes.clear();
             for (var respondente : ia.getInstrumentoTipoRespondenteList()) {
-                respondentes.add(InstrumentoTipoRespondente.create(respondente));
+                respondentes.add(InstrumentoTipoRespondenteDTO.create(respondente));
             }
             return this;
         }
@@ -187,7 +187,7 @@ public final class AvaliacaoDTO {
             paginas.clear();
             for (InstrumentoSessao sessao : ia.getInstrumentoSessoesList()) {
                 if (sessao.getTipoSessao() == TipoSessao.PAGINA) {
-                    paginas.add(Pagina.create(sessao));
+                    paginas.add(InstrumentoSessaoPaginaDTO.create(sessao));
                 }
             }
             return this;
@@ -198,7 +198,7 @@ public final class AvaliacaoDTO {
             totalQuestoes = 0;
             for (InstrumentoSessao sessao : ia.getInstrumentoSessoesList()) {
                 if (sessao.getTipoSessao() != TipoSessao.PAGINA) {
-                    Sessao sessaoDto = Sessao.create(sessao);
+                    InstrumentoSessaoDTO sessaoDto = InstrumentoSessaoDTO.create(sessao);
                     totalQuestoes += sessaoDto.questoes.size();
                     sessoes.add(sessaoDto);
                 }

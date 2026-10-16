@@ -1,4 +1,4 @@
-import type { ConjuntoOpcao, InstrumentoAvaliativoDTO } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcaoDTO, InstrumentoAvaliativoDTO } from '../types/instrumentoAvaliacao';
 
 export interface AvaliacaoDisponivel {
   instrumentoId: string;
@@ -35,7 +35,7 @@ export const responderApi = {
   buscar: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>
     chamar<InstrumentoAvaliativoDTO>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
   conjuntos: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>
-    chamar<ConjuntoOpcao[]>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}/conjuntos-opcao${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
+    chamar<ConjuntoOpcaoDTO[]>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}/conjuntos-opcao${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
   enviar: (instrumentoId: string, dados: RespostaEnvio) =>
     chamar<void>(`/${encodeURIComponent(instrumentoId)}/envios`, {
       method: 'POST', body: JSON.stringify(dados)

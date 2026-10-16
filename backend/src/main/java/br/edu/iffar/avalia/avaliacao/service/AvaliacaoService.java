@@ -48,15 +48,15 @@ public class AvaliacaoService {
         entidadeAcademicaDao.sincronizar();
     }
 
-    public List<ConjuntoOpcao> listarConjuntos() {
-        List<ConjuntoOpcao> resultado = new ArrayList<>();
+    public List<ConjuntoOpcaoDTO> listarConjuntos() {
+        List<ConjuntoOpcaoDTO> resultado = new ArrayList<>();
         for (br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao entidade : dao.listarConjuntos()) {
-            resultado.add(ConjuntoOpcao.create(entidade));
+            resultado.add(ConjuntoOpcaoDTO.create(entidade));
         }
         return resultado;
     }
 
-    public ConjuntoOpcao salvarConjunto(ConjuntoOpcao dto) {
+    public ConjuntoOpcaoDTO salvarConjunto(ConjuntoOpcaoDTO dto) {
         if (dto == null) throw new IllegalArgumentException("Dados do conjunto não informados.");
         if (blank(dto.nome)) throw new IllegalArgumentException("Informe o nome do conjunto de opções.");
         if (dto.opcoes == null || dto.opcoes.size() < 2) throw new IllegalArgumentException("Um conjunto precisa de ao menos 2 opções.");
@@ -67,7 +67,7 @@ public class AvaliacaoService {
         conjunto.setNome(dto.nome.trim());
         dao.persistir(conjunto);
         int ordem = 1;
-        for (Opcao o : dto.opcoes) {
+        for (AvaliacaoDTO.OpcaoQuestaoDTO o : dto.opcoes) {
             if (blank(o.texto)) throw new IllegalArgumentException("Toda opção precisa de um texto.");
             OpcaoQuestao opcao = new OpcaoQuestao();
             opcao.setConjunto(conjunto);
@@ -79,7 +79,7 @@ public class AvaliacaoService {
             dao.persistir(opcao);
         }
         dao.flush();
-        return ConjuntoOpcao.create(conjunto);
+        return ConjuntoOpcaoDTO.create(conjunto);
     }
 
     public List<InstrumentoAvaliativoDTO> listarInstrumentos(int paginaSolicitada, int tamanhoSolicitado) {
@@ -169,11 +169,11 @@ public class AvaliacaoService {
 
     // ------------------------------------------------------------------ internos
 
-    private void substituirRespondentes(String id, List<AvaliacaoDTO.InstrumentoTipoRespondente> respondentes) {
+    private void substituirRespondentes(String id, List<AvaliacaoDTO.InstrumentoTipoRespondenteDTO> respondentes) {
         UUID instrumentoId = UUID.fromString(id);
         dao.removerRespondentes(instrumentoId);
         InstrumentoAvaliativo instrumento = dao.referencia(InstrumentoAvaliativo.class, instrumentoId);
-        for (AvaliacaoDTO.InstrumentoTipoRespondente r : respondentes) {
+        for (AvaliacaoDTO.InstrumentoTipoRespondenteDTO r : respondentes) {
             InstrumentoTipoRespondente entidade = new InstrumentoTipoRespondente();
             entidade.setInstrumentoAvaliativo(instrumento);
             entidade.setTipoEntidade(tiposEntidadeDao.referencia(UUID.fromString(r.tipoEntidadeId)));
@@ -189,13 +189,14 @@ public class AvaliacaoService {
         dao.flush();
     }
 
-    private void substituirEstrutura(String id, List<Pagina> paginas, List<Sessao> sessoes, String usuario) {
+    private void substituirEstrutura(String id, List<AvaliacaoDTO.InstrumentoSessaoPaginaDTO> paginas,
+                                     List<AvaliacaoDTO.InstrumentoSessaoDTO> sessoes, String usuario) {
         List<String> anteriores = idsQuestoes(id);
         dao.removerSessoes(UUID.fromString(id));
         InstrumentoAvaliativo instrumento = dao.referencia(InstrumentoAvaliativo.class, UUID.fromString(id));
 
         int ordemPagina = 1;
-        for (Pagina p : paginas) {
+        for (AvaliacaoDTO.InstrumentoSessaoPaginaDTO p : paginas) {
             InstrumentoSessao pagina = new InstrumentoSessao();
             pagina.setInstrumentoAvaliativo(instrumento);
             pagina.setTipoSessao("PAGINA");
@@ -205,7 +206,7 @@ public class AvaliacaoService {
             dao.persistir(pagina);
         }
         int ordemSessao = 1;
-        for (Sessao s : sessoes) {
+        for (AvaliacaoDTO.InstrumentoSessaoDTO s : sessoes) {
             InstrumentoSessao sessao = new InstrumentoSessao();
             sessao.setInstrumentoAvaliativo(instrumento);
             sessao.setTipoSessao("SESSAO");
@@ -214,7 +215,7 @@ public class AvaliacaoService {
             sessao.setOrdem(ordemSessao++);
             dao.persistir(sessao);
             int ordemQuestao = 1;
-            for (AvaliacaoDTO.Questao q : s.questoes) {
+            for (AvaliacaoDTO.SessaoQuestaoDTO q : s.questoes) {
                 String questaoId = upsertQuestao(q, usuario);
                 SessaoQuestao posicao = new SessaoQuestao();
                 posicao.setInstrumentoSessao(sessao);
@@ -230,7 +231,7 @@ public class AvaliacaoService {
         removerQuestoesOrfas(anteriores);
     }
 
-    private String upsertQuestao(AvaliacaoDTO.Questao q, String usuario) {
+    private String upsertQuestao(AvaliacaoDTO.SessaoQuestaoDTO q, String usuario) {
         String conjunto = "DESCRITIVA".equals(q.tipo) ? null : q.conjuntoOpcaoId;
         Questao entidade = blank(q.questaoId) ? null :
                 dao.buscar(Questao.class, UUID.fromString(q.questaoId));
@@ -282,7 +283,7 @@ public class AvaliacaoService {
 
         Set<String> vistos = new HashSet<>();
         String contextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(d.tipoEntidadeAvaliadaId));
-        if (validarRespondentes) for (AvaliacaoDTO.InstrumentoTipoRespondente r : d.respondentes) {
+        if (validarRespondentes) for (AvaliacaoDTO.InstrumentoTipoRespondenteDTO r : d.respondentes) {
             if (blank(r.tipoEntidadeId)) throw new IllegalArgumentException("Respondente sem tipo definido.");
             if (!vistos.add(r.tipoEntidadeId)) throw new IllegalArgumentException("Público respondente repetido.");
             TipoEntidade tipoRespondente = tiposEntidadeDao.buscar(UUID.fromString(r.tipoEntidadeId));
@@ -304,13 +305,13 @@ public class AvaliacaoService {
             };
             if (!vinculoValido) throw new IllegalArgumentException("Vínculo incompatível com o público e o contexto avaliados.");
         }
-        for (Pagina p : d.paginas) {
+        for (AvaliacaoDTO.InstrumentoSessaoPaginaDTO p : d.paginas) {
             if (blank(p.titulo)) throw new IllegalArgumentException("Toda página precisa de um título.");
         }
-        for (Sessao s : d.sessoes) {
+        for (AvaliacaoDTO.InstrumentoSessaoDTO s : d.sessoes) {
             if (blank(s.titulo)) throw new IllegalArgumentException("Toda sessão precisa de um título.");
             if (s.questoes == null) s.questoes = new ArrayList<>();
-            for (AvaliacaoDTO.Questao q : s.questoes) {
+            for (AvaliacaoDTO.SessaoQuestaoDTO q : s.questoes) {
                 if (blank(q.enunciado)) throw new IllegalArgumentException("Toda questão precisa de um enunciado (sessão \"" + s.titulo + "\").");
                 if (q.tipo == null || !TIPOS_QUESTAO.contains(q.tipo)) throw new IllegalArgumentException("Tipo de questão inválido.");
                 if (!"DESCRITIVA".equals(q.tipo) && blank(q.conjuntoOpcaoId)) {

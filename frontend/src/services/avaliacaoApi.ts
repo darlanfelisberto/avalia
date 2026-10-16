@@ -1,4 +1,4 @@
-import type { ConjuntoOpcao, InstrumentoAvaliativoDTO, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import type { ConjuntoOpcaoDTO, InstrumentoAvaliativoDTO, PermissaoTipoEntidadeDTO, TipoEntidadeDTO } from '../types/instrumentoAvaliacao';
 const BASE = '/api/avaliacao';
 
 export interface Resultado<T> {
@@ -27,12 +27,12 @@ async function chamar<T>(url: string, init?: RequestInit): Promise<Resultado<T>>
 }
 
 export const avaliacaoApi = {
-  tiposEntidade: () => chamar<TipoEntidade[]>(`${BASE}/tipos-entidade`),
-  permissoesTiposEntidade: () => chamar<PermissaoTipoEntidadeAv[]>(`${BASE}/permissoes-tipos-entidade`),
-  salvarPermissoesTiposEntidade: (permissoes: PermissaoTipoEntidadeAv[]) =>
+  tiposEntidade: () => chamar<TipoEntidadeDTO[]>(`${BASE}/tipos-entidade`),
+  permissoesTiposEntidade: () => chamar<PermissaoTipoEntidadeDTO[]>(`${BASE}/permissoes-tipos-entidade`),
+  salvarPermissoesTiposEntidade: (permissoes: PermissaoTipoEntidadeDTO[]) =>
     chamar<void>(`${BASE}/permissoes-tipos-entidade`, { method: 'PUT', body: JSON.stringify(permissoes) }),
-  conjuntos: () => chamar<ConjuntoOpcao[]>(`${BASE}/conjuntos-opcao`),
-  salvarConjunto: (c: ConjuntoOpcao) => chamar<ConjuntoOpcao>(`${BASE}/conjuntos-opcao`, { method: 'POST', body: JSON.stringify(c) }),
+  conjuntos: () => chamar<ConjuntoOpcaoDTO[]>(`${BASE}/conjuntos-opcao`),
+  salvarConjunto: (c: ConjuntoOpcaoDTO) => chamar<ConjuntoOpcaoDTO>(`${BASE}/conjuntos-opcao`, { method: 'POST', body: JSON.stringify(c) }),
   listar: (pagina = 1, tamanho = 10) => chamar<InstrumentoAvaliativoDTO[]>(`${BASE}/instrumentos?pagina=${pagina}&tamanho=${tamanho}`),
   buscar: (id: string) => chamar<InstrumentoAvaliativoDTO>(`${BASE}/instrumentos/${id}`),
   salvar: (i: InstrumentoAvaliativoDTO, usuario?: string) =>
