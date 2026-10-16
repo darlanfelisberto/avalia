@@ -19,11 +19,6 @@ public class AuthDao {
                 .setParameter("cpf", cpf).getResultStream().findFirst().orElse(null);
     }
 
-    public List<UsuarioPermissao> listarUsuariosAtivos() {
-        return em.createQuery("select u from UsuarioPermissao u where u.ativo = true order by u.papel, u.nome", UsuarioPermissao.class)
-                .getResultList();
-    }
-
     public void persistirUsuario(UsuarioPermissao usuario) {
         em.persist(usuario);
     }
@@ -41,6 +36,11 @@ public class AuthDao {
     public AuthSessao buscarSessaoValida(String tokenHash) {
         AuthSessao sessao = em.find(AuthSessao.class, tokenHash);
         return sessao != null && sessao.getExpiraEm().isAfter(OffsetDateTime.now()) ? sessao : null;
+    }
+
+    public void encerrarSessao(String tokenHash) {
+        AuthSessao sessao = em.find(AuthSessao.class, tokenHash);
+        if (sessao != null) em.remove(sessao);
     }
 
     public PessoaAcademica buscarPessoaPorCpf(String cpf) {
@@ -62,20 +62,6 @@ public class AuthDao {
         return contar("""
             select count(*) from academico.docente_turma dt
             join academico.servidor s on s.id = dt.id_servidor where s.id_pessoa = ?1
-            """, pessoaId);
-    }
-
-    public boolean existeChefia(int pessoaId) {
-        return contar("""
-            select count(*) from academico.designacao d
-            join academico.servidor s on s.id = d.id_servidor where s.id_pessoa = ?1 and d.chefia = true
-            """, pessoaId);
-    }
-
-    public boolean existeCoordenacao(int pessoaId) {
-        return contar("""
-            select count(*) from academico.coordenacao_curso c
-            join academico.servidor s on s.id = c.id_servidor where s.id_pessoa = ?1 and c.ativo = true
             """, pessoaId);
     }
 

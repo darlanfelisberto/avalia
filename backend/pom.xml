@@ -23,7 +23,7 @@
         <version.flyway>10.20.1</version.flyway>
         <version.postgresql>42.7.4</version.postgresql>
 
-        <liberty.var.default.http.port>9080</liberty.var.default.http.port>
+        <liberty.var.default.http.port>9081</liberty.var.default.http.port>
         <liberty.var.default.https.port>9443</liberty.var.default.https.port>
     </properties>
 
@@ -61,6 +61,11 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
             <version>${version.flyway}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>10.6</version>
         </dependency>
     </dependencies>
 

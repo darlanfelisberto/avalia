@@ -1,4 +1,15 @@
+import { carregarTokenAtivo, carregarUsuarioAtivo } from './storage';
+
 // --- Integração Acadêmica SIGAA ---
+
+function headersAutenticacao(): Record<string, string> {
+  const token = carregarTokenAtivo();
+  const usuario = carregarUsuarioAtivo();
+  return token && usuario ? {
+    Authorization: `Bearer ${token}`,
+    'X-Papel-Ativo': usuario.papelAtivo || usuario.papel
+  } : {};
+}
 
 export interface SincronizacaoStatus {
   conectadoSigaa: boolean;
@@ -6,20 +17,11 @@ export interface SincronizacaoStatus {
   usuarioSigaa: string;
   emExecucao: boolean;
   contadoresLocais: Record<string, number>;
-  ultimosLogs: Array<{
-    id: number;
-    entidade: string;
-    inicio: string;
-    fim: string;
-    registrosImportados: number;
-    status: string;
-    mensagem: string;
-  }>;
 }
 
 export async function buscarStatusSincronizacaoApi(): Promise<SincronizacaoStatus | null> {
   try {
-    const res = await fetch('/api/sincronizacao/status');
+    const res = await fetch('/api/sincronizacao/status', { headers: headersAutenticacao() });
     if (res.ok) {
       return await res.json();
     }
@@ -38,7 +40,7 @@ export async function executarSincronizacaoApi(params: {
   try {
     const res = await fetch('/api/sincronizacao/executar', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...headersAutenticacao() },
       body: JSON.stringify(params)
     });
     if (res.ok) {
@@ -50,35 +52,3 @@ export async function executarSincronizacaoApi(params: {
     return { sucesso: false, mensagem: e?.message || 'Falha na comunicação com o servidor' };
   }
 }
-
-// --- Autenticação por CPF e Permissões ---
-
-export async function loginPorCpfApi(cpf: string): Promise<import('../types/avaliacao').AuthResponseDTO> {
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cpf })
-    });
-    const data = await res.json();
-    return data;
-  } catch (e: any) {
-    return {
-      autenticado: false,
-      mensagem: e?.message || 'Não foi possível conectar ao servidor para autenticação.'
-    };
-  }
-}
-
-export async function listarUsuariosDemonstracaoApi(): Promise<import('../types/avaliacao').UsuarioContexto[]> {
-  try {
-    const res = await fetch('/api/auth/demonstracao');
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (e) {
-    console.warn('Falha ao obter contas de demonstração do servidor', e);
-  }
-  return [];
-}
-

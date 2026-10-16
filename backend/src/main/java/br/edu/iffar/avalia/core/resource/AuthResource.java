@@ -1,9 +1,9 @@
 package br.edu.iffar.avalia.core.resource;
 
 import br.edu.iffar.avalia.core.dto.AuthResponseDTO;
-import br.edu.iffar.avalia.core.dto.LoginRequestDTO;
-import br.edu.iffar.avalia.core.dto.UsuarioDTO;
+import br.edu.iffar.avalia.core.dto.OidcCallbackDTO;
 import br.edu.iffar.avalia.core.service.AuthService;
+import br.edu.iffar.avalia.core.service.OidcClientService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -21,30 +21,53 @@ public class AuthResource {
     @Inject
     private AuthService authService;
 
+    @Inject
+    private OidcClientService oidcClient;
+
+    @GET
+    @Path("/oidc/config")
+    public Response configuracaoOidc() {
+        try {
+            return Response.ok(oidcClient.configuracaoPublica()).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_GATEWAY)
+                    .entity(new AuthResponseDTO(false, null, "Provedor OIDC indisponível.", null)).build();
+        }
+    }
+
     @POST
-    @Path("/login")
-    public Response login(LoginRequestDTO req) {
-        if (req == null || req.getCpf() == null || req.getCpf().trim().isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new AuthResponseDTO(false, null, "CPF é obrigatório para identificação.", null))
-                    .build();
-        }
-
-        AuthResponseDTO resp = authService.autenticarPorCpf(req.getCpf());
-        if (!resp.isAutenticado()) {
+    @Path("/oidc/callback")
+    public Response callbackOidc(OidcCallbackDTO callback) {
+        try {
+            String cpf = oidcClient.trocarCodigoPorCpf(callback);
+            AuthResponseDTO resposta = authService.autenticarUsuarioOidc(cpf);
+            return resposta.isAutenticado() ? Response.ok(resposta).build()
+                    : Response.status(Response.Status.FORBIDDEN).entity(resposta).build();
+        } catch (SecurityException e) {
             return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(resp)
-                    .build();
+                    .entity(new AuthResponseDTO(false, null, e.getMessage(), null)).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_GATEWAY)
+                    .entity(new AuthResponseDTO(false, null, "Falha na comunicação com o provedor OIDC.", null)).build();
         }
+    }
 
-        return Response.ok(resp).build();
+    @POST
+    @Path("/logout")
+    public Response logout(@HeaderParam("Authorization") String authorization) {
+        authService.encerrarSessao(authorization);
+        return Response.noContent().build();
     }
 
     @GET
-    @Path("/demonstracao")
-    public Response listarUsuariosDemonstracao() {
-        List<UsuarioDTO> lista = authService.listarUsuariosDemonstracao();
-        return Response.ok(lista).build();
+    @Path("/me")
+    public Response sessaoAtual(@HeaderParam("Authorization") String authorization,
+                               @HeaderParam("X-Papel-Ativo") String papel) {
+        try {
+            return Response.ok(authService.validarSessao(authorization, papel)).build();
+        } catch (SecurityException e) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
     }
 
     @GET
@@ -56,10 +79,7 @@ public class AuthResource {
                 "INSTRUMENTO_EXCLUIR",
                 "INSTRUMENTO_VISUALIZAR",
                 "AVALIACAO_RESPONDER",
-                "DOCENTE_MANIFESTAR",
-                "GESTAO_ENCAMINHAR",
-                "SIGAA_SINCRONIZAR",
-                "AUDITORIA_ACESSAR"
+                "SIGAA_SINCRONIZAR"
         );
         return Response.ok(todas).build();
     }

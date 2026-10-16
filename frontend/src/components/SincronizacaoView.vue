@@ -49,7 +49,7 @@ async function dispararSincronizacao() {
 
 onMounted(() => {
   carregarStatus();
-  // Polling a cada 4 segundos para acompanhar o status e logs
+  // Polling a cada 4 segundos para acompanhar o status
   timerPolling = setInterval(() => {
     carregarStatus();
   }, 4000);
@@ -59,15 +59,6 @@ onUnmounted(() => {
   if (timerPolling) clearInterval(timerPolling);
 });
 
-function formatarData(dataStr?: string) {
-  if (!dataStr) return '-';
-  try {
-    const d = new Date(dataStr);
-    return d.toLocaleTimeString('pt-BR');
-  } catch {
-    return dataStr;
-  }
-}
 </script>
 
 <template>
@@ -259,60 +250,5 @@ function formatarData(dataStr?: string) {
       </div>
     </div>
 
-    <!-- Tabela de Logs Recentes de ETL -->
-    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-base font-bold text-slate-900">Histórico de Execuções e Auditoria (ETL Log)</h2>
-          <p class="text-xs text-slate-500">Últimos passos registrados pela rotina de sincronização.</p>
-        </div>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead>
-            <tr class="border-b border-slate-200 text-slate-400 font-semibold uppercase tracking-wider">
-              <th class="py-2.5 px-3">Horário</th>
-              <th class="py-2.5 px-3">Entidade</th>
-              <th class="py-2.5 px-3">Status</th>
-              <th class="py-2.5 px-3 text-right">Registros</th>
-              <th class="py-2.5 px-3">Mensagem / Diagnóstico</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 text-slate-700">
-            <tr v-for="log in status?.ultimosLogs" :key="log.id" class="hover:bg-slate-50/80 transition-colors">
-              <td class="py-2.5 px-3 font-mono text-slate-500 whitespace-nowrap">
-                {{ formatarData(log.inicio) }}
-              </td>
-              <td class="py-2.5 px-3 font-semibold font-mono text-slate-800">
-                {{ log.entidade }}
-              </td>
-              <td class="py-2.5 px-3 whitespace-nowrap">
-                <span
-                  :class="[
-                    'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase',
-                    log.status === 'SUCESSO' ? 'bg-emerald-100 text-emerald-800' :
-                    log.status === 'ERRO' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
-                  ]"
-                >
-                  {{ log.status }}
-                </span>
-              </td>
-              <td class="py-2.5 px-3 text-right font-mono font-semibold">
-                {{ log.registrosImportados.toLocaleString('pt-BR') }}
-              </td>
-              <td class="py-2.5 px-3 text-slate-600 truncate max-w-md" :title="log.mensagem">
-                {{ log.mensagem }}
-              </td>
-            </tr>
-            <tr v-if="!status?.ultimosLogs || status?.ultimosLogs.length === 0">
-              <td colspan="5" class="py-8 text-center text-slate-400 italic">
-                Nenhum registro de log encontrado até o momento.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </template>

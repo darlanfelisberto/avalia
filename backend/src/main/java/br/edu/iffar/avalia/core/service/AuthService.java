@@ -43,7 +43,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponseDTO autenticarPorCpf(String cpfEntrada) {
+    public AuthResponseDTO autenticarUsuarioOidc(String cpfEntrada) {
         String cpfLimpo = normalizarCpf(cpfEntrada);
         if (cpfLimpo.isEmpty()) {
             return new AuthResponseDTO(false, null, "Informe o CPF para identificação.", null);
@@ -114,6 +114,13 @@ public class AuthService {
         dao.registrarSessao(hashToken(token), usuario.getCpf(), String.join(",", usuario.getPapeis()));
     }
 
+    @Transactional
+    public void encerrarSessao(String authorization) {
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            dao.encerrarSessao(hashToken(authorization.substring(7).trim()));
+        }
+    }
+
     public UsuarioDTO validarSessao(String authorization, String papelAtivo) {
         if (authorization == null || !authorization.startsWith("Bearer "))
             throw new SecurityException("Sessão não informada.");
@@ -128,18 +135,10 @@ public class AuthService {
         UsuarioPermissao up = dao.buscarUsuarioAtivo(cpf);
         if (up == null) throw new SecurityException("Sessão expirada. Entre novamente.");
         UsuarioDTO usuario = montarUsuarioDTO(up);
+        if (!usuario.getPapeis().contains(papel))
+            throw new SecurityException("Perfil não autorizado para esta sessão.");
         usuario.setPapelAtivo(papel);
         return usuario;
-    }
-
-    public List<UsuarioDTO> listarUsuariosDemonstracao() {
-        List<UsuarioPermissao> lista = dao.listarUsuariosAtivos();
-
-        List<UsuarioDTO> resultado = new ArrayList<>();
-        for (UsuarioPermissao up : lista) {
-            resultado.add(montarUsuarioDTO(up));
-        }
-        return resultado;
     }
 
     private UsuarioDTO montarUsuarioDTO(UsuarioPermissao up) {
@@ -155,7 +154,6 @@ public class AuthService {
         papeis.add(up.getPapel());
         if ("CPA".equals(up.getPapel())) {
             papeis.add("DOCENTE");
-            papeis.add("GESTAO");
         }
         dto.setPapeis(papeis);
 
@@ -171,7 +169,6 @@ public class AuthService {
         Set<String> papeis = new LinkedHashSet<>();
         if (dao.existeAluno(pessoaId)) papeis.add("DISCENTE");
         if (dao.existeDocenteTurma(pessoaId)) papeis.add("DOCENTE");
-        if (dao.existeChefia(pessoaId) || dao.existeCoordenacao(pessoaId)) papeis.add("GESTAO");
         if (dao.existeServidor(pessoaId) && !papeis.contains("DOCENTE")) papeis.add("TAE");
         if (papeis.isEmpty()) papeis.add("DISCENTE");
         return new ArrayList<>(papeis);
@@ -185,7 +182,6 @@ public class AuthService {
 
     private String definirPapelPrincipal(List<String> papeis) {
         if (papeis.contains("CPA")) return "CPA";
-        if (papeis.contains("GESTAO")) return "GESTAO";
         if (papeis.contains("DOCENTE")) return "DOCENTE";
         if (papeis.contains("DISCENTE")) return "DISCENTE";
         if (papeis.contains("TAE")) return "TAE";
@@ -203,20 +199,10 @@ public class AuthService {
                         "INSTRUMENTO_EXCLUIR",
                         "INSTRUMENTO_VISUALIZAR",
                         "AVALIACAO_RESPONDER",
-                        "DOCENTE_MANIFESTAR",
-                        "GESTAO_ENCAMINHAR",
-                        "SIGAA_SINCRONIZAR",
-                        "AUDITORIA_ACESSAR"
-                );
-            case "GESTAO":
-                return List.of(
-                        "GESTAO_ENCAMINHAR",
-                        "INSTRUMENTO_VISUALIZAR",
-                        "AVALIACAO_RESPONDER"
+                        "SIGAA_SINCRONIZAR"
                 );
             case "DOCENTE":
                 return List.of(
-                        "DOCENTE_MANIFESTAR",
                         "AVALIACAO_RESPONDER",
                         "INSTRUMENTO_VISUALIZAR"
                 );

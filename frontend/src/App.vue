@@ -1,44 +1,55 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { onMounted, ref } from 'vue';
 import Sidebar from './components/Sidebar.vue';
 import HeaderNav from './components/HeaderNav.vue';
-import TeacherFeedbackView from './components/TeacherFeedbackView.vue';
-import ManagementActionPlanView from './components/ManagementActionPlanView.vue';
-import TechnicalView from './components/TechnicalView.vue';
 import SincronizacaoView from './components/SincronizacaoView.vue';
 import AvaliacaoInstrumentoView from './components/AvaliacaoInstrumentoView.vue';
 import PermissoesTiposEntidadeView from './components/PermissoesTiposEntidadeView.vue';
 import ResponderAvaliacoesView from './components/ResponderAvaliacoesView.vue';
 import LoginView from './components/LoginView.vue';
 
-import type { EstadoPreenchimento, InstrumentoAvaliativo, UsuarioContexto } from './types/avaliacao';
-import { carregarEstadoPreenchimento, salvarEstadoPreenchimento, carregarInstrumentoAtivo, carregarUsuarioAtivo, salvarUsuarioAtivo, limparUsuarioAtivo, temPermissao } from './services/storage';
+import type { UsuarioContexto } from './types/avaliacao';
+import { carregarTokenAtivo, carregarUsuarioAtivo, salvarUsuarioAtivo, limparUsuarioAtivo, temPermissao } from './services/storage';
+import { concluirLoginOidc, encerrarLoginOidc, recebeuRetornoOidc, validarSessaoAtual } from './services/oidc';
 
 const usuarioLogado = ref<UsuarioContexto | null>(carregarUsuarioAtivo());
-const instrumento = ref<InstrumentoAvaliativo>(carregarInstrumentoAtivo());
 
-const visaoAtual = ref<'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
+const visaoAtual = ref<'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
 const menuAbertoMobile = ref(false);
+const processandoRetorno = ref(recebeuRetornoOidc() || !!usuarioLogado.value);
+const erroLogin = ref('');
 
-const estado = reactive<EstadoPreenchimento>(carregarEstadoPreenchimento(instrumento.value.id, ''));
+onMounted(async () => {
+  if (!processandoRetorno.value) return;
+  try {
+    if (recebeuRetornoOidc()) {
+      const resposta = await concluirLoginOidc();
+      aoLoginSucesso({ ...resposta.usuario!, papel: resposta.usuario!.papelAtivo || resposta.usuario!.papel, token: resposta.token });
+    } else if (usuarioLogado.value) {
+      const token = carregarTokenAtivo();
+      const usuario = token ? await validarSessaoAtual(token, usuarioLogado.value.papelAtivo || usuarioLogado.value.papel) : null;
+      if (usuario) {
+        usuarioLogado.value = { ...usuario, papel: usuario.papelAtivo || usuario.papel, token: token! };
+        salvarUsuarioAtivo(usuarioLogado.value, token!);
+      } else {
+        usuarioLogado.value = null;
+        limparUsuarioAtivo();
+      }
+    }
+  } catch (e) {
+    usuarioLogado.value = null;
+    limparUsuarioAtivo();
+    erroLogin.value = e instanceof Error ? e.message : 'Falha ao concluir a autenticação.';
+  } finally {
+    processandoRetorno.value = false;
+  }
+});
 
-function reiniciarTeste() {
-  const novo = carregarEstadoPreenchimento(instrumento.value.id, '');
-  Object.assign(estado, novo);
-  estado.respostas = {};
-  estado.etapaAtual = 'autoavaliacao';
-  estado.status = 'EM_ANDAMENTO';
-  salvarEstadoPreenchimento(estado);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes' {
+function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes' {
   if (!u) return 'responder';
   const papel = u.papelAtivo || u.papel;
   if (papel === 'CPA' || papel === 'ADMIN') return 'instrumentos';
-  if (papel === 'DOCENTE') return 'docente';
-  if (papel === 'GESTAO') return 'gestao';
-  if (papel === 'DISCENTE' || papel === 'TAE') return 'responder';
+  if (papel === 'DOCENTE' || papel === 'DISCENTE' || papel === 'TAE') return 'responder';
   return 'responder';
 }
 
@@ -48,9 +59,11 @@ function aoLoginSucesso(usuario: UsuarioContexto) {
   visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
 }
 
-function aoLogout() {
+async function aoLogout() {
+  const token = carregarTokenAtivo();
   usuarioLogado.value = null;
   limparUsuarioAtivo();
+  await encerrarLoginOidc(token || undefined);
 }
 
 function onUsuarioAlterado(usuario: UsuarioContexto) {
@@ -59,13 +72,7 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
   // Se a visão atual não for permitida para o novo papel, redireciona
   if ((visaoAtual.value === 'instrumentos' || visaoAtual.value === 'permissoes') && usuario.papelAtivo !== 'CPA' && usuario.papelAtivo !== 'ADMIN') {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
-  } else if (visaoAtual.value === 'docente' && !temPermissao(usuario, 'DOCENTE_MANIFESTAR')) {
-    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
-  } else if (visaoAtual.value === 'gestao' && !temPermissao(usuario, 'GESTAO_ENCAMINHAR')) {
-    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
   } else if (visaoAtual.value === 'sincronizacao' && !temPermissao(usuario, 'SIGAA_SINCRONIZAR')) {
-    visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
-  } else if (visaoAtual.value === 'tecnica' && !temPermissao(usuario, 'AUDITORIA_ACESSAR')) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
   } else if (visaoAtual.value === 'responder' && !temPermissao(usuario, 'AVALIACAO_RESPONDER')) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
@@ -74,11 +81,8 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
 </script>
 
 <template>
-  <!-- Tela de Login se não estiver autenticado -->
-  <LoginView
-    v-if="!usuarioLogado"
-    @loginSucesso="aoLoginSucesso"
-  />
+  <div v-if="processandoRetorno" class="min-h-screen flex items-center justify-center text-slate-600">Concluindo autenticação...</div>
+  <LoginView v-else-if="!usuarioLogado" :erroInicial="erroLogin" />
 
   <!-- Aplicação Principal Autenticada -->
   <div v-else class="min-h-screen bg-slate-50 text-slate-800 flex">
@@ -106,26 +110,6 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
         <ResponderAvaliacoesView
           v-if="visaoAtual === 'responder'"
           :key="`${usuarioLogado.cpf}:${usuarioLogado.papelAtivo || usuarioLogado.papel}`"
-        />
-
-        <!-- 3. Docente Avaliado (RF-AD07: Manifestação Dialógica / Hoffmann) -->
-        <TeacherFeedbackView
-          v-else-if="visaoAtual === 'docente'"
-          :instrumento="instrumento"
-        />
-
-        <!-- 4. Gestão / CPA (RF14: Fechamento de Ciclo com Decisão / Luckesi) -->
-        <ManagementActionPlanView
-          v-else-if="visaoAtual === 'gestao'"
-          :instrumento="instrumento"
-        />
-
-        <!-- 5. Inspeção Técnica (Payload JSON, LocalStorage, Interoperabilidade REST) -->
-        <TechnicalView
-          v-else-if="visaoAtual === 'tecnica'"
-          :estado="estado"
-          :instrumento="instrumento"
-          @reiniciarTeste="reiniciarTeste"
         />
 
         <!-- Instrumentos de Avaliação (schema avaliacao): questionário, páginas, sessões e questões -->

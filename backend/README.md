@@ -8,7 +8,7 @@ O backend usa Jakarta EE no Open Liberty. O Flyway mantém o schema; a unidade J
 - `avaliacao/dao`: consultas e persistência. `InstrumentoDao` concentra as projeções e operações em lote específicas do PostgreSQL; `ResponderAvaliacaoDao` contém as consultas de elegibilidade que cruzam os schemas `avaliacao` e `academico`.
 - `avaliacao/service`: validação, composição dos DTOs e regras de publicação e envio.
 - `academico/dao/SincronizacaoSigaaDao`: importação JDBC em lotes entre as duas bases; `academico/service` coordena a execução assíncrona.
-- `core/dao/AuthDao`: acesso a usuários e sessões JPA, com consultas do espelho acadêmico usadas no login.
+- `core/dao/AuthDao`: acesso a usuários e sessões JPA, com consultas do espelho acadêmico usadas após a autenticação OIDC.
 
 ## Convenção de organização por objeto
 

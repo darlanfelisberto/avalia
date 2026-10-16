@@ -1,6 +1,5 @@
 package br.edu.iffar.avalia.academico.dao;
 
-import br.edu.iffar.avalia.academico.dto.EtlLogDTO;
 import br.edu.iffar.avalia.academico.service.SigaaConnectionProvider;
 import jakarta.annotation.Resource;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -54,7 +53,6 @@ public class SincronizacaoSigaaDao {
     }
 
     private void sincronizarPessoas(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = """
             SELECT id_pessoa, nome, nome_oficial, cpf_cnpj, email, telefone, celular, data_nascimento, sexo, data_cadastro
             FROM comum.pessoa
@@ -71,7 +69,7 @@ public class SincronizacaoSigaaDao {
             data_nascimento = EXCLUDED.data_nascimento, sexo = EXCLUDED.sexo, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_pessoa"));
             ps.setString(2, rs.getString("nome"));
             ps.setString(3, rs.getString("nome_oficial"));
@@ -88,11 +86,9 @@ public class SincronizacaoSigaaDao {
             ps.setString(9, rs.getString("sexo"));
             ps.setTimestamp(10, rs.getTimestamp("data_cadastro"));
         });
-        gravarLog("pessoa", total, "SUCESSO", "Importadas " + total + " pessoas (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarUnidades(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         // Passo 1: Inserir todas as unidades com id_pai = null para garantir que todas as PKs existam
         String sqlOrigem = "SELECT id_unidade, codigo_unidade, nome, sigla, hierarquia, unidade_responsavel FROM comum.unidade";
         String sqlPasso1 = """
@@ -103,7 +99,7 @@ public class SincronizacaoSigaaDao {
             path = EXCLUDED.path, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlPasso1, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlPasso1, (rs, ps) -> {
             int id = rs.getInt("id_unidade");
             ps.setInt(1, id);
             ps.setString(2, rs.getString("codigo_unidade"));
@@ -144,11 +140,9 @@ public class SincronizacaoSigaaDao {
             loc.commit();
         }
 
-        gravarLog("unidade", total, "SUCESSO", "Importadas " + total + " unidades e atualizadas hierarquias (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void recalcularUnidadeClosure(Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         try (Statement st = loc.createStatement()) {
             st.executeUpdate("TRUNCATE TABLE academico.unidade_closure");
             String sqlClosure = """
@@ -163,14 +157,12 @@ public class SincronizacaoSigaaDao {
                 AND subltree(u.path, idx, idx + 1)::text::integer IN (SELECT id FROM academico.unidade)
                 ON CONFLICT (id_ancestral, id_descendente) DO NOTHING
                 """;
-            int count = st.executeUpdate(sqlClosure);
+            st.executeUpdate(sqlClosure);
             loc.commit();
-            gravarLog("unidade_closure", count, "SUCESSO", "Recalculada tabela closure de unidades (" + count + " pares em " + (System.currentTimeMillis() - inicio) + "ms)");
         }
     }
 
     private void sincronizarCargos(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = "SELECT id, denominacao, sigla, inativo FROM rh.cargo";
         String sqlDestino = """
             INSERT INTO academico.cargo (id, denominacao, sigla, inativo)
@@ -178,17 +170,15 @@ public class SincronizacaoSigaaDao {
             ON CONFLICT (id) DO UPDATE SET denominacao = EXCLUDED.denominacao, sigla = EXCLUDED.sigla, inativo = EXCLUDED.inativo
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id"));
             ps.setString(2, rs.getString("denominacao"));
             ps.setString(3, rs.getString("sigla"));
             ps.setBoolean(4, rs.getBoolean("inativo"));
         });
-        gravarLog("cargo", total, "SUCESSO", "Importados " + total + " cargos (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarSituacoesServidor(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = """
             SELECT id_situacao, descricao
             FROM rh.situacao_servidor
@@ -202,15 +192,13 @@ public class SincronizacaoSigaaDao {
                 atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_situacao"));
             ps.setString(2, rs.getString("descricao"));
         });
-        gravarLog("situacao_servidor", total, "SUCESSO", "Importadas " + total + " situações funcionais (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarServidores(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = """
             SELECT s.id_servidor, s.id_pessoa, s.siape, s.id_cargo,
                    s.id_unidade_lotacao, s.id_unidade_exercicio, s.id_situacao,
@@ -228,7 +216,7 @@ public class SincronizacaoSigaaDao {
             data_desligamento = EXCLUDED.data_desligamento, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_servidor"));
             ps.setInt(2, rs.getInt("id_pessoa"));
             ps.setString(3, String.valueOf(rs.getInt("siape")));
@@ -240,11 +228,9 @@ public class SincronizacaoSigaaDao {
             ps.setDate(9, rs.getDate("admissao"));
             ps.setDate(10, rs.getDate("data_desligamento"));
         });
-        gravarLog("servidor", total, "SUCESSO", "Importados " + total + " servidores (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarDesignacoes(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = "SELECT id_designacao, id_servidor, id_unidade, observacoes, inicio, fim FROM rh.designacao";
         String sqlDestino = """
             INSERT INTO academico.designacao (id, id_servidor, id_unidade, funcao, chefia, data_inicio, data_fim, atualizado_em)
@@ -254,7 +240,7 @@ public class SincronizacaoSigaaDao {
             data_inicio = EXCLUDED.data_inicio, data_fim = EXCLUDED.data_fim, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_designacao"));
             ps.setInt(2, rs.getInt("id_servidor"));
             ps.setInt(3, rs.getInt("id_unidade"));
@@ -262,11 +248,9 @@ public class SincronizacaoSigaaDao {
             ps.setDate(5, rs.getDate("inicio"));
             ps.setDate(6, rs.getDate("fim"));
         });
-        gravarLog("designacao", total, "SUCESSO", "Importadas " + total + " designações (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarCursos(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = "SELECT id_curso, codigo, nome, nivel, id_unidade, ativo FROM public.curso";
         String sqlDestino = """
             INSERT INTO academico.curso (id, codigo, nome, nivel, id_unidade, ativo, atualizado_em)
@@ -276,7 +260,7 @@ public class SincronizacaoSigaaDao {
             id_unidade = EXCLUDED.id_unidade, ativo = EXCLUDED.ativo, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_curso"));
             ps.setString(2, rs.getString("codigo"));
             ps.setString(3, rs.getString("nome"));
@@ -284,11 +268,9 @@ public class SincronizacaoSigaaDao {
             setIntOrNull(ps, 5, rs.getInt("id_unidade"), rs.wasNull());
             ps.setBoolean(6, rs.getBoolean("ativo"));
         });
-        gravarLog("curso", total, "SUCESSO", "Importados " + total + " cursos (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarAlunos(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = """
             SELECT id_discente, id_pessoa, matricula, id_curso, nivel, status, ano_ingresso, periodo_ingresso
             FROM public.discente WHERE ano_ingresso >= 2020
@@ -302,7 +284,7 @@ public class SincronizacaoSigaaDao {
             ano_ingresso = EXCLUDED.ano_ingresso, periodo_ingresso = EXCLUDED.periodo_ingresso, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_discente"));
             ps.setInt(2, rs.getInt("id_pessoa"));
             ps.setString(3, String.valueOf(rs.getLong("matricula")));
@@ -316,7 +298,6 @@ public class SincronizacaoSigaaDao {
             setIntOrNull(ps, 8, rs.getInt("ano_ingresso"), rs.wasNull());
             setIntOrNull(ps, 9, rs.getInt("periodo_ingresso"), rs.wasNull());
         });
-        gravarLog("aluno", total, "SUCESSO", "Importados " + total + " alunos recentes (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private static String situacaoAluno(int status) {
@@ -342,7 +323,6 @@ public class SincronizacaoSigaaDao {
     }
 
     private void sincronizarComponentesCurriculares(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = """
             SELECT cc.id_disciplina, cc.codigo, ccd.nome, cc.id_unidade, cc.nivel,
             ccd.ch_total, ccd.ch_teorico, ccd.ch_pratico, ccd.ementa
@@ -358,7 +338,7 @@ public class SincronizacaoSigaaDao {
             ch_pratica = EXCLUDED.ch_pratica, ementa = EXCLUDED.ementa, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_disciplina"));
             ps.setString(2, rs.getString("codigo"));
             ps.setString(3, rs.getString("nome"));
@@ -369,11 +349,9 @@ public class SincronizacaoSigaaDao {
             setIntOrNull(ps, 8, rs.getInt("ch_pratico"), rs.wasNull());
             ps.setString(9, rs.getString("ementa"));
         });
-        gravarLog("componente_curricular", total, "SUCESSO", "Importados " + total + " componentes (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarCoordenacaoCurso(Connection sig, Connection loc) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String sqlOrigem = "SELECT id_coordenacao_curso, id_servidor, id_curso, data_inicio_mandato, data_fim_mandato, ativo FROM ensino.coordenacao_curso";
         String sqlDestino = """
             INSERT INTO academico.coordenacao_curso (id, id_servidor, id_curso, data_inicio, data_fim, ativo, atualizado_em)
@@ -383,7 +361,7 @@ public class SincronizacaoSigaaDao {
             data_fim = EXCLUDED.data_fim, ativo = EXCLUDED.ativo, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_coordenacao_curso"));
             setIntOrNull(ps, 2, rs.getInt("id_servidor"), rs.wasNull());
             setIntOrNull(ps, 3, rs.getInt("id_curso"), rs.wasNull());
@@ -391,11 +369,9 @@ public class SincronizacaoSigaaDao {
             ps.setDate(5, rs.getDate("data_fim_mandato"));
             ps.setBoolean(6, rs.getBoolean("ativo"));
         });
-        gravarLog("coordenacao_curso", total, "SUCESSO", "Importadas " + total + " coordenações (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarTurmas(Connection sig, Connection loc, int ano, Integer periodo) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String filtroPeriodo = (periodo != null) ? " AND t.periodo = " + periodo : "";
         String sqlOrigem = """
             SELECT t.id_turma, t.id_disciplina, t.codigo, t.ano, t.periodo, t.capacidade_aluno, st.descricao AS situacao
@@ -414,7 +390,7 @@ public class SincronizacaoSigaaDao {
             situacao = EXCLUDED.situacao, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_turma"));
             ps.setInt(2, rs.getInt("id_disciplina"));
             ps.setString(3, rs.getString("codigo"));
@@ -423,11 +399,9 @@ public class SincronizacaoSigaaDao {
             setIntOrNull(ps, 6, rs.getInt("capacidade_aluno"), rs.wasNull());
             ps.setString(7, rs.getString("situacao"));
         });
-        gravarLog("turma", total, "SUCESSO", "Importadas " + total + " turmas (ano " + ano + ") (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarDocenteTurma(Connection sig, Connection loc, int ano, Integer periodo) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String filtroPeriodo = (periodo != null) ? " AND t.periodo = " + periodo : "";
         String sqlOrigem = """
             SELECT dt.id_docente_turma, dt.id_docente, dt.id_turma, dt.ch_dedicada_periodo
@@ -446,17 +420,15 @@ public class SincronizacaoSigaaDao {
             ch_dedicada = EXCLUDED.ch_dedicada, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_docente_turma"));
             setIntOrNull(ps, 2, rs.getInt("id_docente"), rs.wasNull());
             ps.setInt(3, rs.getInt("id_turma"));
             setIntOrNull(ps, 4, rs.getInt("ch_dedicada_periodo"), rs.wasNull());
         });
-        gravarLog("docente_turma", total, "SUCESSO", "Importados " + total + " vínculos docente-turma (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     private void sincronizarMatriculas(Connection sig, Connection loc, int ano, Integer periodo) throws SQLException {
-        long inicio = System.currentTimeMillis();
         String filtroPeriodo = (periodo != null) ? " AND t.periodo = " + periodo : "";
         String sqlOrigem = """
             SELECT mc.id_matricula_componente, mc.id_discente, mc.id_turma, mc.media_final, mc.numero_faltas, mc.ano, mc.periodo, mc.data_cadastro
@@ -475,7 +447,7 @@ public class SincronizacaoSigaaDao {
             numero_faltas = EXCLUDED.numero_faltas, ano = EXCLUDED.ano, periodo = EXCLUDED.periodo, atualizado_em = now()
             """;
 
-        int total = executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
+        executarCarga(sig, loc, sqlOrigem, sqlDestino, (rs, ps) -> {
             ps.setInt(1, rs.getInt("id_matricula_componente"));
             setIntOrNull(ps, 2, rs.getInt("id_discente"), rs.wasNull());
             setIntOrNull(ps, 3, rs.getInt("id_turma"), rs.wasNull());
@@ -490,11 +462,10 @@ public class SincronizacaoSigaaDao {
             setIntOrNull(ps, 7, rs.getInt("periodo"), rs.wasNull());
             ps.setDate(8, rs.getDate("data_cadastro"));
         });
-        gravarLog("matricula", total, "SUCESSO", "Importadas " + total + " matrículas (" + (System.currentTimeMillis() - inicio) + "ms)");
     }
 
     // =========================================================================
-    // UTILITÁRIOS DE BATCH PROCESSING E AUDITORIA
+    // UTILITÁRIOS DE BATCH PROCESSING
     // =========================================================================
 
     @FunctionalInterface
@@ -502,7 +473,7 @@ public class SincronizacaoSigaaDao {
         void map(ResultSet rs, PreparedStatement ps) throws SQLException;
     }
 
-    private int executarCarga(Connection sig, Connection loc, String sqlOrigem, String sqlDestino, RowMapper mapper) throws SQLException {
+    private void executarCarga(Connection sig, Connection loc, String sqlOrigem, String sqlDestino, RowMapper mapper) throws SQLException {
         int contador = 0;
         int batchSize = 1000;
 
@@ -523,7 +494,6 @@ public class SincronizacaoSigaaDao {
             psDestino.executeBatch();
             loc.commit();
         }
-        return contador;
     }
 
     private void setIntOrNull(PreparedStatement ps, int paramIndex, int value, boolean wasNull) throws SQLException {
@@ -531,23 +501,6 @@ public class SincronizacaoSigaaDao {
             ps.setNull(paramIndex, Types.INTEGER);
         } else {
             ps.setInt(paramIndex, value);
-        }
-    }
-
-    public void gravarLog(String entidade, int total, String status, String mensagem) {
-        try (Connection loc = localDataSource.getConnection();
-             PreparedStatement ps = loc.prepareStatement(
-                     """
-                         INSERT INTO academico.etl_log (entidade, inicio, fim, registros_importados, status, mensagem)
-                         VALUES (?, now(), now(), ?, ?, ?)
-                         """)) {
-            ps.setString(1, entidade);
-            ps.setInt(2, total);
-            ps.setString(3, status);
-            ps.setString(4, mensagem);
-            ps.executeUpdate();
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Erro ao gravar etl_log: " + e.getMessage());
         }
     }
 
@@ -569,33 +522,4 @@ public class SincronizacaoSigaaDao {
         return mapa;
     }
 
-    public List<EtlLogDTO> obterUltimosLogs(int limite) {
-        List<EtlLogDTO> lista = new ArrayList<>();
-        try (Connection loc = localDataSource.getConnection();
-             PreparedStatement ps = loc.prepareStatement(
-                     """
-                         SELECT id, entidade, inicio, fim, registros_importados, status, mensagem
-                         FROM academico.etl_log ORDER BY id DESC LIMIT ?
-                         """)) {
-            ps.setInt(1, limite);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    EtlLogDTO dto = new EtlLogDTO();
-                    dto.id = rs.getLong("id");
-                    dto.entidade = rs.getString("entidade");
-                    Timestamp ini = rs.getTimestamp("inicio");
-                    if (ini != null) dto.inicio = ini.toLocalDateTime();
-                    Timestamp fim = rs.getTimestamp("fim");
-                    if (fim != null) dto.fim = fim.toLocalDateTime();
-                    dto.registrosImportados = rs.getInt("registros_importados");
-                    dto.status = rs.getString("status");
-                    dto.mensagem = rs.getString("mensagem");
-                    lista.add(dto);
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Erro ao obter logs de ETL: " + e.getMessage());
-        }
-        return lista;
-    }
 }

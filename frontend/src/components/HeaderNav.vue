@@ -4,7 +4,7 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { salvarUsuarioAtivo } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes';
+  visaoAtual: 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes';
   usuario: UsuarioContexto | null;
 }>();
 
@@ -32,35 +32,17 @@ const tituloVisao = computed(() => {
     case 'instrumentos':
       return {
         titulo: 'Cadastro de Instrumentos',
-        categoria: 'Gestão de Instrumentos',
+        categoria: 'Instrumentos',
         codigo: 'Schema avaliacao'
       };
     case 'permissoes':
       return {
         titulo: 'Permissões entre Tipos de Entidade',
-        categoria: 'Gestão de Instrumentos',
+        categoria: 'Instrumentos',
         codigo: 'Regras de participação'
       };
     case 'responder':
       return { titulo: 'Responder Avaliações', categoria: 'Aplicação e Respostas', codigo: '' };
-    case 'docente':
-      return {
-        titulo: 'Manifestação e Plano de Desenvolvimento Docente',
-        categoria: 'Avaliação Mediadora',
-        codigo: 'RF-AD07 (Hoffmann, 2012)'
-      };
-    case 'gestao':
-      return {
-        titulo: 'Gestão e Consolidação do Ciclo com Plano de Ação',
-        categoria: 'Governança & CPA',
-        codigo: 'RF14 (Cipriano Luckesi)'
-      };
-    case 'tecnica':
-      return {
-        titulo: 'Auditoria de Dados e Interoperabilidade REST',
-        categoria: 'Arquitetura e API',
-        codigo: 'Open Liberty & PostgreSQL'
-      };
     default:
       return { titulo: 'Sistema de Avaliação', categoria: 'IFFar', codigo: '' };
   }

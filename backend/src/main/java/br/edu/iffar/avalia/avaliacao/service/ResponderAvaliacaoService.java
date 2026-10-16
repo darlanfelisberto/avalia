@@ -38,7 +38,7 @@ public class ResponderAvaliacaoService {
         return switch (usuario.getPapelAtivo()) {
             case "DISCENTE" -> "ALUNO";
             case "DOCENTE" -> "DOCENTE";
-            case "TAE", "GESTAO", "CPA", "ADMIN" -> "SERVIDOR";
+            case "TAE", "CPA", "ADMIN" -> "SERVIDOR";
             default -> null;
         };
     }

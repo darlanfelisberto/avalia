@@ -41,7 +41,7 @@ public class SincronizacaoSigaaService {
     }
 
     /**
-     * Retorna o status atual de conectividade, contadores do schema academico e logs recentes.
+     * Retorna o status atual de conectividade e contadores do schema academico.
      */
     public SincronizacaoStatusDTO getStatus() {
         SincronizacaoStatusDTO status = new SincronizacaoStatusDTO();
@@ -50,7 +50,6 @@ public class SincronizacaoSigaaService {
         status.conectadoSigaa = connectionProvider.testConnection();
         status.emExecucao = emExecucao.get();
         status.contadoresLocais = dao.obterContadoresLocais();
-        status.ultimosLogs = dao.obterUltimosLogs(20);
         return status;
     }
 
@@ -81,7 +80,6 @@ public class SincronizacaoSigaaService {
                 LOGGER.info(">>> Sincronização SIGAA -> AVALIA concluída com sucesso! <<<");
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Erro durante a sincronização com o SIGAA", e);
-                dao.gravarLog("GERAL", 0, "ERRO", "Falha na sincronização: " + e.getMessage());
             } finally {
                 emExecucao.set(false);
             }

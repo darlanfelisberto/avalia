@@ -60,7 +60,7 @@ public class TipoEntidadeResource {
         UsuarioDTO usuario = auth.validarSessao(token, papel);
         if (!("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
                 || !usuario.getPermissoes().contains("INSTRUMENTO_VISUALIZAR"))
-            throw new SecurityException("Acesso restrito à gestão de instrumentos.");
+            throw new SecurityException("Acesso restrito à administração de instrumentos.");
     }
 
     private Response executar(Supplier<Response> acao) {

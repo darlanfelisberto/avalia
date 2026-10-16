@@ -4,13 +4,13 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { temPermissao } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes';
+  visaoAtual: 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes';
   menuAbertoMobile: boolean;
   usuario: UsuarioContexto | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'mudarVisao', visao: 'responder' | 'docente' | 'gestao' | 'tecnica' | 'sincronizacao' | 'instrumentos' | 'permissoes'): void;
+  (e: 'mudarVisao', visao: 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes'): void;
   (e: 'fecharMenuMobile'): void;
   (e: 'logout'): void;
 }>();
@@ -18,10 +18,7 @@ const emit = defineEmits<{
 const podeGerenciarInstrumentos = computed(() => (props.usuario?.papelAtivo === 'CPA' || props.usuario?.papelAtivo === 'ADMIN' || (!props.usuario?.papelAtivo && (props.usuario?.papel === 'CPA' || props.usuario?.papel === 'ADMIN')))
   && temPermissao(props.usuario, 'INSTRUMENTO_VISUALIZAR'));
 const podeDiscente = computed(() => temPermissao(props.usuario, 'AVALIACAO_RESPONDER'));
-const podeDocente = computed(() => temPermissao(props.usuario, 'DOCENTE_MANIFESTAR'));
-const podeGestao = computed(() => temPermissao(props.usuario, 'GESTAO_ENCAMINHAR'));
 const podeSincronizacao = computed(() => temPermissao(props.usuario, 'SIGAA_SINCRONIZAR'));
-const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSAR'));
 </script>
 
 <template>
@@ -64,10 +61,10 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
 
     <!-- Navegação / Itens de Menu -->
     <nav class="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
-      <!-- Grupo 1: Gestão de Instrumentos -->
+      <!-- Grupo 1: Instrumentos -->
       <div v-if="podeGerenciarInstrumentos">
         <div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Gestão de Instrumentos
+          Instrumentos
         </div>
         <div class="space-y-1">
           <!-- Instrumentos de Avaliação (schema avaliacao) -->
@@ -86,7 +83,6 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               <div class="text-[10px] opacity-75 font-normal">Instrumentos, páginas, sessões e questões</div>
             </div>
           </button>
-
           <button type="button"
             @click="() => { emit('mudarVisao', 'permissoes'); emit('fecharMenuMobile'); }"
             :class="[
@@ -102,12 +98,11 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
               <div class="text-[10px] opacity-75 font-normal">Quem pode avaliar cada tipo</div>
             </div>
           </button>
-
         </div>
       </div>
 
       <!-- Grupo 2: Execução Avaliativa e Ciclos -->
-      <div v-if="podeDiscente || podeDocente">
+      <div v-if="podeDiscente">
         <div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
           Aplicação e Respostas
         </div>
@@ -131,52 +126,15 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
             </div>
           </button>
 
-          <!-- Item: Manifestação Docente (RF-AD07) -->
-          <button
-            v-if="podeDocente"
-            type="button"
-            @click="() => { emit('mudarVisao', 'docente'); emit('fecharMenuMobile'); }"
-            :class="[
-              'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer',
-              visaoAtual === 'docente'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            ]"
-          >
-            <span class="text-base">👨‍🏫</span>
-            <div class="flex-1">
-              <div>Manifestação Docente</div>
-              <div class="text-[10px] opacity-75 font-normal">Plano de Desenvolvimento (RF-AD07)</div>
-            </div>
-          </button>
         </div>
       </div>
 
-      <!-- Grupo 3: Governança e Tomada de Decisão -->
-      <div v-if="podeGestao || podeSincronizacao || podeTecnica">
+      <!-- Grupo 3: Integração Acadêmica -->
+      <div v-if="podeSincronizacao">
         <div class="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Governança e Decisão
+          Integração Acadêmica
         </div>
         <div class="space-y-1">
-          <!-- Item: Fechamento de Ciclo / Gestão (RF14) -->
-          <button
-            v-if="podeGestao"
-            type="button"
-            @click="() => { emit('mudarVisao', 'gestao'); emit('fecharMenuMobile'); }"
-            :class="[
-              'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer',
-              visaoAtual === 'gestao'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            ]"
-          >
-            <span class="text-base">🏛️</span>
-            <div class="flex-1">
-              <div>Gestão & Plano de Ação</div>
-              <div class="text-[10px] opacity-75 font-normal">Fechamento do Ciclo (RF14)</div>
-            </div>
-          </button>
-
           <!-- Item: Sincronização SIGAA / SIGRH -->
           <button
             v-if="podeSincronizacao"
@@ -196,24 +154,6 @@ const podeTecnica = computed(() => temPermissao(props.usuario, 'AUDITORIA_ACESSA
             </div>
           </button>
 
-          <!-- Item: Auditoria & API REST -->
-          <button
-            v-if="podeTecnica"
-            type="button"
-            @click="() => { emit('mudarVisao', 'tecnica'); emit('fecharMenuMobile'); }"
-            :class="[
-              'w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer',
-              visaoAtual === 'tecnica'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            ]"
-          >
-            <span class="text-base">⚡</span>
-            <div class="flex-1">
-              <div>Auditoria & API REST</div>
-              <div class="text-[10px] opacity-75 font-normal">Payloads e Conectividade</div>
-            </div>
-          </button>
         </div>
       </div>
     </nav>
