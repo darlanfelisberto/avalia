@@ -73,7 +73,7 @@ onMounted(carregar);
 
 <template>
   <section class="permissions-view">
-    <header class="permissions-view__intro">
+    <header class="surface-card permissions-view__intro">
       <p class="permissions-view__eyebrow">Regras de participação</p>
       <h1 class="permissions-view__title">Quem pode avaliar cada tipo de entidade</h1>
       <p class="permissions-view__description">
@@ -85,11 +85,11 @@ onMounted(carregar);
     <div v-if="erro" role="alert" class="alert alert--error">{{ erro }}</div>
     <div v-if="sucesso" role="status" class="alert alert--success">{{ sucesso }}</div>
 
-    <div v-if="carregando" class="permissions-view__loading">
+    <div v-if="carregando" class="surface-card permissions-view__loading">
       Carregando tipos de entidade…
     </div>
 
-    <div v-else class="permissions-matrix">
+    <div v-else class="surface-card permissions-matrix">
       <div class="permissions-matrix__scroll">
         <table class="permissions-matrix__table">
           <thead>

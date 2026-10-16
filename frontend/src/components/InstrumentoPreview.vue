@@ -46,7 +46,7 @@ function finalizar() {
 
 <template>
   <div class="survey-preview">
-    <div class="survey-preview__intro">
+    <div class="surface-card survey-preview__intro">
       <button type="button" @click="emit('voltar')" class="text-action text-action--primary">
         ← Voltar à edição
       </button>
@@ -63,14 +63,14 @@ function finalizar() {
     <p v-if="erro" role="alert" class="alert alert--error">{{ erro }}</p>
 
     <section v-for="(pagina, pi) in instrumento.paginas || []" :key="pagina.id || pi"
-      class="survey-page">
+      class="surface-card surface-card--subtle survey-page">
       <p class="survey-page__number">Página {{ pi + 1 }}</p>
       <h3 class="survey-page__title">{{ pagina.titulo }}</h3>
       <p v-if="pagina.descricao" class="survey-page__description">{{ pagina.descricao }}</p>
     </section>
 
     <section v-for="(sessao, si) in instrumento.sessoes || []" :key="sessao.id || si"
-      class="survey-session">
+      class="surface-card survey-session">
       <div>
         <h3 class="survey-session__title">{{ sessao.titulo }}</h3>
         <p v-if="sessao.descricao" class="survey-session__description">{{ sessao.descricao }}</p>
@@ -81,7 +81,7 @@ function finalizar() {
           {{ qi + 1 }}. {{ q.enunciado }} <span v-if="q.obrigatoria" class="survey-question__required">*</span>
         </legend>
         <textarea v-if="q.tipo === 'DESCRITIVA'" v-model="textos[chaveQuestao(q, si, qi)]" rows="4"
-          class="survey-answer" placeholder="Escreva sua resposta"></textarea>
+          class="form-field survey-answer" placeholder="Escreva sua resposta"></textarea>
         <template v-else>
           <label v-for="op in opcoes(q)" :key="op.id || op.texto" class="survey-option">
             <input v-if="q.tipo === 'MULTIPLA_ESCOLHA'" v-model="multiplas[chaveQuestao(q, si, qi)]" type="checkbox" :value="op.id || op.texto" />

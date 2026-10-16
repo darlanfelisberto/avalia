@@ -223,7 +223,7 @@ function voltarDaPrevia() {
       </div>
 
       <!-- 1. Dados gerais -->
-      <div class="form-panel">
+      <div class="surface-card form-panel">
         <div class="form-panel__heading">
           <h3 class="form-panel__title">1. Dados Gerais</h3>
         </div>
@@ -261,7 +261,7 @@ function voltarDaPrevia() {
       </div>
 
       <!-- 2. Respondentes -->
-      <div class="form-panel form-panel--respondents">
+      <div class="surface-card form-panel form-panel--respondents">
         <div class="form-panel__heading">
           <h3 class="form-panel__title">2. Quem Responde</h3>
           <p class="form-panel__description">Marque os públicos e, se necessário, o vínculo exigido com o que é avaliado.</p>

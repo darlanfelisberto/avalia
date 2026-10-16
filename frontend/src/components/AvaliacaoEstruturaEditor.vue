@@ -128,8 +128,8 @@ const btnIcone = 'icon-button-control';
                   {{ mapaConjuntos.get(q.conjuntoOpcaoId)?.opcoes.map(o => o.texto).join(' · ') }}
                 </span>
               </div>
-              <button v-if="!somenteLeitura" type="button" class="text-action text-action--danger" @click="ses.questoes.splice(qi, 1)">
-                Remover questão
+              <button v-if="!somenteLeitura" type="button" class="button button--danger question-editor__remove" @click="ses.questoes.splice(qi, 1)">
+                <span aria-hidden="true">×</span> Remover questão
               </button>
             </div>
           </article>

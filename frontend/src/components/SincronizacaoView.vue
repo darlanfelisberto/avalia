@@ -64,7 +64,7 @@ onUnmounted(() => {
 <template>
   <div class="sync-view">
     <!-- Cabeçalho do Módulo -->
-    <header class="sync-header">
+    <header class="surface-card sync-header">
       <div>
         <div class="sync-header__badges">
           <span class="sync-badge sync-badge--module">
@@ -111,7 +111,7 @@ onUnmounted(() => {
 
     <!-- Cards de Status e Conexão -->
     <div class="sync-status-grid">
-      <div class="sync-status-card">
+      <div class="surface-card sync-status-card">
         <div class="sync-status-card__label">Origem dos Dados</div>
         <div class="sync-status-card__value sync-status-card__value--truncate" :title="status?.urlSigaa">
           {{ status?.urlSigaa || 'Configurando...' }}
@@ -121,7 +121,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="sync-status-card">
+      <div class="surface-card sync-status-card">
         <div class="sync-status-card__label">Estado da Rotina</div>
         <div class="sync-status-card__state">
           <span
@@ -142,7 +142,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="sync-status-card">
+      <div class="surface-card sync-status-card">
         <div class="sync-status-card__label">Schema de Destino</div>
         <div class="sync-status-card__value">
           PostgreSQL <span class="sync-highlight">academico</span> (Local)
@@ -154,7 +154,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Painel de Disparo de Sincronização -->
-    <div class="sync-panel">
+    <div class="surface-card sync-panel">
       <div class="sync-panel__header">
         <div>
           <h2 class="sync-panel__title">Configurar e Executar Carga</h2>
@@ -230,7 +230,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Contadores Locais da Base Acadêmica -->
-    <div class="sync-panel">
+    <div class="surface-card sync-panel">
       <h2 class="sync-panel__title sync-panel__title--spaced">Estatísticas do Schema Local <span class="sync-highlight sync-highlight--code">academico</span></h2>
       <p class="sync-panel__description sync-panel__description--spaced">Volume de dados espelhado e disponível no banco AVALIA para consultas em milissegundos.</p>
 

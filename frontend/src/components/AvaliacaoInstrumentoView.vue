@@ -75,7 +75,7 @@ const colunasInstrumentos = [
       <span>⚠️ {{ erro }}</span><button type="button" @click="erro = null">✕</button>
     </p>
 
-    <div class="instrument-list__card">
+    <div class="surface-card instrument-list__card">
       <div class="instrument-list__header">
         <div>
           <h2 class="instrument-list__title">Instrumentos de Avaliação</h2>

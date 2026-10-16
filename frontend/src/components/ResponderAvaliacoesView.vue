@@ -152,7 +152,7 @@ function voltarASelecao() {
 
 <template>
   <div class="survey-response">
-    <div class="survey-response__intro">
+    <div class="surface-card survey-response__intro">
       <h2 class="survey-response__title">Responder avaliações</h2>
       <p class="survey-response__description">Avaliações publicadas para seu perfil durante o período de aplicação.</p>
     </div>
@@ -165,7 +165,7 @@ function voltarASelecao() {
       <p v-if="!carregando && grupos.length === 0" class="empty-state">
         Nenhuma avaliação disponível para seu perfil neste período.
       </p>
-      <div v-if="grupoSelecionado" class="survey-selection">
+      <div v-if="grupoSelecionado" class="surface-card survey-selection">
         <button type="button" @click="grupoSelecionado = null; alvosMarcados = []" class="text-action text-action--primary">← Voltar às avaliações</button>
         <div>
           <h3 class="survey-card__title">{{ grupos.find(g => g.chave === grupoSelecionado)?.titulo }}</h3>
@@ -186,7 +186,7 @@ function voltarASelecao() {
         </button>
       </div>
       <div v-else v-for="grupo in grupos" :key="grupo.chave"
-        class="survey-card survey-card--summary">
+        class="surface-card survey-card survey-card--summary">
         <div>
           <h3 class="survey-card__title">{{ grupo.titulo }}</h3>
           <p v-if="grupo.descricao" class="survey-card__description">{{ grupo.descricao }}</p>
@@ -201,7 +201,7 @@ function voltarASelecao() {
     </template>
 
     <template v-else>
-      <div class="survey-response__instrument">
+      <div class="surface-card survey-response__instrument">
         <button type="button" @click="voltarASelecao"
           class="text-action text-action--primary">← Voltar às avaliações</button>
         <h3 class="survey-response__instrument-title">{{ instrumento.titulo }}</h3>
@@ -211,13 +211,13 @@ function voltarASelecao() {
         </p>
       </div>
       <section v-for="(pagina, pi) in instrumento.paginas || []" :key="pagina.id || pi"
-        class="survey-page">
+        class="surface-card surface-card--subtle survey-page">
         <p class="survey-page__number">Página {{ pi + 1 }}</p>
         <h4 class="survey-page__title">{{ pagina.titulo }}</h4>
         <p v-if="pagina.descricao" class="survey-page__description">{{ pagina.descricao }}</p>
       </section>
       <section v-for="(sessao, si) in instrumento.sessoes || []" :key="sessao.id || si"
-        class="survey-session">
+        class="surface-card survey-session">
         <div>
           <h4 class="survey-session__title">{{ sessao.titulo }}</h4>
           <p v-if="sessao.descricao" class="survey-session__description">{{ sessao.descricao }}</p>
@@ -225,7 +225,7 @@ function voltarASelecao() {
         <fieldset v-for="(q, qi) in sessao.questoes" :key="q.sessaoQuestaoId || qi" class="survey-question">
           <legend class="survey-question__title">{{ qi + 1 }}. {{ q.enunciado }} <span v-if="q.obrigatoria" class="survey-question__required">*</span></legend>
           <textarea v-if="q.tipo === 'DESCRITIVA'" v-model="textos[q.sessaoQuestaoId!]" rows="4"
-            class="survey-answer" placeholder="Escreva sua resposta"></textarea>
+            class="form-field survey-answer" placeholder="Escreva sua resposta"></textarea>
           <template v-else>
             <label v-for="op in opcoes(q)" :key="op.id" class="survey-option">
               <input v-if="q.tipo === 'MULTIPLA_ESCOLHA'" v-model="multiplas[q.sessaoQuestaoId!]" type="checkbox" :value="op.id" />
