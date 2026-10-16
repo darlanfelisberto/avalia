@@ -8,6 +8,7 @@ const sessoes = defineModel<SessaoAv[]>('sessoes', { required: true });
 const props = defineProps<{
   conjuntos: ConjuntoOpcao[];
   somenteLeitura?: boolean;
+  podeCriarConjunto?: boolean;
 }>();
 
 const emit = defineEmits<{ (e: 'novoConjunto'): void }>();
@@ -61,7 +62,7 @@ const btnIcone = 'text-[11px] px-1.5 py-0.5 rounded border border-slate-200 text
     </div>
 
     <p v-if="somenteLeitura" class="text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-3">
-      Instrumento já publicado: a estrutura está bloqueada para edição. Apenas os dados gerais podem ser ajustados.
+      A estrutura deste instrumento está disponível somente para leitura.
     </p>
     <section class="space-y-2">
       <h4 class="text-xs font-bold uppercase text-slate-500">Páginas</h4>
@@ -137,7 +138,7 @@ const btnIcone = 'text-[11px] px-1.5 py-0.5 rounded border border-slate-200 text
             <button type="button" class="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg" @click="ses.questoes.push(novaQuestao())">
               + Questão
             </button>
-            <button type="button" class="text-[11px] font-bold text-purple-700 bg-white border border-purple-200 px-3 py-1.5 rounded-lg" @click="emit('novoConjunto')">
+            <button v-if="podeCriarConjunto" type="button" class="text-[11px] font-bold text-purple-700 bg-white border border-purple-200 px-3 py-1.5 rounded-lg" @click="emit('novoConjunto')">
               + Novo conjunto de opções
             </button>
           </div>

@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import type { ConjuntoOpcao, InstrumentoAv, PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
 import { avaliacaoApi } from '../services/avaliacaoApi';
-import { carregarUsuarioAtivo } from '../services/storage';
+import { carregarUsuarioAtivo, temPermissao } from '../services/storage';
 import AvaliacaoEstruturaEditor from './AvaliacaoEstruturaEditor.vue';
 import AvaliacaoConjuntoModal from './AvaliacaoConjuntoModal.vue';
 import InstrumentoPreview from './InstrumentoPreview.vue';
@@ -26,6 +26,10 @@ const salvando = ref(false);
 const modalConjunto = ref(false);
 const erro = ref<string | null>(null);
 const sucesso = ref<string | null>(null);
+const usuario = carregarUsuarioAtivo();
+const podeCriar = temPermissao(usuario, 'INSTRUMENTO_CRIAR');
+const podeEditar = temPermissao(usuario, 'INSTRUMENTO_EDITAR');
+const podeExcluir = temPermissao(usuario, 'INSTRUMENTO_EXCLUIR');
 
 const tiposAvaliaveis = computed(() => tipos.value.filter(t => t.podeSerAvaliada));
 const tiposRespondentes = computed(() => {
@@ -109,7 +113,8 @@ function ajustarRespondentesPermitidos() {
 }
 
 const form = reactive<InstrumentoAv>(novoInstrumento());
-const somenteLeitura = computed(() => !!form.status && form.status !== 'RASCUNHO');
+const semPermissaoDeEdicao = computed(() => form.id ? !podeEditar : !podeCriar);
+const somenteLeitura = computed(() => (!!form.status && form.status !== 'RASCUNHO') || semPermissaoDeEdicao.value);
 
 // ---------------------------------------------------------------- carga
 async function carregarLista() {
@@ -272,7 +277,7 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
           <h2 class="text-lg font-bold text-slate-900">Instrumentos de Avaliação</h2>
           <p class="text-xs text-slate-500">Questionários cadastrados no schema <code>avaliacao</code>.</p>
         </div>
-        <button type="button" @click="novo" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
+        <button v-if="podeCriar" type="button" @click="novo" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl">
           + Novo instrumento
         </button>
       </div>
@@ -296,7 +301,7 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
             <td class="p-3"><span :class="['px-2 py-0.5 rounded-full font-bold text-[10px]', corStatus[i.status || 'RASCUNHO']]">{{ i.status }}</span></td>
             <td class="p-3 text-right whitespace-nowrap">
               <button type="button" class="font-bold text-emerald-700 hover:underline mr-3" @click="editar(i.id!)">{{ i.status === 'RASCUNHO' ? 'Editar' : 'Abrir' }}</button>
-              <button v-if="i.status === 'RASCUNHO'" type="button" class="font-bold text-rose-600 hover:underline" @click="excluir(i.id!, i.titulo)">Excluir</button>
+              <button v-if="podeExcluir && i.status === 'RASCUNHO'" type="button" class="font-bold text-rose-600 hover:underline" @click="excluir(i.id!, i.titulo)">Excluir</button>
             </td>
           </tr>
         </tbody>
@@ -319,10 +324,10 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
           <button type="button" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl" @click="previsualizando = true">
             👁 Visualizar instrumento
           </button>
-          <button type="button" :disabled="salvando" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl disabled:opacity-50" @click="salvar">
+          <button v-if="!semPermissaoDeEdicao" type="button" :disabled="salvando" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl disabled:opacity-50" @click="salvar">
             💾 {{ salvando ? 'Salvando…' : 'Salvar' }}
           </button>
-          <button v-if="!somenteLeitura" type="button" :disabled="salvando" class="bg-slate-900 hover:bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50" @click="publicar">
+          <button v-if="podeEditar && !somenteLeitura" type="button" :disabled="salvando" class="bg-slate-900 hover:bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl disabled:opacity-50" @click="publicar">
             🚀 Salvar e publicar
           </button>
         </div>
@@ -335,19 +340,19 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label class="md:col-span-2 space-y-1.5 text-xs font-bold text-slate-700">Título
-            <input v-model="form.titulo" :class="[input, 'font-semibold']" placeholder="Ex.: ADPD 2026/1 – Avaliação Docente" />
+            <input v-model="form.titulo" :disabled="semPermissaoDeEdicao" :class="[input, 'font-semibold']" placeholder="Ex.: ADPD 2026/1 – Avaliação Docente" />
           </label>
           <label class="md:col-span-2 space-y-1.5 text-xs font-bold text-slate-700">Descrição
-            <textarea v-model="form.descricao" rows="2" :class="input" placeholder="Orientações exibidas ao respondente"></textarea>
+            <textarea v-model="form.descricao" :disabled="semPermissaoDeEdicao" rows="2" :class="input" placeholder="Orientações exibidas ao respondente"></textarea>
           </label>
           <label class="space-y-1.5 text-xs font-bold text-slate-700">Ciclo de referência
-            <input v-model="form.cicloReferencia" :class="input" placeholder="2026/1" />
+            <input v-model="form.cicloReferencia" :disabled="semPermissaoDeEdicao" :class="input" placeholder="2026/1" />
           </label>
           <label class="space-y-1.5 text-xs font-bold text-slate-700">Início da aplicação
-            <input v-model="form.inicioAplicacao" type="datetime-local" :class="input" />
+            <input v-model="form.inicioAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" :class="input" />
           </label>
           <label class="space-y-1.5 text-xs font-bold text-slate-700">Término da aplicação
-            <input v-model="form.fimAplicacao" type="datetime-local" :class="input" />
+            <input v-model="form.fimAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" :class="input" />
           </label>
           <label class="md:col-span-2 space-y-1.5 text-xs font-bold text-slate-700">O que será avaliado
             <select v-model="form.tipoEntidadeAvaliadaId" :disabled="somenteLeitura" :class="input" @change="contextoAlterado">
@@ -408,6 +413,7 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
         v-model:sessoes="form.sessoes"
         :conjuntos="conjuntos"
         :somente-leitura="somenteLeitura"
+        :pode-criar-conjunto="podeCriar"
         @novo-conjunto="modalConjunto = true"
       />
     </template>

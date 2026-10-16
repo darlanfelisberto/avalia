@@ -5,8 +5,8 @@ import br.edu.iffar.avalia.avaliacao.service.TipoEntidadeService;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
 import br.edu.iffar.avalia.core.service.AuthService;
 import jakarta.inject.Inject;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PUT;
@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 @Path("/avaliacao")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed("user")
 public class TipoEntidadeResource {
     @Inject
     private TipoEntidadeService service;
@@ -37,10 +38,9 @@ public class TipoEntidadeResource {
 
     @GET
     @Path("/permissoes-tipos-entidade")
-    public Response listarPermissoes(@CookieParam("avalia_session") String token,
-                                     @HeaderParam("X-Papel-Ativo") String papel) {
+    public Response listarPermissoes(@HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
-            exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR");
+            exigirGestor(papel, "INSTRUMENTO_VISUALIZAR");
             return Response.ok(service.listarPermissoes()).build();
         });
     }
@@ -48,17 +48,16 @@ public class TipoEntidadeResource {
     @PUT
     @Path("/permissoes-tipos-entidade")
     public Response salvarPermissoes(List<PermissaoTipoEntidadeDTO> permissoes,
-                                     @CookieParam("avalia_session") String token,
                                      @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
-            exigirGestor(token, papel, "INSTRUMENTO_EDITAR");
+            exigirGestor(papel, "INSTRUMENTO_EDITAR");
             service.salvarPermissoes(permissoes);
             return Response.noContent().build();
         });
     }
 
-    private void exigirGestor(String token, String papel, String permissao) {
-        UsuarioDTO usuario = auth.validarSessao(token, papel);
+    private void exigirGestor(String papel, String permissao) {
+        UsuarioDTO usuario = auth.validarJwt(papel);
         if (!("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
                 || !usuario.getPermissoes().contains(permissao))
             throw new SecurityException("Acesso restrito à administração de instrumentos.");

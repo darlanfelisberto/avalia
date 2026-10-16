@@ -57,7 +57,6 @@ export function temPermissao(
   permissao: import('../types/avaliacao').PermissaoUsuario
 ): boolean {
   if (!usuario) return false;
-  if (usuario.papel === 'CPA' || usuario.papelAtivo === 'CPA') return true;
   return Array.isArray(usuario.permissoes) && usuario.permissoes.includes(permissao);
 }
 

@@ -2,6 +2,9 @@
 import { computed, onMounted, ref } from 'vue';
 import { avaliacaoApi } from '../services/avaliacaoApi';
 import type { PermissaoTipoEntidadeAv, TipoEntidade } from '../types/instrumentoAvaliacao';
+import { carregarUsuarioAtivo, temPermissao } from '../services/storage';
+
+const podeEditar = temPermissao(carregarUsuarioAtivo(), 'INSTRUMENTO_EDITAR');
 
 const tipos = ref<TipoEntidade[]>([]);
 const permissoes = ref(new Set<string>());
@@ -111,7 +114,7 @@ onMounted(carregar);
                     class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     :aria-label="`${respondente.nome} pode avaliar ${alvo.nome}`"
                     :checked="estaPermitido(respondente.id, alvo.id)"
-                    :disabled="salvando"
+                    :disabled="salvando || !podeEditar"
                     @change="alternar(respondente.id, alvo.id)"
                   />
                 </label>
@@ -128,7 +131,7 @@ onMounted(carregar);
 
       <footer class="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs text-slate-500">{{ permissoes.size }} combinação(ões) permitida(s)</p>
-        <button type="button" class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60" :disabled="salvando" @click="salvar">
+        <button v-if="podeEditar" type="button" class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60" :disabled="salvando" @click="salvar">
           {{ salvando ? 'Salvando…' : 'Salvar permissões' }}
         </button>
       </footer>

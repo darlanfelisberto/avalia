@@ -9,6 +9,7 @@
         <feature>validation-3.1</feature>
         <feature>jdbc-4.3</feature>
         <feature>persistence-3.2</feature>
+        <feature>mpJwt-2.1</feature>
     </featureManager>
 
     <!-- Variáveis injetadas pelo container/SO ou com defaultValue vazio (sem credenciais fixas no fonte) -->
@@ -17,6 +18,9 @@
     <variable name="AVALIA_DB_DATABASE" defaultValue="avalia"/>
     <variable name="AVALIA_DB_USER" defaultValue=""/>
     <variable name="AVALIA_DB_PASSWORD" defaultValue=""/>
+    <variable name="AVALIA_OIDC_CLIENT_ID" defaultValue="avalia"/>
+    <variable name="AVALIA_OIDC_ISSUER" defaultValue="urn:avalia:oidc-issuer-nao-configurado"/>
+    <variable name="AVALIA_OIDC_JWKS_URI" defaultValue="http://localhost:9036/web/auth/realms/feliva/certs"/>
 
     <variable name="AVALIA_DB_SIG_IP" defaultValue=""/>
     <variable name="AVALIA_DB_SIG_PORT" defaultValue="5432"/>
@@ -27,6 +31,11 @@
     <httpEndpoint id="defaultHttpEndpoint"
                   httpPort="9081"
                   httpsPort="9443"/>
+
+    <mpJwt id="avaliaJwt" issuer="${AVALIA_OIDC_ISSUER}"
+           jwksUri="${AVALIA_OIDC_JWKS_URI}" audiences="${AVALIA_OIDC_CLIENT_ID}"
+           signatureAlgorithm="RS256" tokenHeader="Cookie" cookieName="avalia_access"
+           userNameAttribute="preferred_username"/>
 
     <!-- Para exibir logs detalhados de SQL no messages.log e console (descomente abaixo):
     <logging traceSpecification="*=info:eclipselink=fine:eclipselink.sql=fine:org.eclipse.persistence=fine"

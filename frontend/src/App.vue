@@ -46,8 +46,9 @@ onMounted(async () => {
 function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes' {
   if (!u) return 'responder';
   const papel = u.papelAtivo || u.papel;
-  if (papel === 'CPA' || papel === 'ADMIN') return 'instrumentos';
-  if (papel === 'DOCENTE' || papel === 'DISCENTE' || papel === 'TAE') return 'responder';
+  if ((papel === 'CPA' || papel === 'ADMIN') && temPermissao(u, 'INSTRUMENTO_VISUALIZAR')) return 'instrumentos';
+  if (temPermissao(u, 'AVALIACAO_RESPONDER')) return 'responder';
+  if (temPermissao(u, 'SIGAA_SINCRONIZAR')) return 'sincronizacao';
   return 'responder';
 }
 
@@ -72,7 +73,8 @@ function onUsuarioAlterado(usuario: UsuarioContexto) {
   usuarioLogado.value = usuario;
   salvarUsuarioAtivo(usuario);
   // Se a visão atual não for permitida para o novo papel, redireciona
-  if ((visaoAtual.value === 'instrumentos' || visaoAtual.value === 'permissoes') && usuario.papelAtivo !== 'CPA' && usuario.papelAtivo !== 'ADMIN') {
+  if ((visaoAtual.value === 'instrumentos' || visaoAtual.value === 'permissoes')
+      && ((usuario.papelAtivo !== 'CPA' && usuario.papelAtivo !== 'ADMIN') || !temPermissao(usuario, 'INSTRUMENTO_VISUALIZAR'))) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
   } else if (visaoAtual.value === 'sincronizacao' && !temPermissao(usuario, 'SIGAA_SINCRONIZAR')) {
     visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);

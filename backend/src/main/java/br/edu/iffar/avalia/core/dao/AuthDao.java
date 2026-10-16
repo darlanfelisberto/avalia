@@ -1,12 +1,10 @@
 package br.edu.iffar.avalia.core.dao;
 
 import br.edu.iffar.avalia.academico.model.PessoaAcademica;
-import br.edu.iffar.avalia.core.model.AuthSessao;
 import br.edu.iffar.avalia.core.model.UsuarioPermissao;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import java.time.OffsetDateTime;
 import java.util.List;
 
 @ApplicationScoped
@@ -21,26 +19,6 @@ public class AuthDao {
 
     public void persistirUsuario(UsuarioPermissao usuario) {
         em.persist(usuario);
-    }
-
-    public void registrarSessao(String tokenHash, String cpf, String papeis) {
-        em.flush();
-        AuthSessao sessao = new AuthSessao();
-        sessao.setTokenHash(tokenHash);
-        sessao.setCpf(cpf);
-        sessao.setPapeis(papeis);
-        sessao.setExpiraEm(OffsetDateTime.now().plusHours(12));
-        em.persist(sessao);
-    }
-
-    public AuthSessao buscarSessaoValida(String tokenHash) {
-        AuthSessao sessao = em.find(AuthSessao.class, tokenHash);
-        return sessao != null && sessao.getExpiraEm().isAfter(OffsetDateTime.now()) ? sessao : null;
-    }
-
-    public void encerrarSessao(String tokenHash) {
-        AuthSessao sessao = em.find(AuthSessao.class, tokenHash);
-        if (sessao != null) em.remove(sessao);
     }
 
     public PessoaAcademica buscarPessoaPorCpf(String cpf) {

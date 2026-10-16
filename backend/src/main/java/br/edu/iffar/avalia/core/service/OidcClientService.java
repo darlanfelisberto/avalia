@@ -22,10 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
 public class OidcClientService {
+    public record IdentidadeOidc(String cpf, String sub, List<String> grupos, Instant expiraEm) {}
+    public record TokensOidc(IdentidadeOidc identidade, String accessToken) {}
+
     private final String providerUrl = config("AVALIA_OIDC_PROVIDER_URL", "http://localhost:9036/web/auth/realms/feliva");
     private final String expectedIssuer = config("AVALIA_OIDC_ISSUER", providerUrl);
     private final String clientId = config("AVALIA_OIDC_CLIENT_ID", "avalia");
@@ -58,7 +62,7 @@ public class OidcClientService {
         );
     }
 
-    public String trocarCodigoPorCpf(OidcCallbackDTO callback) throws Exception {
+    public TokensOidc trocarCodigoPorTokens(OidcCallbackDTO callback) throws Exception {
         exigirClientSecret();
         if (callback == null || callback.code == null || callback.code.isBlank() || callback.code.length() > 1024
                 || callback.codeVerifier == null || !callback.codeVerifier.matches("[A-Za-z0-9._~-]{43,128}")
@@ -83,25 +87,20 @@ public class OidcClientService {
         JsonObject tokens = json(response.body());
         String idToken = tokens.getString("id_token", null);
         if (idToken == null) throw new SecurityException("Provedor não retornou id_token.");
-        return verificarIdentidade(idToken, callback.nonce, metadata.getString("issuer"), endpointLocal(metadata, "jwks_uri"));
+        if (!"Bearer".equalsIgnoreCase(tokens.getString("token_type", "")))
+            throw new SecurityException("Tipo de access token inválido.");
+        String accessToken = tokens.getString("access_token", null);
+        if (accessToken == null || accessToken.isBlank())
+            throw new SecurityException("Provedor não retornou access_token.");
+        String issuer = metadata.getString("issuer");
+        String jwksUri = endpointLocal(metadata, "jwks_uri");
+        IdentidadeOidc identidade = verificarIdentidade(idToken, callback.nonce, issuer, jwksUri);
+        IdentidadeOidc acesso = verificarAccessToken(accessToken, identidade, issuer, jwksUri);
+        return new TokensOidc(acesso, accessToken);
     }
 
-    private String verificarIdentidade(String idToken, String nonce, String issuer, String jwksUri) throws Exception {
-        SignedJWT jwt = SignedJWT.parse(idToken);
-        if (!JWSAlgorithm.RS256.equals(jwt.getHeader().getAlgorithm()))
-            throw new SecurityException("Algoritmo OIDC inválido.");
-        String kid = jwt.getHeader().getKeyID();
-        if (kid == null || kid.isBlank()) throw new SecurityException("Chave OIDC não identificada.");
-
-        HttpRequest request = HttpRequest.newBuilder(URI.create(jwksUri))
-                .timeout(Duration.ofSeconds(10)).GET().build();
-        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() != 200) throw new SecurityException("Chaves OIDC indisponíveis.");
-        JWK key = JWKSet.parse(response.body()).getKeyByKeyId(kid);
-        if (!(key instanceof RSAKey rsa) || !jwt.verify(new RSASSAVerifier(rsa.toRSAPublicKey())))
-            throw new SecurityException("Assinatura OIDC inválida.");
-
-        JWTClaimsSet claims = jwt.getJWTClaimsSet();
+    private IdentidadeOidc verificarIdentidade(String idToken, String nonce, String issuer, String jwksUri) throws Exception {
+        JWTClaimsSet claims = verificarAssinatura(idToken, jwksUri);
         Instant now = Instant.now();
         Date expiry = claims.getExpirationTime();
         Date notBefore = claims.getNotBeforeTime();
@@ -121,7 +120,46 @@ public class OidcClientService {
         String cpf = claims.getStringClaim("preferred_username");
         if (cpf == null || !cpf.matches("\\d{11}"))
             throw new SecurityException("O provedor não retornou um CPF válido.");
-        return cpf;
+        return new IdentidadeOidc(cpf, claims.getSubject(), List.of(), expiry.toInstant());
+    }
+
+    private IdentidadeOidc verificarAccessToken(String accessToken, IdentidadeOidc identidade,
+                                                String issuer, String jwksUri) throws Exception {
+        JWTClaimsSet claims = verificarAssinatura(accessToken, jwksUri);
+        Instant now = Instant.now();
+        Date expiry = claims.getExpirationTime();
+        Date notBefore = claims.getNotBeforeTime();
+        Date issuedAt = claims.getIssueTime();
+        if (!issuer.equals(claims.getIssuer()) || !identidade.sub().equals(claims.getSubject())
+                || claims.getAudience() == null || claims.getAudience().size() != 1
+                || !claims.getAudience().contains(clientId)
+                || expiry == null || !expiry.toInstant().isAfter(now)
+                || issuedAt == null || issuedAt.toInstant().isAfter(now.plusSeconds(60))
+                || !expiry.toInstant().isAfter(issuedAt.toInstant())
+                || (notBefore != null && notBefore.toInstant().isAfter(now.plusSeconds(60)))
+                || !identidade.cpf().equals(claims.getStringClaim("preferred_username")))
+            throw new SecurityException("Claims do access token inválidas.");
+        List<String> grupos = claims.getStringListClaim("groups");
+        if (grupos == null || grupos.isEmpty())
+            throw new SecurityException("O provedor não retornou as permissões do usuário.");
+        return new IdentidadeOidc(identidade.cpf(), identidade.sub(), List.copyOf(grupos), expiry.toInstant());
+    }
+
+    private JWTClaimsSet verificarAssinatura(String token, String jwksUri) throws Exception {
+        SignedJWT jwt = SignedJWT.parse(token);
+        if (!JWSAlgorithm.RS256.equals(jwt.getHeader().getAlgorithm()))
+            throw new SecurityException("Algoritmo OIDC inválido.");
+        String kid = jwt.getHeader().getKeyID();
+        if (kid == null || kid.isBlank()) throw new SecurityException("Chave OIDC não identificada.");
+
+        HttpRequest request = HttpRequest.newBuilder(URI.create(jwksUri))
+                .timeout(Duration.ofSeconds(10)).GET().build();
+        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) throw new SecurityException("Chaves OIDC indisponíveis.");
+        JWK key = JWKSet.parse(response.body()).getKeyByKeyId(kid);
+        if (!(key instanceof RSAKey rsa) || !jwt.verify(new RSASSAVerifier(rsa.toRSAPublicKey())))
+            throw new SecurityException("Assinatura OIDC inválida.");
+        return jwt.getJWTClaimsSet();
     }
 
     private JsonObject descobrir() throws Exception {

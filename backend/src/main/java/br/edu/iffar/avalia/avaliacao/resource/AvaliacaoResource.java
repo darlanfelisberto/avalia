@@ -6,6 +6,7 @@ import br.edu.iffar.avalia.avaliacao.service.AvaliacaoService;
 import br.edu.iffar.avalia.core.service.AuthService;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
 import jakarta.inject.Inject;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -16,6 +17,7 @@ import java.util.function.Supplier;
 @Path("/avaliacao")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RolesAllowed("user")
 public class AvaliacaoResource {
 
     @Inject
@@ -24,8 +26,8 @@ public class AvaliacaoResource {
     @Inject
     AuthService auth;
 
-    private void exigirGestor(String token, String papel, String permissao) {
-        UsuarioDTO usuario = auth.validarSessao(token, papel);
+    private void exigirGestor(String papel, String permissao) {
+        UsuarioDTO usuario = auth.validarJwt(papel);
         if (!("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
                 || !usuario.getPermissoes().contains(permissao))
             throw new SecurityException("Acesso restrito à administração de instrumentos.");
@@ -33,31 +35,27 @@ public class AvaliacaoResource {
 
     @GET
     @Path("/conjuntos-opcao")
-    public Response conjuntos(@CookieParam("avalia_session") String token,
-                             @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarConjuntos()).build(); });
+    public Response conjuntos(@HeaderParam("X-Papel-Ativo") String papel) {
+        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarConjuntos()).build(); });
     }
 
     @POST
     @Path("/conjuntos-opcao")
-    public Response salvarConjunto(ConjuntoOpcao dto, @CookieParam("avalia_session") String token,
-                                  @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_CRIAR"); return Response.ok(service.salvarConjunto(dto)).build(); });
+    public Response salvarConjunto(ConjuntoOpcao dto, @HeaderParam("X-Papel-Ativo") String papel) {
+        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_CRIAR"); return Response.ok(service.salvarConjunto(dto)).build(); });
     }
 
     @GET
     @Path("/instrumentos")
-    public Response listar(@CookieParam("avalia_session") String token,
-                           @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarInstrumentos()).build(); });
+    public Response listar(@HeaderParam("X-Papel-Ativo") String papel) {
+        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_VISUALIZAR"); return Response.ok(service.listarInstrumentos()).build(); });
     }
 
     @GET
     @Path("/instrumentos/{id}")
-    public Response buscar(@PathParam("id") String id, @CookieParam("avalia_session") String token,
-                           @HeaderParam("X-Papel-Ativo") String papel) {
+    public Response buscar(@PathParam("id") String id, @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
-            exigirGestor(token, papel, "INSTRUMENTO_VISUALIZAR");
+            exigirGestor(papel, "INSTRUMENTO_VISUALIZAR");
             Instrumento i = service.buscarInstrumento(id);
             return i == null ? Response.status(Response.Status.NOT_FOUND).build() : Response.ok(i).build();
         });
@@ -65,27 +63,24 @@ public class AvaliacaoResource {
 
     @POST
     @Path("/instrumentos")
-    public Response salvar(Instrumento dto, @CookieParam("avalia_session") String token,
-                           @HeaderParam("X-Papel-Ativo") String papel) {
+    public Response salvar(Instrumento dto, @HeaderParam("X-Papel-Ativo") String papel) {
         return executar(() -> {
-            exigirGestor(token, papel, dto == null || dto.id == null || dto.id.isBlank() ? "INSTRUMENTO_CRIAR" : "INSTRUMENTO_EDITAR");
-            UsuarioDTO usuario = auth.validarSessao(token, papel);
+            exigirGestor(papel, dto == null || dto.id == null || dto.id.isBlank() ? "INSTRUMENTO_CRIAR" : "INSTRUMENTO_EDITAR");
+            UsuarioDTO usuario = auth.validarJwt(papel);
             return Response.ok(service.salvarInstrumento(dto, usuario.getCpf())).build();
         });
     }
 
     @POST
     @Path("/instrumentos/{id}/publicar")
-    public Response publicar(@PathParam("id") String id, @CookieParam("avalia_session") String token,
-                             @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_EDITAR"); return Response.ok(service.publicar(id)).build(); });
+    public Response publicar(@PathParam("id") String id, @HeaderParam("X-Papel-Ativo") String papel) {
+        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_EDITAR"); return Response.ok(service.publicar(id)).build(); });
     }
 
     @DELETE
     @Path("/instrumentos/{id}")
-    public Response excluir(@PathParam("id") String id, @CookieParam("avalia_session") String token,
-                            @HeaderParam("X-Papel-Ativo") String papel) {
-        return executar(() -> { exigirGestor(token, papel, "INSTRUMENTO_EXCLUIR"); return service.excluir(id)
+    public Response excluir(@PathParam("id") String id, @HeaderParam("X-Papel-Ativo") String papel) {
+        return executar(() -> { exigirGestor(papel, "INSTRUMENTO_EXCLUIR"); return service.excluir(id)
                 ? Response.noContent().build()
                 : Response.status(Response.Status.NOT_FOUND).build(); });
     }

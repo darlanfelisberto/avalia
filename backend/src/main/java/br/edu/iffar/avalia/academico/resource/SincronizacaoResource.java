@@ -6,6 +6,7 @@ import br.edu.iffar.avalia.academico.service.SincronizacaoSigaaService;
 import br.edu.iffar.avalia.core.service.AuthService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -16,6 +17,7 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @ApplicationScoped
+@RolesAllowed("user")
 public class SincronizacaoResource {
 
     @Inject
@@ -24,9 +26,9 @@ public class SincronizacaoResource {
     @Inject
     private AuthService authService;
 
-    private boolean autorizado(String token, String papel) {
+    private boolean autorizado(String papel) {
         try {
-            var usuario = authService.validarSessao(token, papel);
+            var usuario = authService.validarJwt(papel);
             return ("CPA".equals(usuario.getPapelAtivo()) || "ADMIN".equals(usuario.getPapelAtivo()))
                     && usuario.getPermissoes().contains("SIGAA_SINCRONIZAR");
         } catch (SecurityException e) {
@@ -36,9 +38,8 @@ public class SincronizacaoResource {
 
     @GET
     @Path("/status")
-    public Response getStatus(@CookieParam("avalia_session") String token,
-                              @HeaderParam("X-Papel-Ativo") String papel) {
-        if (!autorizado(token, papel)) return Response.status(Response.Status.UNAUTHORIZED).build();
+    public Response getStatus(@HeaderParam("X-Papel-Ativo") String papel) {
+        if (!autorizado(papel)) return Response.status(Response.Status.UNAUTHORIZED).build();
         SincronizacaoStatusDTO status = sincronizacaoService.getStatus();
         return Response.ok(status).build();
     }
@@ -46,9 +47,8 @@ public class SincronizacaoResource {
     @POST
     @Path("/executar")
     public Response executar(SincronizacaoRequestDTO req,
-                            @CookieParam("avalia_session") String token,
                             @HeaderParam("X-Papel-Ativo") String papel) {
-        if (!autorizado(token, papel)) return Response.status(Response.Status.UNAUTHORIZED).build();
+        if (!autorizado(papel)) return Response.status(Response.Status.UNAUTHORIZED).build();
         Map<String, Object> resp = sincronizacaoService.executarSincronizacao(req);
         return Response.ok(resp).build();
     }

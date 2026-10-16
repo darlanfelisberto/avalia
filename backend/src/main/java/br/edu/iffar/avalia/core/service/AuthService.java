@@ -3,23 +3,27 @@ package br.edu.iffar.avalia.core.service;
 import br.edu.iffar.avalia.core.dto.AuthResponseDTO;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
 import br.edu.iffar.avalia.core.dao.AuthDao;
-import br.edu.iffar.avalia.core.model.AuthSessao;
 import br.edu.iffar.avalia.core.model.UsuarioPermissao;
 import br.edu.iffar.avalia.academico.model.PessoaAcademica;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.*;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 @ApplicationScoped
 public class AuthService {
+    private static final List<String> PAPEIS_OIDC = List.of("ADMIN", "CPA", "DOCENTE", "DISCENTE", "TAE");
+    private static final List<String> PERMISSOES_OIDC = List.of(
+            "INSTRUMENTO_CRIAR", "INSTRUMENTO_EDITAR", "INSTRUMENTO_EXCLUIR",
+            "INSTRUMENTO_VISUALIZAR", "AVALIACAO_RESPONDER", "SIGAA_SINCRONIZAR");
 
     @Inject
     private AuthDao dao;
+
+    @Inject
+    private JsonWebToken jwt;
 
     public String normalizarCpf(String cpf) {
         if (cpf == null) return "";
@@ -43,19 +47,17 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponseDTO autenticarUsuarioOidc(String cpfEntrada) {
-        String cpfLimpo = normalizarCpf(cpfEntrada);
+    public AuthResponseDTO autenticarUsuarioOidc(OidcClientService.IdentidadeOidc identidade) {
+        String cpfLimpo = normalizarCpf(identidade.cpf());
         if (cpfLimpo.isEmpty()) {
-            return new AuthResponseDTO(false, null, "Informe o CPF para identificação.", null);
+            return new AuthResponseDTO(false, "Informe o CPF para identificação.", null);
         }
 
-        // 1. Consulta inicial na tabela de permissões do Avalia
+        // O cadastro local fornece dados institucionais; a autorização vem do access token validado.
         UsuarioPermissao up = dao.buscarUsuarioAtivo(cpfLimpo);
         if (up != null) {
             UsuarioDTO dto = montarUsuarioDTO(up);
-            String token = UUID.randomUUID().toString();
-            registrarSessao(token, dto);
-            return new AuthResponseDTO(true, token, "Login realizado com sucesso.", dto);
+            return criarSessaoOidc(dto, identidade);
         }
 
         // 2. Consulta de fallback no espelho acadêmico (academico.pessoa)
@@ -68,23 +70,20 @@ public class AuthService {
             // Identificar papéis e vínculos institucionais
             List<String> papeis = identificarPapeisAcademicos(pessoaId);
             if (papeis.isEmpty()) {
-                return new AuthResponseDTO(false, null, "CPF sem vínculo acadêmico identificado para acesso ao AVALIA.", null);
+                return new AuthResponseDTO(false, "CPF sem vínculo acadêmico identificado para acesso ao AVALIA.", null);
             }
             String campus = identificarCampusPessoa(pessoaId);
 
             String papelPrincipal = definirPapelPrincipal(papeis);
-            List<String> permissoes = obterPermissoesPadrao(papelPrincipal);
-
             // Cadastrar automaticamente em usuario_permissao para persistência
             UsuarioPermissao novo = new UsuarioPermissao(
                     cpfLimpo,
                     nome,
                     papelPrincipal,
                     campus != null ? campus : "Reitoria",
-                    String.join(",", permissoes)
+                    ""
             );
             novo.setEmail(email);
-            dao.persistirUsuario(novo);
 
             UsuarioDTO dto = new UsuarioDTO();
             dto.setCpf(cpfLimpo);
@@ -94,49 +93,50 @@ public class AuthService {
             dto.setCampus(novo.getCampus());
             dto.setPapelAtivo(papelPrincipal);
             dto.setPapeis(papeis);
-            dto.setPermissoes(permissoes);
-
-            String token = UUID.randomUUID().toString();
-            registrarSessao(token, dto);
-            return new AuthResponseDTO(true, token, "Login realizado com sucesso.", dto);
+            aplicarAutorizacaoOidc(dto, identidade.grupos());
+            if (dto.getPermissoes().isEmpty())
+                return new AuthResponseDTO(false, "Usuário sem permissões no provedor OIDC.", null);
+            dao.persistirUsuario(novo);
+            return new AuthResponseDTO(true, "Login realizado com sucesso.", dto);
         }
 
-        return new AuthResponseDTO(false, null, "CPF não localizado no cadastro institucional do IFFar.", null);
+        return new AuthResponseDTO(false, "CPF não localizado no cadastro institucional do IFFar.", null);
     }
 
-    private String hashToken(String token) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(token.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
+    private AuthResponseDTO criarSessaoOidc(UsuarioDTO usuario, OidcClientService.IdentidadeOidc identidade) {
+        aplicarAutorizacaoOidc(usuario, identidade.grupos());
+        if (usuario.getPermissoes().isEmpty())
+            return new AuthResponseDTO(false, "Usuário sem permissões no provedor OIDC.", null);
+        return new AuthResponseDTO(true, "Login realizado com sucesso.", usuario);
     }
 
-    private void registrarSessao(String token, UsuarioDTO usuario) {
-        dao.registrarSessao(hashToken(token), usuario.getCpf(), String.join(",", usuario.getPapeis()));
+    private void aplicarAutorizacaoOidc(UsuarioDTO usuario, List<String> grupos) {
+        Set<String> gruposConfiaveis = new HashSet<>(grupos);
+        List<String> papeis = new ArrayList<>();
+        for (String papel : PAPEIS_OIDC)
+            if (gruposConfiaveis.contains(papel)) papeis.add(papel);
+        String papelLocal = usuario.getPapelAtivo();
+        if (List.of("DOCENTE", "DISCENTE", "TAE").contains(papelLocal) && !papeis.contains(papelLocal))
+            papeis.add(papelLocal);
+        if (papeis.isEmpty()) papeis.add("TAE");
+        usuario.setPapeis(papeis);
+        usuario.setPapelAtivo(papeis.get(0));
+        usuario.setPermissoes(PERMISSOES_OIDC.stream().filter(gruposConfiaveis::contains).toList());
     }
 
-    @Transactional
-    public void encerrarSessao(String sessionToken) {
-        if (sessionToken != null && sessionToken.matches("[0-9a-f-]{36}"))
-            dao.encerrarSessao(hashToken(sessionToken));
-    }
-
-    public UsuarioDTO validarSessao(String sessionToken, String papelAtivo) {
-        if (sessionToken == null || !sessionToken.matches("[0-9a-f-]{36}"))
-            throw new SecurityException("Sessão não informada.");
-        AuthSessao sessao = dao.buscarSessaoValida(hashToken(sessionToken));
-        if (sessao == null) throw new SecurityException("Sessão expirada. Entre novamente.");
-        String cpf = sessao.getCpf();
-        List<String> papeis = Arrays.asList(sessao.getPapeis().split(","));
-        String papel = papelAtivo == null || papelAtivo.isBlank() ? papeis.get(0) : papelAtivo;
-        if (!papeis.contains(papel)) throw new SecurityException("Perfil não autorizado para esta sessão.");
+    public UsuarioDTO validarJwt(String papelAtivo) {
+        String cpf = jwt == null ? null : jwt.getClaim("preferred_username");
+        if (cpf == null || !cpf.matches("\\d{11}"))
+            throw new SecurityException("Token de acesso inválido.");
         UsuarioPermissao up = dao.buscarUsuarioAtivo(cpf);
-        if (up == null) throw new SecurityException("Sessão expirada. Entre novamente.");
+        if (up == null) throw new SecurityException("Usuário sem cadastro ativo.");
         UsuarioDTO usuario = montarUsuarioDTO(up);
+        aplicarAutorizacaoOidc(usuario, new ArrayList<>(jwt.getGroups()));
+        if (usuario.getPermissoes().isEmpty())
+            throw new SecurityException("Usuário sem permissões no provedor OIDC.");
+        String papel = papelAtivo == null || papelAtivo.isBlank() ? usuario.getPapelAtivo() : papelAtivo;
         if (!usuario.getPapeis().contains(papel))
-            throw new SecurityException("Perfil não autorizado para esta sessão.");
+            throw new SecurityException("Perfil não autorizado para este token.");
         usuario.setPapelAtivo(papel);
         return usuario;
     }
@@ -150,18 +150,7 @@ public class AuthService {
         dto.setCampus(up.getCampus() != null ? up.getCampus() : "Reitoria");
         dto.setPapelAtivo(up.getPapel());
 
-        List<String> papeis = new ArrayList<>();
-        papeis.add(up.getPapel());
-        if ("CPA".equals(up.getPapel())) {
-            papeis.add("DOCENTE");
-        }
-        dto.setPapeis(papeis);
-
-        if (up.getPermissoes() != null && !up.getPermissoes().trim().isEmpty()) {
-            dto.setPermissoes(new ArrayList<>(Arrays.asList(up.getPermissoes().split(","))));
-        } else {
-            dto.setPermissoes(obterPermissoesPadrao(up.getPapel()));
-        }
+        dto.setPapeis(List.of(up.getPapel()));
         return dto;
     }
 
@@ -187,30 +176,4 @@ public class AuthService {
         return "DISCENTE";
     }
 
-    public List<String> obterPermissoesPadrao(String papel) {
-        if (papel == null) return List.of("AVALIACAO_RESPONDER");
-        switch (papel.toUpperCase()) {
-            case "CPA":
-            case "ADMIN":
-                return List.of(
-                        "INSTRUMENTO_CRIAR",
-                        "INSTRUMENTO_EDITAR",
-                        "INSTRUMENTO_EXCLUIR",
-                        "INSTRUMENTO_VISUALIZAR",
-                        "AVALIACAO_RESPONDER",
-                        "SIGAA_SINCRONIZAR"
-                );
-            case "DOCENTE":
-                return List.of(
-                        "AVALIACAO_RESPONDER",
-                        "INSTRUMENTO_VISUALIZAR"
-                );
-            case "TAE":
-            case "DISCENTE":
-            default:
-                return List.of(
-                        "AVALIACAO_RESPONDER"
-                );
-        }
-    }
 }
