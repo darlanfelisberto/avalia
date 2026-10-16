@@ -4,6 +4,7 @@ import br.edu.iffar.avalia.avaliacao.dao.TipoEntidadeDao;
 import br.edu.iffar.avalia.avaliacao.dto.PermissaoTipoEntidadeDTO;
 import br.edu.iffar.avalia.avaliacao.dto.TipoEntidadeDTO;
 import br.edu.iffar.avalia.avaliacao.model.TipoEntidadePermissao;
+import br.edu.iffar.avalia.core.exception.ValidacaoException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -40,7 +41,7 @@ public class TipoEntidadeService {
     }
 
     public void salvarPermissoes(List<PermissaoTipoEntidadeDTO> permissoes) {
-        if (permissoes == null) throw new IllegalArgumentException("Informe a matriz de permissões.");
+        if (permissoes == null) throw new ValidacaoException("Informe a matriz de permissões.");
 
         Map<UUID, br.edu.iffar.avalia.avaliacao.model.TipoEntidade> tipos = new HashMap<>();
         for (var tipo : dao.listar()) tipos.put(tipo.getId(), tipo);
@@ -49,18 +50,18 @@ public class TipoEntidadeService {
 
         for (PermissaoTipoEntidadeDTO permissao : permissoes) {
             if (permissao == null || emBranco(permissao.tipoRespondenteId) || emBranco(permissao.tipoAvaliadoId))
-                throw new IllegalArgumentException("Cada permissão precisa de um tipo respondente e um tipo avaliado.");
+                throw new ValidacaoException("Cada permissão precisa de um tipo respondente e um tipo avaliado.");
             UUID respondenteId = UUID.fromString(permissao.tipoRespondenteId);
             UUID avaliadoId = UUID.fromString(permissao.tipoAvaliadoId);
             if (!pares.add(respondenteId + ":" + avaliadoId))
-                throw new IllegalArgumentException("A matriz contém uma permissão repetida.");
+                throw new ValidacaoException("A matriz contém uma permissão repetida.");
 
             var respondente = tipos.get(respondenteId);
             var avaliado = tipos.get(avaliadoId);
             if (respondente == null || !respondente.isPodeResponder())
-                throw new IllegalArgumentException("O tipo selecionado não pode responder avaliações.");
+                throw new ValidacaoException("O tipo selecionado não pode responder avaliações.");
             if (avaliado == null || !avaliado.isPodeSerAvaliada())
-                throw new IllegalArgumentException("O tipo selecionado não pode ser avaliado.");
+                throw new ValidacaoException("O tipo selecionado não pode ser avaliado.");
             paresValidos.add(new UUID[]{respondenteId, avaliadoId});
         }
 

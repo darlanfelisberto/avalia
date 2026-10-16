@@ -7,6 +7,7 @@ import br.edu.iffar.avalia.core.service.AuthService;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
 import jakarta.inject.Inject;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.persistence.NoResultException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -74,7 +75,7 @@ public class AvaliacaoResource {
     @POST
     @Path("/instrumentos/{id}/publicar")
     public Response publicar(@PathParam("id") String id) {
-        return executar(() -> { exigirPermissao("INSTRUMENTO_EDITAR"); return Response.ok(service.publicar(id)).build(); });
+        return executar(() -> { return Response.ok(service.publicar(id)).build(); });
     }
 
     @DELETE
@@ -89,6 +90,8 @@ public class AvaliacaoResource {
     private Response executar(Supplier<Response> acao) {
         try {
             return acao.get();
+        } catch (NoResultException e) {
+            return Response.status(Response.Status.BAD_REQUEST).type(MediaType.TEXT_PLAIN).entity("Objeto não encontrado.").build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).type(MediaType.TEXT_PLAIN).entity(e.getMessage()).build();
         } catch (SecurityException e) {

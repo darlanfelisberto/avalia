@@ -165,20 +165,20 @@ public class InstrumentoAvaliativoDAO {
                     id, tipoId, referencia);
     }
 
-    public void popularAlvos(String id) {
-        dao.exec("""
-            insert into avaliacao.instrumento_entidade_avaliada (instrumento_avaliativo_id, tipo_entidade_alvo_id, entidade_id)
-            select i.instrumento_avaliativo_id, ita.tipo_entidade_alvo_id, e.entidade_id
-            from avaliacao.instrumento_avaliativo i join avaliacao.instrumento_tipo_alvo ita
-            on ita.instrumento_avaliativo_id = i.instrumento_avaliativo_id
-            join avaliacao.tipo_entidade te on te.tipo_entidade_id = ita.tipo_entidade_alvo_id
-            join avaliacao.entidade e on e.tipo_entidade_id = ita.tipo_entidade_alvo_id
-            where i.instrumento_avaliativo_id = cast(?1 as uuid)
-            and (e.referencia_externa like 'academico:%'
-            or (te.codigo = 'INSTITUICAO' and e.referencia_externa = 'instrumento:' || i.instrumento_avaliativo_id))
-            on conflict (instrumento_avaliativo_id, entidade_id) do nothing
-            """, id);
-    }
+//    public void popularAlvos(String id) {
+//        dao.exec("""
+//            insert into avaliacao.instrumento_entidade_avaliada (instrumento_avaliativo_id, tipo_entidade_alvo_id, entidade_id)
+//            select i.instrumento_avaliativo_id, ita.tipo_entidade_alvo_id, e.entidade_id
+//            from avaliacao.instrumento_avaliativo i join avaliacao.instrumento_tipo_alvo ita
+//            on ita.instrumento_avaliativo_id = i.instrumento_avaliativo_id
+//            join avaliacao.tipo_entidade te on te.tipo_entidade_id = ita.tipo_entidade_alvo_id
+//            join avaliacao.entidade e on e.tipo_entidade_id = ita.tipo_entidade_alvo_id
+//            where i.instrumento_avaliativo_id = cast(?1 as uuid)
+//            and (e.referencia_externa like 'academico:%'
+//            or (te.codigo = 'INSTITUICAO' and e.referencia_externa = 'instrumento:' || i.instrumento_avaliativo_id))
+//            on conflict (instrumento_avaliativo_id, entidade_id) do nothing
+//            """, id);
+//    }
 
     public void removerQuestaoOrfa(String id) {
         if (dao.count("""

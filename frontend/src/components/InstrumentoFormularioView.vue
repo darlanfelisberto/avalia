@@ -178,7 +178,6 @@ async function salvar(navegarAposCriar = true): Promise<boolean> {
 }
 
 async function publicar() {
-  if (!confirm('Após publicar, a estrutura do questionário não poderá mais ser alterada. Continuar?')) return;
   if (!(await salvar(false)) || !form.id) return;
   const resposta = await avaliacaoApi.publicar(form.id);
   if (resposta.ok && resposta.dados) {

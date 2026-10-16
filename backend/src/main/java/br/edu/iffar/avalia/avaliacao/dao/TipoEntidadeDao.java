@@ -2,6 +2,7 @@ package br.edu.iffar.avalia.avaliacao.dao;
 
 import br.edu.iffar.avalia.avaliacao.model.TipoEntidade;
 import br.edu.iffar.avalia.avaliacao.model.TipoEntidadePermissao;
+import br.edu.iffar.avalia.core.exception.ValidacaoException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -26,7 +27,7 @@ public class TipoEntidadeDao {
 
     public String codigo(UUID id) {
         TipoEntidade tipo = buscar(id);
-        if (tipo == null) throw new IllegalArgumentException("Tipo de entidade não encontrado.");
+        if (tipo == null) throw new ValidacaoException("Tipo de entidade não encontrado.");
         return tipo.getCodigo();
     }
 

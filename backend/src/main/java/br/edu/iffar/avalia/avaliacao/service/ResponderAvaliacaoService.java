@@ -13,6 +13,7 @@ import br.edu.iffar.avalia.avaliacao.model.RespostaInstrumento;
 import br.edu.iffar.avalia.avaliacao.model.RespostaQuestao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
+import br.edu.iffar.avalia.core.exception.ValidacaoException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -158,18 +159,18 @@ public class ResponderAvaliacaoService {
 
     @SuppressWarnings("unchecked")
     public void enviar(UsuarioDTO usuario, String instrumentoId, Envio envio) {
-        if (envio == null || envio.alvoId == null) throw new IllegalArgumentException("Selecione a avaliação.");
+        if (envio == null || envio.alvoId == null) throw new ValidacaoException("Selecione a avaliação.");
         Disponivel disponivel = elegivel(usuario, instrumentoId, envio.alvoId, envio.contextoId);
-        if (disponivel.respondido) throw new IllegalArgumentException("Você já respondeu esta avaliação.");
-        if (envio.respostas == null) throw new IllegalArgumentException("Respostas não informadas.");
+        if (disponivel.respondido) throw new ValidacaoException("Você já respondeu esta avaliação.");
+        if (envio.respostas == null) throw new ValidacaoException("Respostas não informadas.");
 
         Map<String, Item> respostas = new HashMap<>();
         for (Item item : envio.respostas) {
             if (item == null || item.sessaoQuestaoId == null || respostas.putIfAbsent(item.sessaoQuestaoId, item) != null)
-                throw new IllegalArgumentException("Questão repetida ou inválida.");
+                throw new ValidacaoException("Questão repetida ou inválida.");
         }
         List<Object[]> questoes = dao.questoesParaResposta(UUID.fromString(instrumentoId));
-        if (questoes.isEmpty()) throw new IllegalArgumentException("Instrumento sem questões.");
+        if (questoes.isEmpty()) throw new ValidacaoException("Instrumento sem questões.");
         Set<String> idsValidos = new HashSet<>();
         for (Object[] questao : questoes) {
             String id = (String) questao[0];
@@ -180,25 +181,25 @@ public class ResponderAvaliacaoService {
             String texto = item == null ? null : item.texto;
             boolean preenchida = !opcoes.isEmpty() || (texto != null && !texto.isBlank());
             if ((Boolean) questao[3] && !preenchida)
-                throw new IllegalArgumentException("Responda todas as questões obrigatórias.");
+                throw new ValidacaoException("Responda todas as questões obrigatórias.");
             if (!preenchida) continue;
             if ("DESCRITIVA".equals(tipo)) {
                 if (!opcoes.isEmpty() || texto == null || texto.isBlank())
-                    throw new IllegalArgumentException("Resposta descritiva inválida.");
+                    throw new ValidacaoException("Resposta descritiva inválida.");
             } else {
                 if (texto != null && !texto.isBlank() || opcoes.isEmpty()
                         || (!"MULTIPLA_ESCOLHA".equals(tipo) && opcoes.size() != 1)
                         || new HashSet<>(opcoes).size() != opcoes.size())
-                    throw new IllegalArgumentException("Opções de resposta inválidas.");
+                    throw new ValidacaoException("Opções de resposta inválidas.");
                 for (String opcao : opcoes) {
                     OpcaoQuestao entidadeOpcao = dao.buscar(OpcaoQuestao.class, UUID.fromString(opcao));
                     if (entidadeOpcao == null || !entidadeOpcao.getConjunto().getId().toString().equals(questao[2]))
-                        throw new IllegalArgumentException("Opção fora do instrumento.");
+                        throw new ValidacaoException("Opção fora do instrumento.");
                 }
             }
         }
         if (!idsValidos.containsAll(respostas.keySet()))
-            throw new IllegalArgumentException("Questão fora do instrumento.");
+            throw new ValidacaoException("Questão fora do instrumento.");
 
         String tipoCodigo = disponivel.tipoRespondenteCodigo != null
                 ? disponivel.tipoRespondenteCodigo : codigosRespondente(usuario).stream().findFirst()

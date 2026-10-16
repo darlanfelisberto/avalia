@@ -15,6 +15,7 @@ import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo;
 import br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao;
 import br.edu.iffar.avalia.avaliacao.model.Questao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
+import br.edu.iffar.avalia.core.exception.ValidacaoException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -58,18 +59,18 @@ public class AvaliacaoService {
     }
 
     public ConjuntoOpcaoDTO salvarConjunto(ConjuntoOpcaoDTO dto) {
-        if (dto == null) throw new IllegalArgumentException("Dados do conjunto não informados.");
-        if (blank(dto.nome)) throw new IllegalArgumentException("Informe o nome do conjunto de opções.");
-        if (dto.opcoes == null || dto.opcoes.size() < 2) throw new IllegalArgumentException("Um conjunto precisa de ao menos 2 opções.");
+        if (dto == null) throw new ValidacaoException("Dados do conjunto não informados.");
+        if (blank(dto.nome)) throw new ValidacaoException("Informe o nome do conjunto de opções.");
+        if (dto.opcoes == null || dto.opcoes.size() < 2) throw new ValidacaoException("Um conjunto precisa de ao menos 2 opções.");
         if (dao.existeConjunto(dto.nome.trim())) {
-            throw new IllegalArgumentException("Já existe um conjunto de opções com este nome.");
+            throw new ValidacaoException("Já existe um conjunto de opções com este nome.");
         }
         br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao conjunto = new br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao();
         conjunto.setNome(dto.nome.trim());
         dao.persistir(conjunto);
         int ordem = 1;
         for (AvaliacaoDTO.OpcaoQuestaoDTO o : dto.opcoes) {
-            if (blank(o.texto)) throw new IllegalArgumentException("Toda opção precisa de um texto.");
+            if (blank(o.texto)) throw new ValidacaoException("Toda opção precisa de um texto.");
             OpcaoQuestao opcao = new OpcaoQuestao();
             opcao.setConjunto(conjunto);
             opcao.setTexto(o.texto.trim());
@@ -85,7 +86,7 @@ public class AvaliacaoService {
 
     public List<InstrumentoAvaliativoDTO> listarInstrumentos(int paginaSolicitada, int tamanhoSolicitado) {
         if (tamanhoSolicitado < 1 || tamanhoSolicitado > 100)
-            throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e 100.");
+            throw new ValidacaoException("O tamanho da página deve estar entre 1 e 100.");
 
         List<InstrumentoAvaliativoDTO> resultado = new ArrayList<>();
         for (var instrimento : instrumentoDao.listInstrumentos(paginaSolicitada, tamanhoSolicitado)) {
@@ -97,19 +98,18 @@ public class AvaliacaoService {
 
     public InstrumentoAvaliativoDTO buscarInstrumento(String id) {
         InstrumentoAvaliativo inst = instrumentoDao.findInstrumentosById(UUID.fromString(id));
-        if (inst == null) return null;
         return new InstrumentoAvaliativoDTO().createDetalhe(inst);
     }
 
     public InstrumentoAvaliativoDTO salvarInstrumento(InstrumentoAvaliativoDTO dto, String usuario) {
-        if (dto == null) throw new IllegalArgumentException("Dados do instrumento não informados.");
+        if (dto == null) throw new ValidacaoException("Dados do instrumento não informados.");
         InstrumentoAvaliativo entidade = blank(dto.id) ? null : dao.buscarInstrumento(UUID.fromString(dto.id));
-        if (!blank(dto.id) && entidade == null) throw new IllegalArgumentException("Instrumento não encontrado.");
+        if (!blank(dto.id) && entidade == null) throw new ValidacaoException("Instrumento não encontrado.");
         boolean rascunho = entidade == null || "RASCUNHO".equals(entidade.getStatus());
         validar(dto, rascunho);
         if (dao.existeInstrumento(dto.titulo.trim(), dto.cicloReferencia.trim(),
                 UUID.fromString(dto.tipoEntidadeAvaliadaId), entidade == null ? null : entidade.getId())) {
-            throw new IllegalArgumentException("Já existe um instrumento para este tipo avaliado, ciclo e título.");
+            throw new ValidacaoException("Já existe um instrumento para este tipo avaliado, ciclo e título.");
         }
         boolean novo = entidade == null;
         if (novo) {
@@ -140,10 +140,10 @@ public class AvaliacaoService {
 
     public InstrumentoAvaliativoDTO publicar(String id) {
         InstrumentoAvaliativoDTO i = buscarInstrumento(id);
-        if (i == null) throw new IllegalArgumentException("Instrumento não encontrado.");
-        if (!"RASCUNHO".equals(i.status)) throw new IllegalArgumentException("Apenas rascunhos podem ser publicados.");
-        if (i.totalQuestoes == 0) throw new IllegalArgumentException("Inclua ao menos uma questão antes de publicar.");
-        if (i.respondentes.isEmpty()) throw new IllegalArgumentException("Defina ao menos um público respondente antes de publicar.");
+        if (i == null) throw new ValidacaoException("Instrumento não encontrado.");
+        if (!"RASCUNHO".equals(i.status)) throw new ValidacaoException("Apenas rascunhos podem ser publicados.");
+        if (i.totalQuestoes == 0) throw new ValidacaoException("Inclua ao menos uma questão antes de publicar.");
+        if (i.respondentes.isEmpty()) throw new ValidacaoException("Defina ao menos um público respondente antes de publicar.");
         InstrumentoAvaliativo entidade = dao.buscarInstrumento(UUID.fromString(id));
         entidade.setStatus("PUBLICADO");
         entidade.setAtualizadoEm(OffsetDateTime.now());
@@ -153,14 +153,14 @@ public class AvaliacaoService {
             instrumentoDao.criarEntidadeInstitucional(i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
             instrumentoDao.vincularEntidadeInstitucional(id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
         }
-        instrumentoDao.popularAlvos(id);
+//        instrumentoDao.popularAlvos(id);
         return buscarInstrumento(id);
     }
 
     public boolean excluir(String id) {
         InstrumentoAvaliativoDTO i = buscarInstrumento(id);
         if (i == null) return false;
-        if (!"RASCUNHO".equals(i.status)) throw new IllegalArgumentException("Só é possível excluir instrumentos em rascunho.");
+        if (!"RASCUNHO".equals(i.status)) throw new ValidacaoException("Só é possível excluir instrumentos em rascunho.");
         List<String> questoes = idsQuestoes(id);
         dao.remover(dao.buscarInstrumento(UUID.fromString(id)));
         dao.flush();
@@ -274,7 +274,7 @@ public class AvaliacaoService {
             } else {
                 conjunto = dao.buscar(ConjuntoOpcao.class, UUID.fromString(q.conjuntoOpcaoId));
                 if (conjunto == null || conjunto.isExclusivo())
-                    throw new IllegalArgumentException("Conjunto de opções inválido para esta questão.");
+                    throw new ValidacaoException("Conjunto de opções inválido para esta questão.");
             }
         }
         entidade.setConjuntoOpcao(conjunto);
@@ -299,16 +299,16 @@ public class AvaliacaoService {
     }
 
     private void validar(InstrumentoAvaliativoDTO d, boolean validarRespondentes) {
-        if (d == null) throw new IllegalArgumentException("Dados do instrumento não informados.");
-        if (blank(d.titulo)) throw new IllegalArgumentException("Informe o título do instrumento.");
-        if (blank(d.cicloReferencia)) throw new IllegalArgumentException("Informe o ciclo de referência (ex.: 2026/1).");
-        if (blank(d.tipoEntidadeAvaliadaId)) throw new IllegalArgumentException("Informe o que será avaliado.");
+        if (d == null) throw new ValidacaoException("Dados do instrumento não informados.");
+        if (blank(d.titulo)) throw new ValidacaoException("Informe o título do instrumento.");
+        if (blank(d.cicloReferencia)) throw new ValidacaoException("Informe o ciclo de referência (ex.: 2026/1).");
+        if (blank(d.tipoEntidadeAvaliadaId)) throw new ValidacaoException("Informe o que será avaliado.");
         TipoEntidade tipoAvaliado = tiposEntidadeDao.buscar(UUID.fromString(d.tipoEntidadeAvaliadaId));
         if (tipoAvaliado == null || !tipoAvaliado.isPodeSerAvaliada())
-            throw new IllegalArgumentException("Tipo avaliado inválido.");
-        if (blank(d.inicioAplicacao) || blank(d.fimAplicacao)) throw new IllegalArgumentException("Informe o período de aplicação.");
+            throw new ValidacaoException("Tipo avaliado inválido.");
+        if (blank(d.inicioAplicacao) || blank(d.fimAplicacao)) throw new ValidacaoException("Informe o período de aplicação.");
         if (!OffsetDateTime.parse(d.fimAplicacao).isAfter(OffsetDateTime.parse(d.inicioAplicacao))) {
-            throw new IllegalArgumentException("O término da aplicação deve ser posterior ao início.");
+            throw new ValidacaoException("O término da aplicação deve ser posterior ao início.");
         }
         if (d.respondentes == null) d.respondentes = new ArrayList<>();
         if (d.paginas == null) d.paginas = new ArrayList<>();
@@ -317,15 +317,15 @@ public class AvaliacaoService {
         Set<String> vistos = new HashSet<>();
         String contextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(d.tipoEntidadeAvaliadaId));
         if (validarRespondentes) for (AvaliacaoDTO.InstrumentoTipoRespondenteDTO r : d.respondentes) {
-            if (blank(r.tipoEntidadeId)) throw new IllegalArgumentException("Respondente sem tipo definido.");
-            if (!vistos.add(r.tipoEntidadeId)) throw new IllegalArgumentException("Público respondente repetido.");
+            if (blank(r.tipoEntidadeId)) throw new ValidacaoException("Respondente sem tipo definido.");
+            if (!vistos.add(r.tipoEntidadeId)) throw new ValidacaoException("Público respondente repetido.");
             TipoEntidade tipoRespondente = tiposEntidadeDao.buscar(UUID.fromString(r.tipoEntidadeId));
             if (tipoRespondente == null || !tipoRespondente.isPodeResponder())
-                throw new IllegalArgumentException("Público respondente inválido.");
+                throw new ValidacaoException("Público respondente inválido.");
             String vinculo = blank(r.tipoVinculo) ? null : r.tipoVinculo.trim();
             String codigo = tipoRespondente.getCodigo();
             if (!tiposEntidadeDao.podeAvaliar(UUID.fromString(r.tipoEntidadeId), UUID.fromString(d.tipoEntidadeAvaliadaId))) {
-                throw new IllegalArgumentException("O tipo " + tipoRespondente.getNome()
+                throw new ValidacaoException("O tipo " + tipoRespondente.getNome()
                         + " não está autorizado a avaliar o tipo selecionado.");
             }
             boolean vinculoValido = switch (contextoCodigo) {
@@ -336,30 +336,30 @@ public class AvaliacaoService {
                 case "DOCENTE" -> "ALUNO".equals(codigo) && (vinculo == null || "MATRICULADO_EM".equals(vinculo));
                 default -> vinculo == null || Set.of("MATRICULADO_EM", "LECIONA", "PERTENCE_A").contains(vinculo);
             };
-            if (!vinculoValido) throw new IllegalArgumentException("Vínculo incompatível com o público e o contexto avaliados.");
+            if (!vinculoValido) throw new ValidacaoException("Vínculo incompatível com o público e o contexto avaliados.");
         }
         for (AvaliacaoDTO.InstrumentoSessaoPaginaDTO p : d.paginas) {
-            if (blank(p.titulo)) throw new IllegalArgumentException("Toda página precisa de um título.");
+            if (blank(p.titulo)) throw new ValidacaoException("Toda página precisa de um título.");
         }
         for (AvaliacaoDTO.InstrumentoSessaoDTO s : d.sessoes) {
-            if (blank(s.titulo)) throw new IllegalArgumentException("Toda sessão precisa de um título.");
+            if (blank(s.titulo)) throw new ValidacaoException("Toda sessão precisa de um título.");
             if (s.questoes == null) s.questoes = new ArrayList<>();
             for (AvaliacaoDTO.SessaoQuestaoDTO q : s.questoes) {
-                if (blank(q.enunciado)) throw new IllegalArgumentException("Toda questão precisa de um enunciado (sessão \"" + s.titulo + "\").");
-                if (q.tipo == null || !TIPOS_QUESTAO.contains(q.tipo)) throw new IllegalArgumentException("Tipo de questão inválido.");
+                if (blank(q.enunciado)) throw new ValidacaoException("Toda questão precisa de um enunciado (sessão \"" + s.titulo + "\").");
+                if (q.tipo == null || !TIPOS_QUESTAO.contains(q.tipo)) throw new ValidacaoException("Tipo de questão inválido.");
                 boolean temConjunto = !blank(q.conjuntoOpcaoId);
                 boolean temOpcoesExclusivas = q.opcoes != null && !q.opcoes.isEmpty();
                 if ("DESCRITIVA".equals(q.tipo) && (temConjunto || temOpcoesExclusivas)) {
-                    throw new IllegalArgumentException("Questão descritiva não pode ter opções.");
+                    throw new ValidacaoException("Questão descritiva não pode ter opções.");
                 }
                 if (!"DESCRITIVA".equals(q.tipo) && temConjunto == temOpcoesExclusivas) {
-                    throw new IllegalArgumentException("A questão \"" + q.enunciado + "\" precisa de um conjunto ou de opções exclusivas.");
+                    throw new ValidacaoException("A questão \"" + q.enunciado + "\" precisa de um conjunto ou de opções exclusivas.");
                 }
                 if (temOpcoesExclusivas) {
-                    if (q.opcoes.size() < 2) throw new IllegalArgumentException("Cadastre ao menos duas opções para a questão \"" + q.enunciado + "\".");
+                    if (q.opcoes.size() < 2) throw new ValidacaoException("Cadastre ao menos duas opções para a questão \"" + q.enunciado + "\".");
                     for (AvaliacaoDTO.OpcaoQuestaoDTO o : q.opcoes) {
                         if (o == null || blank(o.texto) || o.texto.trim().length() > 300)
-                            throw new IllegalArgumentException("Toda opção exclusiva precisa de um texto de até 300 caracteres.");
+                            throw new ValidacaoException("Toda opção exclusiva precisa de um texto de até 300 caracteres.");
                     }
                 }
             }
