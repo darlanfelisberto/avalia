@@ -8,7 +8,9 @@
         <feature>jsonp-2.1</feature>
         <feature>validation-3.1</feature>
         <feature>jdbc-4.3</feature>
-        <feature>persistence-3.2</feature>
+        <feature>persistenceContainer-3.2</feature>
+        <feature>xmlBinding-4.0</feature>
+        <feature>bells-1.0</feature>
         <feature>mpJwt-2.1</feature>
     </featureManager>
 
@@ -38,11 +40,19 @@
            userNameAttribute="preferred_username" groupNameAttribute="groups"/>
 
     <!-- Exibir logs de SQL gerados no console e messages.log -->
-    <logging traceSpecification="*=info:eclipselink=fine:eclipselink.sql=fine:org.eclipse.persistence=fine"
+    <logging traceSpecification="*=info:org.hibernate.SQL=fine"
              consoleLogLevel="INFO"/>
 
     <webApplication location="avalia.war" contextRoot="/">
+        <classloader commonLibraryRef="HibernateLib"/>
     </webApplication>
+
+    <library id="HibernateLib">
+        <fileset dir="${server.config.dir}/lib/shared/hibernate" includes="*.jar"/>
+    </library>
+
+    <bell libraryRef="HibernateLib"/>
+    <jpa defaultPersistenceProvider="org.hibernate.jpa.HibernatePersistenceProvider"/>
 
     <!-- Driver JDBC PostgreSQL -->
     <library id="postgresqlLib">

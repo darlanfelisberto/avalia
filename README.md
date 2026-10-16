@@ -30,7 +30,7 @@ cd backend
 ./dev.sh
 ```
 
-A API fica em `http://localhost:9081`. Na inicialização, o Flyway aplica as migrações pendentes. A V29 remove sessões locais e a V30 remove as tabelas antigas `usuario_permissao`, `usuario_credencial` e `oidc_codigo`.
+A API fica em `http://localhost:9081`. As migrations Flyway atuais foram removidas; o dump da base será preparado posteriormente como uma migration inicial.
 
 ### Frontend
 

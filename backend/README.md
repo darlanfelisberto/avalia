@@ -16,4 +16,4 @@ Cada entidade ou objeto de domínio deve ter seus próprios componentes de API e
 
 Os componentes devem ficar nos pacotes por camada (`model`, `resource`, `service`, `dao` e `dto`), com nomes correspondentes ao objeto de domínio. Essa separação vale também para novos objetos; ao alterar código existente, mover as operações para os componentes do objeto responsável.
 
-As migrações ficam em `src/main/resources/db/migration`. A V8 cria o schema de avaliação e a V16 remove a coluna legada de módulo. Execute `mvn -f backend/pom.xml verify` para compilar e empacotar o backend. Para verificar os fluxos com persistência, disponibilize PostgreSQL e inicie o Liberty conforme o README principal.
+O diretório `src/main/resources/db/migration` está sem migrations no momento; o dump da base será preparado posteriormente como uma migration inicial. Execute `mvn -f backend/pom.xml verify` para compilar e empacotar o backend. Para verificar os fluxos com persistência, disponibilize PostgreSQL e inicie o Liberty conforme o README principal.

@@ -6,17 +6,31 @@
                                  https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
 
     <persistence-unit name="avaliaPU" transaction-type="JTA">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <jta-data-source>jdbc/avaliaDS</jta-data-source>
-        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+        <class>br.edu.iffar.avalia.academico.model.PessoaAcademica</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.Entidade</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.EntidadeVinculo</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.InstrumentoEntidadeAvaliada</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.Participacao</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.QuestaoAvaliativa</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.RespostaInstrumento</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.RespostaQuestao</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.SessaoQuestao</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.TipoEntidade</class>
+        <class>br.edu.iffar.avalia.avaliacao.model.TipoEntidadePermissao</class>
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
-            <!-- Validar schema existente gerenciado pelo Flyway sem modificar tabelas em runtime -->
-            <property name="jakarta.persistence.schema-generation.database.action" value="none"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
 
             <!-- Exibir SQLs gerados e parâmetros (equivalente ao show_sql) -->
-            <property name="eclipselink.logging.level.sql" value="FINE"/>
-            <property name="eclipselink.logging.parameters" value="true"/>
-            <property name="eclipselink.logging.logger" value="DefaultLogger"/>
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
         </properties>

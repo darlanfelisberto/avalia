@@ -22,6 +22,7 @@
         <version.liberty-maven-plugin>3.12.3</version.liberty-maven-plugin>
         <version.flyway>10.20.1</version.flyway>
         <version.postgresql>42.7.4</version.postgresql>
+        <version.hibernate>7.4.13.Final</version.hibernate>
 
         <liberty.var.default.http.port>9081</liberty.var.default.http.port>
         <liberty.var.default.https.port>9443</liberty.var.default.https.port>
@@ -78,6 +79,34 @@
             <artifactId>sharedClass</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${version.hibernate}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.persistence</groupId>
+                    <artifactId>jakarta.persistence-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.transaction</groupId>
+                    <artifactId>jakarta.transaction-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jaxb</groupId>
+                    <artifactId>jaxb-runtime</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.inject</groupId>
+                    <artifactId>jakarta.inject-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -113,6 +142,13 @@
                                 <artifactId>postgresql</artifactId>
                             </dependency>
                         </dependencyGroup>
+                    <dependencyGroup>
+                        <location>lib/shared/hibernate</location>
+                        <dependency>
+                            <groupId>org.hibernate.orm</groupId>
+                            <artifactId>hibernate-core</artifactId>
+                        </dependency>
+                    </dependencyGroup>
                     </copyDependencies>
                 </configuration>
             </plugin>
