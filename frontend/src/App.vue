@@ -1,20 +1,26 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import Sidebar from './components/Sidebar.vue';
 import HeaderNav from './components/HeaderNav.vue';
-import SincronizacaoView from './components/SincronizacaoView.vue';
-import AvaliacaoInstrumentoView from './components/AvaliacaoInstrumentoView.vue';
-import PermissoesTiposEntidadeView from './components/PermissoesTiposEntidadeView.vue';
-import ResponderAvaliacoesView from './components/ResponderAvaliacoesView.vue';
 import LoginView from './components/LoginView.vue';
+import { RouterView, useRoute, useRouter } from 'vue-router';
 
 import type { UsuarioContexto } from './types/avaliacao';
-import { carregarUsuarioAtivo, salvarUsuarioAtivo, limparUsuarioAtivo, temPermissao } from './services/storage';
+import { carregarUsuarioAtivo, salvarUsuarioAtivo, limparUsuarioAtivo } from './services/storage';
 import { concluirLoginOidc, encerrarLoginOidc, recebeuRetornoOidc, validarSessaoAtual } from './services/oidc';
+import { rotaInicial } from './router';
 
 const usuarioLogado = ref<UsuarioContexto | null>(carregarUsuarioAtivo());
-
-const visaoAtual = ref<'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes'>(obterVisaoPadraoParaUsuario(usuarioLogado.value));
+const route = useRoute();
+const router = useRouter();
+type VisaoMenu = 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes';
+const visaoAtual = computed<VisaoMenu | 'acesso-negado'>(() => {
+  if (route.name === 'instrumento-novo' || route.name === 'instrumento-editar') return 'instrumentos';
+  return route.name === 'instrumentos' || route.name === 'permissoes'
+    || route.name === 'sincronizacao' || route.name === 'acesso-negado'
+    ? route.name
+    : 'responder';
+});
 const recargaVisao = ref(0);
 const menuAbertoMobile = ref(false);
 const processandoRetorno = ref(true);
@@ -25,11 +31,11 @@ onMounted(async () => {
   try {
     if (recebeuRetornoOidc()) {
       const resposta = await concluirLoginOidc();
-      aoLoginSucesso({ ...resposta.usuario!, papel: resposta.usuario!.papelAtivo || resposta.usuario!.papel });
+      aoLoginSucesso({ ...resposta.usuario!, papel: resposta.usuario!.papelAtivo || resposta.usuario!.papel }, true);
     } else {
       const usuario = await validarSessaoAtual();
       if (usuario) {
-        aoLoginSucesso({ ...usuario, papel: usuario.papelAtivo || usuario.papel });
+        aoLoginSucesso({ ...usuario, papel: usuario.papelAtivo || usuario.papel }, !usuarioLogado.value);
       } else {
         usuarioLogado.value = null;
         limparUsuarioAtivo();
@@ -44,23 +50,19 @@ onMounted(async () => {
   }
 });
 
-function obterVisaoPadraoParaUsuario(u: UsuarioContexto | null): 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes' {
-  if (!u) return 'responder';
-  if (u.papeis.some(p => p === 'CPA' || p === 'ADMIN') && temPermissao(u, 'INSTRUMENTO_VISUALIZAR')) return 'instrumentos';
-  if (temPermissao(u, 'AVALIACAO_RESPONDER')) return 'responder';
-  if (temPermissao(u, 'SIGAA_SINCRONIZAR')) return 'sincronizacao';
-  return 'responder';
-}
-
-function aoLoginSucesso(usuario: UsuarioContexto) {
+function aoLoginSucesso(usuario: UsuarioContexto, irParaRotaInicial = false) {
   usuarioLogado.value = usuario;
   salvarUsuarioAtivo(usuario);
-  visaoAtual.value = obterVisaoPadraoParaUsuario(usuario);
+  if (irParaRotaInicial) void router.replace(rotaInicial(usuario));
 }
 
-function aoMudarVisao(visao: typeof visaoAtual.value) {
-  visaoAtual.value = visao;
-  recargaVisao.value++;
+async function aoMudarVisao(visao: VisaoMenu) {
+  const caminho = `/${visao}`;
+  if (route.path === caminho) {
+    recargaVisao.value++;
+    return;
+  }
+  await router.push(caminho);
 }
 
 async function aoLogout() {
@@ -103,27 +105,9 @@ async function aoLogout() {
 
       <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 md:py-8">
         <p v-if="erroLogout" role="alert" class="mb-4 rounded bg-red-50 p-3 text-red-700">{{ erroLogout }}</p>
-        <ResponderAvaliacoesView
-          v-if="visaoAtual === 'responder'"
-          :key="`${usuarioLogado.cpf}-${recargaVisao}`"
-        />
-
-        <!-- Instrumentos de Avaliação (schema avaliacao): questionário, páginas, sessões e questões -->
-        <AvaliacaoInstrumentoView
-          v-else-if="visaoAtual === 'instrumentos'"
-          :key="`instrumentos-${recargaVisao}`"
-        />
-
-        <PermissoesTiposEntidadeView
-          v-else-if="visaoAtual === 'permissoes'"
-          :key="`permissoes-${recargaVisao}`"
-        />
-
-        <!-- 6. Sincronização & Integração SIGAA / SIGRH -->
-        <SincronizacaoView
-          v-else-if="visaoAtual === 'sincronizacao'"
-          :key="`sincronizacao-${recargaVisao}`"
-        />
+        <RouterView v-slot="{ Component }">
+          <component :is="Component" :key="`${route.fullPath}-${usuarioLogado.cpf}-${recargaVisao}`" />
+        </RouterView>
       </main>
 
       <!-- Rodapé Acadêmico e Institucional -->

@@ -4,7 +4,7 @@ import type { UsuarioContexto } from '../types/avaliacao';
 import { temPermissao } from '../services/storage';
 
 const props = defineProps<{
-  visaoAtual: 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes';
+  visaoAtual: 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes' | 'acesso-negado';
   menuAbertoMobile: boolean;
   usuario: UsuarioContexto | null;
 }>();

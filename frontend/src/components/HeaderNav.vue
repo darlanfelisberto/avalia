@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { UsuarioContexto } from '../types/avaliacao';
 
 const props = defineProps<{
-  visaoAtual: 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes';
+  visaoAtual: 'responder' | 'sincronizacao' | 'instrumentos' | 'permissoes' | 'acesso-negado';
   usuario: UsuarioContexto | null;
 }>();
 
@@ -28,6 +28,10 @@ const tituloVisao = computed(() => {
       };
     case 'responder':
       return { titulo: 'Responder Avaliações', categoria: 'Aplicação e Respostas', codigo: '' };
+    case 'sincronizacao':
+      return { titulo: 'Sincronização SIGAA', categoria: 'Integração Acadêmica', codigo: '' };
+    case 'acesso-negado':
+      return { titulo: 'Acesso não autorizado', categoria: 'Conta', codigo: '' };
     default:
       return { titulo: 'Sistema de Avaliação', categoria: 'IFFar', codigo: '' };
   }
