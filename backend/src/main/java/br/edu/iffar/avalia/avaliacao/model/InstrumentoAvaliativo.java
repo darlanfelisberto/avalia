@@ -64,8 +64,9 @@ public class InstrumentoAvaliativo extends Model<UUID> {
     @Column(name = "permite_edicao", nullable = false)
     private boolean permiteEdicao = true;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 12)
-    private String status = "RASCUNHO";
+    private StatusInstrumentoAvaliativo status = StatusInstrumentoAvaliativo.RASCUNHO;
 
     @Column(name = "consolidado_em")
     private OffsetDateTime consolidadoEm;
@@ -121,6 +122,16 @@ public class InstrumentoAvaliativo extends Model<UUID> {
 
     public void setInstrumentoSessoesList(List<InstrumentoSessao> sessoes) {
         this.instrumentoSessoesList = sessoes;
+    }
+
+    public int contarQuestoes() {
+        if (instrumentoSessoesList == null) return 0;
+        return instrumentoSessoesList.stream()
+                .filter(sessao -> sessao.getTipoSessao() == TipoSessao.SESSAO)
+                .mapToInt(sessao -> sessao.getSessaoQuestoesList() == null
+                        ? 0
+                        : sessao.getSessaoQuestoesList().size())
+                .sum();
     }
 
     public List<InstrumentoTipoAlvo> getTiposAlvoList() { return tiposAlvoList; }
@@ -191,11 +202,11 @@ public class InstrumentoAvaliativo extends Model<UUID> {
         this.permiteEdicao = permiteEdicao;
     }
 
-    public String getStatus() {
+    public StatusInstrumentoAvaliativo getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(StatusInstrumentoAvaliativo status) {
         this.status = status;
     }
 
@@ -232,8 +243,10 @@ public class InstrumentoAvaliativo extends Model<UUID> {
     }
 
     public boolean isAtivo() {
-        return status != null && status.equals("ATIVO");
+        return status == StatusInstrumentoAvaliativo.PUBLICADO;
     }
+
+
 
     @Override
     public UUID getMMId() {

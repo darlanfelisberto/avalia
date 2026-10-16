@@ -15,6 +15,7 @@ import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo;
 import br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao;
 import br.edu.iffar.avalia.avaliacao.model.Questao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
+import br.edu.iffar.avalia.avaliacao.model.StatusInstrumentoAvaliativo;
 import br.edu.iffar.avalia.core.exception.ValidacaoException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -105,7 +106,7 @@ public class AvaliacaoService {
         if (dto == null) throw new ValidacaoException("Dados do instrumento não informados.");
         InstrumentoAvaliativo entidade = blank(dto.id) ? null : dao.buscarInstrumento(UUID.fromString(dto.id));
         if (!blank(dto.id) && entidade == null) throw new ValidacaoException("Instrumento não encontrado.");
-        boolean rascunho = entidade == null || "RASCUNHO".equals(entidade.getStatus());
+        boolean rascunho = entidade == null || entidade.getStatus() == StatusInstrumentoAvaliativo.RASCUNHO;
         validar(dto, rascunho);
         if (dao.existeInstrumento(dto.titulo.trim(), dto.cicloReferencia.trim(),
                 UUID.fromString(dto.tipoEntidadeAvaliadaId), entidade == null ? null : entidade.getId())) {
@@ -138,29 +139,30 @@ public class AvaliacaoService {
         return buscarInstrumento(id);
     }
 
+    @Transactional
     public InstrumentoAvaliativoDTO publicar(String id) {
-        InstrumentoAvaliativoDTO i = buscarInstrumento(id);
-        if (i == null) throw new ValidacaoException("Instrumento não encontrado.");
-        if (!"RASCUNHO".equals(i.status)) throw new ValidacaoException("Apenas rascunhos podem ser publicados.");
-        if (i.totalQuestoes == 0) throw new ValidacaoException("Inclua ao menos uma questão antes de publicar.");
-        if (i.respondentes.isEmpty()) throw new ValidacaoException("Defina ao menos um público respondente antes de publicar.");
         InstrumentoAvaliativo entidade = dao.buscarInstrumento(UUID.fromString(id));
-        entidade.setStatus("PUBLICADO");
+        if (entidade == null) throw new ValidacaoException("Instrumento não encontrado.");
+        if (entidade.getStatus() != StatusInstrumentoAvaliativo.RASCUNHO) throw new ValidacaoException("Apenas rascunhos podem ser publicados.");
+        if (entidade.contarQuestoes() == 0) throw new ValidacaoException("Inclua ao menos uma questão antes de publicar.");
+        if (entidade.getInstrumentoTipoRespondenteList().isEmpty()) throw new ValidacaoException("Defina ao menos um público respondente antes de publicar.");
+
+        entidade.setStatus(StatusInstrumentoAvaliativo.PUBLICADO);
         entidade.setAtualizadoEm(OffsetDateTime.now());
         dao.flush();
-        String tipoContextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(i.tipoEntidadeAvaliadaId));
-        if ("INSTITUICAO".equals(tipoContextoCodigo)) {
-            instrumentoDao.criarEntidadeInstitucional(i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
-            instrumentoDao.vincularEntidadeInstitucional(id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
-        }
-//        instrumentoDao.popularAlvos(id);
-        return buscarInstrumento(id);
+//        String tipoContextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(i.tipoEntidadeAvaliadaId));
+//        if ("INSTITUICAO".equals(tipoContextoCodigo)) {
+//            instrumentoDao.criarEntidadeInstitucional(i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
+//            instrumentoDao.vincularEntidadeInstitucional(id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
+//        }
+////        instrumentoDao.popularAlvos(id);
+        return new InstrumentoAvaliativoDTO().createDetalhe(entidade);
     }
 
     public boolean excluir(String id) {
         InstrumentoAvaliativoDTO i = buscarInstrumento(id);
         if (i == null) return false;
-        if (!"RASCUNHO".equals(i.status)) throw new ValidacaoException("Só é possível excluir instrumentos em rascunho.");
+        if (!StatusInstrumentoAvaliativo.RASCUNHO.name().equals(i.status)) throw new ValidacaoException("Só é possível excluir instrumentos em rascunho.");
         List<String> questoes = idsQuestoes(id);
         dao.remover(dao.buscarInstrumento(UUID.fromString(id)));
         dao.flush();

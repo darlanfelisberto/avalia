@@ -232,7 +232,7 @@ function voltarDaPrevia() {
           <button v-if="!semPermissaoDeEdicao" type="button" :disabled="salvando" class="button button--primary instrument-form__save" @click="salvar()">
             💾 {{ salvando ? 'Salvando…' : 'Salvar' }}
           </button>
-          <button v-if="podeEditar && !somenteLeitura" type="button" :disabled="salvando" class="button button--publish" @click="publicar">
+          <button v-if="podeEditar && (!form.status || form.status === 'RASCUNHO') && !somenteLeitura" type="button" :disabled="salvando" class="button button--publish" @click="publicar">
             🚀 Salvar e publicar
           </button>
         </div>

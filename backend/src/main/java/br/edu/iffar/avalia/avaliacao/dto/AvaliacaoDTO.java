@@ -175,7 +175,7 @@ public final class AvaliacaoDTO {
             titulo = ia.getTitulo();
             descricao = ia.getDescricao();
             cicloReferencia = ia.getCicloReferencia();
-            status = ia.getStatus();
+            status = ia.getStatus().name();
             inicioAplicacao = ia.getInicioAplicacao().toString();
             fimAplicacao = ia.getFimAplicacao().toString();
             anonimo = ia.isAnonimo();
