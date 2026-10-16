@@ -38,19 +38,10 @@ const podeExcluir = temPermissao(usuario, 'INSTRUMENTO_EXCLUIR');
 const tiposAvaliaveis = computed(() => tipos.value.filter(t => t.podeSerAvaliada));
 const tiposRespondentes = computed(() => {
   const tipoAvaliadoId = form.tipoEntidadeAvaliadaId;
-  const alvosSelecionados = form.tiposEntidadeAlvoIds || [];
-  if (!tipoAvaliadoId || !alvosSelecionados.length) return [];
+  if (!tipoAvaliadoId) return [];
   return tipos.value.filter(tipo => tipo.podeResponder
     && permissoesTipos.value.some(permissao =>
-      permissao.tipoRespondenteId === tipo.id && permissao.tipoAvaliadoId === tipoAvaliadoId)
-    && alvosSelecionados.every(alvoId => permissoesTipos.value.some(permissao =>
-      permissao.tipoRespondenteId === tipo.id && permissao.tipoAvaliadoId === alvoId)));
-});
-const tiposAlvoDisponiveis = computed(() => {
-  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId);
-  return contexto?.codigo === 'TURMA'
-    ? tiposAvaliaveis.value.filter(t => ['DOCENTE', 'ALUNO'].includes(t.codigo))
-    : tiposAvaliaveis.value.filter(t => t.id === form.tipoEntidadeAvaliadaId);
+      permissao.tipoRespondenteId === tipo.id && permissao.tipoAvaliadoId === tipoAvaliadoId));
 });
 
 // datas ISO <-> input datetime-local
@@ -67,7 +58,6 @@ function novoInstrumento(): InstrumentoAvaliativoDTO {
   const fim = new Date(Date.now() + 30 * 86400000);
   return {
     tipoEntidadeAvaliadaId: '',
-    tiposEntidadeAlvoIds: [],
     titulo: '',
     descricao: '',
     cicloReferencia: `${hoje.getFullYear()}/${hoje.getMonth() < 6 ? 1 : 2}`,
@@ -87,28 +77,12 @@ function normalizarRespondentes(respondentes?: InstrumentoAvaliativoDTO['respond
   return (respondentes || []).map(r => ({ ...r, tipoVinculo: r.tipoVinculo ?? '' }));
 }
 
-function normalizarTiposAlvo(i: InstrumentoAvaliativoDTO) {
-  return i.tiposEntidadeAlvoIds?.length ? [...i.tiposEntidadeAlvoIds] : (i.tipoEntidadeAvaliadaId ? [i.tipoEntidadeAvaliadaId] : []);
-}
-
 function contextoAlterado() {
-  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId);
-  form.tiposEntidadeAlvoIds = contexto?.codigo === 'TURMA'
-    ? tiposAlvoDisponiveis.value.map(t => t.id)
-    : (form.tipoEntidadeAvaliadaId ? [form.tipoEntidadeAvaliadaId] : []);
   ajustarRespondentesPermitidos();
   for (const respondente of form.respondentes) {
     const vinculos = vinculosParaRespondente(respondente.tipoEntidadeId).map(v => v.valor);
     if (!vinculos.includes(respondente.tipoVinculo || '')) respondente.tipoVinculo = '';
   }
-}
-
-function alternarTipoAlvo(tipoId: string) {
-  form.tiposEntidadeAlvoIds ||= [];
-  const idx = form.tiposEntidadeAlvoIds?.indexOf(tipoId) ?? -1;
-  if (idx >= 0) form.tiposEntidadeAlvoIds!.splice(idx, 1);
-  else form.tiposEntidadeAlvoIds!.push(tipoId);
-  ajustarRespondentesPermitidos();
 }
 
 function ajustarRespondentesPermitidos() {
@@ -168,8 +142,7 @@ async function editar(id: string) {
   Object.assign(form, res.dados, {
     inicioAplicacao: isoParaLocal(res.dados.inicioAplicacao),
     fimAplicacao: isoParaLocal(res.dados.fimAplicacao),
-    respondentes: normalizarRespondentes(res.dados.respondentes),
-    tiposEntidadeAlvoIds: normalizarTiposAlvo(res.dados)
+    respondentes: normalizarRespondentes(res.dados.respondentes)
   });
   modo.value = 'form';
 }
@@ -178,8 +151,7 @@ function aplicar(i: InstrumentoAvaliativoDTO) {
   Object.assign(form, i, {
     inicioAplicacao: isoParaLocal(i.inicioAplicacao),
     fimAplicacao: isoParaLocal(i.fimAplicacao),
-    respondentes: normalizarRespondentes(i.respondentes),
-    tiposEntidadeAlvoIds: normalizarTiposAlvo(i)
+    respondentes: normalizarRespondentes(i.respondentes)
   });
 }
 
@@ -270,7 +242,7 @@ const corStatus: Record<string, string> = {
 const colunasInstrumentos = [
   { key: 'titulo', label: 'Título', class: 'font-semibold text-slate-900' },
   { key: 'cicloReferencia', label: 'Ciclo', class: 'text-slate-600' },
-  { key: 'tiposEntidadeAlvoNomes', label: 'Avalia', class: 'text-slate-600' },
+  { key: 'tipoEntidadeAvaliadaNome', label: 'Avalia', class: 'text-slate-600' },
   { key: 'periodo', label: 'Período', class: 'text-slate-600' },
   { key: 'status', label: 'Status' },
   { key: 'acoes', label: '', class: 'text-right whitespace-nowrap' }
@@ -308,10 +280,7 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
                       :page="paginaAtual" :has-next="temProximaPagina"
                       @page-change="carregarLista">
         <template #cell="{ row, column }">
-          <template v-if="column === 'tiposEntidadeAlvoNomes'">
-            {{ row.tiposEntidadeAlvoNomes?.join(', ') || row.tipoEntidadeAvaliadaNome }}
-          </template>
-          <template v-else-if="column === 'periodo'">
+          <template v-if="column === 'periodo'">
             {{ fmtData(row.inicioAplicacao) }} – {{ fmtData(row.fimAplicacao) }}
           </template>
           <span v-else-if="column === 'status'" :class="['px-2 py-0.5 rounded-full font-bold text-[10px]', corStatus[row.status || 'RASCUNHO']]">{{ row.status }}</span>
@@ -375,18 +344,6 @@ const input = 'w-full text-xs p-3 border border-slate-200 rounded-xl bg-white fo
               <option v-for="t in tiposAvaliaveis" :key="t.id" :value="t.id">{{ t.nome }}</option>
             </select>
           </label>
-          <div v-if="tiposAlvoDisponiveis.length" class="md:col-span-2 space-y-2">
-            <p class="text-xs font-bold text-slate-700">Alvos deste instrumento</p>
-            <p v-if="tipos.find(t => t.id === form.tipoEntidadeAvaliadaId)?.codigo === 'TURMA'" class="text-xs text-slate-500">
-              Ao selecionar uma turma, o respondente poderá avaliar docentes que lecionam nela e alunos vinculados a ela.
-            </p>
-            <div class="flex flex-wrap gap-3">
-              <label v-for="t in tiposAlvoDisponiveis" :key="t.id" class="flex items-center gap-2 text-xs text-slate-700">
-                <input type="checkbox" :checked="form.tiposEntidadeAlvoIds?.includes(t.id)" :disabled="somenteLeitura"
-                  @change="alternarTipoAlvo(t.id)" /> {{ t.nome }}
-              </label>
-            </div>
-          </div>
           <div class="md:col-span-2 flex flex-wrap gap-6">
             <label class="flex items-center gap-2 text-xs font-medium text-slate-800 cursor-pointer">
               <input v-model="form.anonimo" type="checkbox" class="w-4 h-4" /> Respostas anônimas (não vincular o respondente à resposta)

@@ -3,9 +3,11 @@ package br.edu.iffar.avalia.avaliacao.dto;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
+import br.edu.iffar.avalia.avaliacao.model.TipoSessao;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * DTOs do schema "avaliacao" (páginas e sessões do instrumento; questões nas sessões). Datas em ISO-8601 (UTC).
@@ -126,8 +128,6 @@ public final class AvaliacaoDTO {
         public String id;
         public String tipoEntidadeAvaliadaId;
         public String tipoEntidadeAvaliadaNome;
-        public List<String> tiposEntidadeAlvoIds = new ArrayList<>();
-        public List<String> tiposEntidadeAlvoNomes = new ArrayList<>();
         public String titulo;
         public String descricao;
         public String cicloReferencia;
@@ -146,34 +146,64 @@ public final class AvaliacaoDTO {
         public List<Pagina> paginas = new ArrayList<>();
         public List<Sessao> sessoes = new ArrayList<>();
 
-        public static InstrumentoAvaliativoDTO create(InstrumentoAvaliativo entidade) {
-            InstrumentoAvaliativoDTO i = new InstrumentoAvaliativoDTO();
-            i.id = entidade.getId().toString();
-            i.tipoEntidadeAvaliadaId = entidade.getTipoEntidadeAvaliada().getId().toString();
-            i.tipoEntidadeAvaliadaNome = entidade.getTipoEntidadeAvaliada().getNome();
-            i.titulo = entidade.getTitulo();
-            i.descricao = entidade.getDescricao();
-            i.cicloReferencia = entidade.getCicloReferencia();
-            i.status = entidade.getStatus();
-            i.inicioAplicacao = entidade.getInicioAplicacao().toString();
-            i.fimAplicacao = entidade.getFimAplicacao().toString();
-            i.anonimo = entidade.isAnonimo();
-            i.permiteEdicao = entidade.isPermiteEdicao();
-            i.criadoPor = entidade.getCriadoPor();
-            i.atualizadoEm = entidade.getAtualizadoEm().toString();
-//            for (InstrumentoTipoAlvo alvo : entidade.getTiposAlvoList().stream()
-//                    .sorted(Comparator.comparing(item -> item.getTipoAlvo().getNome())).toList()) {
-//                i.tiposEntidadeAlvoIds.add(alvo.getTipoAlvo().getId().toString());
-//                i.tiposEntidadeAlvoNomes.add(alvo.getTipoAlvo().getNome());
-//            }
-            if (i.tiposEntidadeAlvoIds.isEmpty()) {
-                i.tiposEntidadeAlvoIds.add(i.tipoEntidadeAvaliadaId);
-                i.tiposEntidadeAlvoNomes.add(i.tipoEntidadeAvaliadaNome);
+        public InstrumentoAvaliativoDTO createResumo(InstrumentoAvaliativo ia) {
+            return comDadosBasicos(ia);
+        }
+
+        public InstrumentoAvaliativoDTO createDetalhe(InstrumentoAvaliativo ia) {
+            return createResumo(ia)
+                    .comRespondentes(ia)
+                    .comPaginas(ia)
+                    .comSessoes(ia);
+        }
+
+        public InstrumentoAvaliativoDTO comDadosBasicos(InstrumentoAvaliativo ia) {
+            var tipoAvaliado = ia.getTipoEntidadeAvaliada();
+            id = ia.getId().toString();
+            tipoEntidadeAvaliadaId = tipoAvaliado.getId().toString();
+            tipoEntidadeAvaliadaNome = tipoAvaliado.getNome();
+            titulo = ia.getTitulo();
+            descricao = ia.getDescricao();
+            cicloReferencia = ia.getCicloReferencia();
+            status = ia.getStatus();
+            inicioAplicacao = ia.getInicioAplicacao().toString();
+            fimAplicacao = ia.getFimAplicacao().toString();
+            anonimo = ia.isAnonimo();
+            permiteEdicao = ia.isPermiteEdicao();
+            criadoPor = ia.getCriadoPor();
+            atualizadoEm = ia.getAtualizadoEm().toString();
+            return this;
+        }
+
+        public InstrumentoAvaliativoDTO comRespondentes(InstrumentoAvaliativo ia) {
+            respondentes.clear();
+            for (var respondente : ia.getInstrumentoTipoRespondenteList()) {
+                respondentes.add(InstrumentoTipoRespondente.create(respondente));
             }
-            for (var respondente : entidade.getInstrumentoTipoRespondenteList()) {
-                i.respondentes.add(InstrumentoTipoRespondente.create(respondente));
+            return this;
+        }
+
+        public InstrumentoAvaliativoDTO comPaginas(InstrumentoAvaliativo ia) {
+            paginas.clear();
+            for (InstrumentoSessao sessao : ia.getInstrumentoSessoesList()) {
+                if (sessao.getTipoSessao() == TipoSessao.PAGINA) {
+                    paginas.add(Pagina.create(sessao));
+                }
             }
-            return i;
+            return this;
+        }
+
+        public InstrumentoAvaliativoDTO comSessoes(InstrumentoAvaliativo ia) {
+            sessoes.clear();
+            totalQuestoes = 0;
+            for (InstrumentoSessao sessao : ia.getInstrumentoSessoesList()) {
+                if (sessao.getTipoSessao() != TipoSessao.PAGINA) {
+                    Sessao sessaoDto = Sessao.create(sessao);
+                    totalQuestoes += sessaoDto.questoes.size();
+                    sessoes.add(sessaoDto);
+                }
+            }
+            return this;
         }
     }
 }

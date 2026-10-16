@@ -66,9 +66,6 @@ export interface InstrumentoAvaliativoDTO {
   id?: string;
   tipoEntidadeAvaliadaId: string;
   tipoEntidadeAvaliadaNome?: string;
-  /** Tipos de entidade avaliados; em instrumentos legados, omitido significa o tipo principal. */
-  tiposEntidadeAlvoIds?: string[];
-  tiposEntidadeAlvoNomes?: string[];
   titulo: string;
   descricao?: string | null;
   cicloReferencia: string;

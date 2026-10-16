@@ -37,8 +37,8 @@ public class InstrumentoAvaliativo extends Model<UUID> {
     @OrderBy("ordem ASC")
     private List<InstrumentoSessao> instrumentoSessoesList = new ArrayList<>();
 
-//    @OneToMany(mappedBy = "instrumento")
-//    private List<InstrumentoTipoAlvo> tiposAlvoList = new ArrayList<>();
+    @OneToMany(mappedBy = "instrumento")
+    private List<InstrumentoTipoAlvo> tiposAlvoList = new ArrayList<>();
 
     @OneToMany(mappedBy = "instrumento")
     private List<InstrumentoEntidadeAvaliada> entidadesAvaliadasList = new ArrayList<>();
@@ -123,13 +123,9 @@ public class InstrumentoAvaliativo extends Model<UUID> {
         this.instrumentoSessoesList = sessoes;
     }
 
-//    public List<InstrumentoTipoAlvo> getTiposAlvoList() {
-//        return tiposAlvoList;
-//    }
-//
-//    public void setTiposAlvoList(List<InstrumentoTipoAlvo> tiposAlvo) {
-//        this.tiposAlvoList = tiposAlvo;
-//    }
+    public List<InstrumentoTipoAlvo> getTiposAlvoList() { return tiposAlvoList; }
+
+    public void setTiposAlvoList(List<InstrumentoTipoAlvo> tiposAlvo) { this.tiposAlvoList = tiposAlvo; }
 
     public List<InstrumentoEntidadeAvaliada> getEntidadesAvaliadasList() {
         return entidadesAvaliadasList;

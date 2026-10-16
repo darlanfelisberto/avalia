@@ -82,15 +82,14 @@ public class AvaliacaoService {
         return ConjuntoOpcao.create(conjunto);
     }
 
-    // ------------------------------------------------------------------ instrumento
-
     public List<InstrumentoAvaliativoDTO> listarInstrumentos(int paginaSolicitada, int tamanhoSolicitado) {
         if (tamanhoSolicitado < 1 || tamanhoSolicitado > 100)
             throw new IllegalArgumentException("O tamanho da página deve estar entre 1 e 100.");
 
         List<InstrumentoAvaliativoDTO> resultado = new ArrayList<>();
-        for (InstrumentoAvaliativo entidade : instrumentoDao.listInstrumentos(paginaSolicitada, tamanhoSolicitado)) {
-            resultado.add(InstrumentoAvaliativoDTO.create(entidade));
+        for (var instrimento : instrumentoDao.listInstrumentos(paginaSolicitada, tamanhoSolicitado)) {
+            resultado.add(new InstrumentoAvaliativoDTO()
+                    .createResumo(instrimento));
         }
         return resultado;
     }
@@ -98,17 +97,7 @@ public class AvaliacaoService {
     public InstrumentoAvaliativoDTO buscarInstrumento(String id) {
         InstrumentoAvaliativo inst = instrumentoDao.findInstrumentosById(UUID.fromString(id));
         if (inst == null) return null;
-        InstrumentoAvaliativoDTO i = InstrumentoAvaliativoDTO.create(inst);
-        for (InstrumentoSessao sessao : inst.getInstrumentoSessoesList()) {
-            if ("PAGINA".equals(sessao.getTipoSessao())) {
-                i.paginas.add(Pagina.create(sessao));
-            } else {
-                Sessao dto = Sessao.create(sessao);
-                i.totalQuestoes += dto.questoes.size();
-                i.sessoes.add(dto);
-            }
-        }
-        return i;
+        return new InstrumentoAvaliativoDTO().createDetalhe(inst);
     }
 
     public InstrumentoAvaliativoDTO salvarInstrumento(InstrumentoAvaliativoDTO dto, String usuario) {
@@ -159,7 +148,7 @@ public class AvaliacaoService {
         entidade.setAtualizadoEm(OffsetDateTime.now());
         dao.flush();
         String tipoContextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(i.tipoEntidadeAvaliadaId));
-        if ("INSTITUICAO".equals(tipoContextoCodigo) && i.tiposEntidadeAlvoIds.contains(i.tipoEntidadeAvaliadaId)) {
+        if ("INSTITUICAO".equals(tipoContextoCodigo)) {
             instrumentoDao.criarEntidadeInstitucional(i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
             instrumentoDao.vincularEntidadeInstitucional(id, i.tipoEntidadeAvaliadaId, "instrumento:" + id);
         }
@@ -194,14 +183,9 @@ public class AvaliacaoService {
     }
 
     private void substituirTiposAlvo(String id, InstrumentoAvaliativoDTO dto) {
-        List<String> tiposAlvo = dto.tiposEntidadeAlvoIds == null || dto.tiposEntidadeAlvoIds.isEmpty()
-                ? List.of(dto.tipoEntidadeAvaliadaId) : dto.tiposEntidadeAlvoIds;
         UUID instrumentoId = UUID.fromString(id);
         dao.removerTiposAlvo(instrumentoId);
-        for (String tipoId : new LinkedHashSet<>(tiposAlvo)) {
-            dao.persistir(new InstrumentoTipoAlvo(
-                    instrumentoId, UUID.fromString(tipoId)));
-        }
+        dao.persistir(new InstrumentoTipoAlvo(instrumentoId, UUID.fromString(dto.tipoEntidadeAvaliadaId)));
         dao.flush();
     }
 
@@ -285,9 +269,9 @@ public class AvaliacaoService {
         if (blank(d.titulo)) throw new IllegalArgumentException("Informe o título do instrumento.");
         if (blank(d.cicloReferencia)) throw new IllegalArgumentException("Informe o ciclo de referência (ex.: 2026/1).");
         if (blank(d.tipoEntidadeAvaliadaId)) throw new IllegalArgumentException("Informe o que será avaliado.");
-        if (d.tiposEntidadeAlvoIds == null || d.tiposEntidadeAlvoIds.isEmpty()) {
-            d.tiposEntidadeAlvoIds = new ArrayList<>(List.of(d.tipoEntidadeAvaliadaId));
-        }
+        TipoEntidade tipoAvaliado = tiposEntidadeDao.buscar(UUID.fromString(d.tipoEntidadeAvaliadaId));
+        if (tipoAvaliado == null || !tipoAvaliado.isPodeSerAvaliada())
+            throw new IllegalArgumentException("Tipo avaliado inválido.");
         if (blank(d.inicioAplicacao) || blank(d.fimAplicacao)) throw new IllegalArgumentException("Informe o período de aplicação.");
         if (!OffsetDateTime.parse(d.fimAplicacao).isAfter(OffsetDateTime.parse(d.inicioAplicacao))) {
             throw new IllegalArgumentException("O término da aplicação deve ser posterior ao início.");
@@ -297,25 +281,7 @@ public class AvaliacaoService {
         if (d.sessoes == null) d.sessoes = new ArrayList<>();
 
         Set<String> vistos = new HashSet<>();
-        Set<String> tiposAlvoVistos = new HashSet<>();
-        for (String tipoAlvo : d.tiposEntidadeAlvoIds) {
-            if (blank(tipoAlvo)) throw new IllegalArgumentException("Tipo de alvo sem identificação.");
-            if (!tiposAlvoVistos.add(tipoAlvo)) throw new IllegalArgumentException("Tipo de alvo repetido.");
-            TipoEntidade tipo = tiposEntidadeDao.buscar(UUID.fromString(tipoAlvo));
-            if (tipo == null || !tipo.isPodeSerAvaliada())
-                throw new IllegalArgumentException("Tipo de alvo inválido.");
-        }
         String contextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(d.tipoEntidadeAvaliadaId));
-        if ("TURMA".equals(contextoCodigo)) {
-            Set<String> codigos = new HashSet<>();
-            for (String tipoId : d.tiposEntidadeAlvoIds) {
-                codigos.add(tiposEntidadeDao.codigo(UUID.fromString(tipoId)));
-            }
-            if (codigos.isEmpty() || !Set.of("DOCENTE", "ALUNO").containsAll(codigos))
-                throw new IllegalArgumentException("Uma avaliação de turma pode incluir docentes e alunos como alvos.");
-        } else if (d.tiposEntidadeAlvoIds.size() != 1 || !d.tiposEntidadeAlvoIds.contains(d.tipoEntidadeAvaliadaId)) {
-            throw new IllegalArgumentException("Selecione o próprio tipo avaliado como alvo.");
-        }
         if (validarRespondentes) for (AvaliacaoDTO.InstrumentoTipoRespondente r : d.respondentes) {
             if (blank(r.tipoEntidadeId)) throw new IllegalArgumentException("Respondente sem tipo definido.");
             if (!vistos.add(r.tipoEntidadeId)) throw new IllegalArgumentException("Público respondente repetido.");
@@ -327,12 +293,6 @@ public class AvaliacaoService {
             if (!tiposEntidadeDao.podeAvaliar(UUID.fromString(r.tipoEntidadeId), UUID.fromString(d.tipoEntidadeAvaliadaId))) {
                 throw new IllegalArgumentException("O tipo " + tipoRespondente.getNome()
                         + " não está autorizado a avaliar o tipo selecionado.");
-            }
-            for (String tipoAlvo : d.tiposEntidadeAlvoIds) {
-                if (!tiposEntidadeDao.podeAvaliar(UUID.fromString(r.tipoEntidadeId), UUID.fromString(tipoAlvo))) {
-                    throw new IllegalArgumentException("O tipo " + tipoRespondente.getNome()
-                            + " não está autorizado a avaliar um dos tipos de alvo selecionados.");
-                }
             }
             boolean vinculoValido = switch (contextoCodigo) {
                 case "INSTITUICAO" -> vinculo == null;

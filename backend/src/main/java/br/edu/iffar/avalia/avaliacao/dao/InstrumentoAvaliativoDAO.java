@@ -8,7 +8,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** Projeções e operações em lote dos instrumentos que exigem SQL PostgreSQL. */
@@ -23,9 +25,9 @@ public class InstrumentoAvaliativoDAO {
     private EntityManager em;
 
     public List<InstrumentoAvaliativo> listInstrumentos(int pagina, int tamanho) {
-        return em.createQuery("""
+       return em.createQuery("""
                     select i from InstrumentoAvaliativo i
-                    left join fetch i.origem o
+                    left join fetch i.tipoEntidadeAvaliada
                     order by i.atualizadoEm desc
                 """, InstrumentoAvaliativo.class)
                 .setFirstResult((pagina - 1) * tamanho)
@@ -40,7 +42,6 @@ public class InstrumentoAvaliativoDAO {
         // mesmo tempo pode gerar MultipleBagFetchException no Hibernate.
         InstrumentoAvaliativo instrumento = em.createQuery("""
                     select distinct i from InstrumentoAvaliativo i
-                    left join fetch i.origem
                     left join fetch i.tipoEntidadeAvaliada
                     left join fetch i.instrumentoTipoRespondenteList r
                     left join fetch r.tipoEntidade
@@ -69,10 +70,8 @@ public class InstrumentoAvaliativoDAO {
 
         em.createQuery("""
                     select distinct i from InstrumentoAvaliativo i
-                    left join fetch i.entidadesAvaliadasList ea
-                    left join fetch ea.tipoAlvo
-                    left join fetch ea.entidade e
-                    left join fetch e.tipo
+                    left join fetch i.tiposAlvoList ta
+                    left join fetch ta.tipoAlvo
                     where i.instrumentoAvaliativoId = :id
                 """, InstrumentoAvaliativo.class)
                 .setParameter("id", id)
