@@ -26,6 +26,12 @@ public class ResponderAvaliacaoResource {
     }
 
     @GET
+    @Path("/{instrumentoId}/formulario")
+    public Response formulario(@PathParam("instrumentoId") String instrumentoId) {
+        return executar(() -> Response.ok(service.buscar(usuario(), instrumentoId, null, null)).build());
+    }
+
+    @GET
     @Path("/{instrumentoId}/{alvoId}")
     public Response buscar(@PathParam("instrumentoId") String instrumentoId,
                            @PathParam("alvoId") String alvoId,

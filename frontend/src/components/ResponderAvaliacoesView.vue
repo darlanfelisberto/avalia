@@ -2,10 +2,14 @@
 import { onMounted, ref } from 'vue';
 import type { InstrumentoAvaliativoDTO } from '../types/instrumentoAvaliacao';
 import { responderApi } from '../services/responderApi';
+import InstrumentosDisponiveisView from './InstrumentosDisponiveisView.vue';
+import FormularioResponderAvaliacao from './FormularioResponderAvaliacao.vue';
 
 const instrumentos = ref<InstrumentoAvaliativoDTO[]>([]);
+const instrumentoAberto = ref<InstrumentoAvaliativoDTO | null>(null);
 const carregando = ref(false);
 const erro = ref('');
+const respostas = ref<Record<string, any>>({});
 
 async function carregar() {
   carregando.value = true;
@@ -21,14 +25,24 @@ async function carregar() {
 
 onMounted(carregar);
 
-function formatarData(data?: string | null) {
-  if (!data) return '—';
-  const valor = new Date(data);
-  if (Number.isNaN(valor.getTime())) return data;
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short'
-  }).format(valor);
+async function abrirInstrumento(item: InstrumentoAvaliativoDTO) {
+  if (!item.id) return;
+  carregando.value = true;
+  erro.value = '';
+  try {
+    instrumentoAberto.value = await responderApi.formulario(item.id);
+    respostas.value = {};
+  } catch (e) {
+    erro.value = e instanceof Error ? e.message : 'Não foi possível abrir a avaliação.';
+  } finally {
+    carregando.value = false;
+  }
+}
+
+function voltarALista() {
+  instrumentoAberto.value = null;
+  respostas.value = {};
+  erro.value = '';
 }
 </script>
 
@@ -40,23 +54,13 @@ function formatarData(data?: string | null) {
     </div>
 
     <p v-if="erro" role="alert" class="alert alert--error">{{ erro }}</p>
-    <p v-if="carregando" class="loading-message">Carregando avaliações…</p>
-    <p v-if="!carregando && !erro && instrumentos.length === 0" class="empty-state">
-      Nenhuma avaliação disponível para seu perfil neste período.
+    <p v-if="carregando" class="loading-message">
+      {{ instrumentoAberto ? 'Carregando formulário…' : 'Carregando avaliações…' }}
     </p>
 
-    <article v-for="item in instrumentos" :key="item.id" class="surface-card survey-card survey-card--summary">
-      <div>
-        <h3 class="survey-card__title">{{ item.titulo }}</h3>
-        <p v-if="item.descricao" class="survey-card__description">{{ item.descricao }}</p>
-        <p class="survey-card__hint">
-          Avaliação: {{ item.tipoEntidadeAvaliadaNome || 'Institucional' }}
-          <span v-if="item.cicloReferencia"> · Ciclo: {{ item.cicloReferencia }}</span>
-        </p>
-        <p v-if="item.inicioAplicacao || item.fimAplicacao" class="survey-card__hint">
-          Período: {{ formatarData(item.inicioAplicacao) }} a {{ formatarData(item.fimAplicacao) }}
-        </p>
-      </div>
-    </article>
+    <FormularioResponderAvaliacao v-if="instrumentoAberto" :instrumento="instrumentoAberto"
+      v-model:respostas="respostas" @voltar="voltarALista" />
+    <InstrumentosDisponiveisView v-else :instrumentos="instrumentos" :carregando="carregando"
+      @selecionar="abrirInstrumento" />
   </div>
 </template>

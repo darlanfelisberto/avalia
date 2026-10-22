@@ -20,6 +20,8 @@ async function chamar<T>(caminho: string, init?: RequestInit): Promise<T> {
 
 export const responderApi = {
   listar: () => chamar<InstrumentoAvaliativoDTO[]>(''),
+  formulario: (instrumentoId: string) =>
+    chamar<InstrumentoAvaliativoDTO>(`/${encodeURIComponent(instrumentoId)}/formulario`),
   buscar: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>
     chamar<InstrumentoAvaliativoDTO>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
   conjuntos: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>
