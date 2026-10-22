@@ -20,6 +20,16 @@ async function carregar() {
 }
 
 onMounted(carregar);
+
+function formatarData(data?: string | null) {
+  if (!data) return '—';
+  const valor = new Date(data);
+  if (Number.isNaN(valor.getTime())) return data;
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  }).format(valor);
+}
 </script>
 
 <template>
@@ -44,7 +54,7 @@ onMounted(carregar);
           <span v-if="item.cicloReferencia"> · Ciclo: {{ item.cicloReferencia }}</span>
         </p>
         <p v-if="item.inicioAplicacao || item.fimAplicacao" class="survey-card__hint">
-          Período: {{ item.inicioAplicacao || '—' }} a {{ item.fimAplicacao || '—' }}
+          Período: {{ formatarData(item.inicioAplicacao) }} a {{ formatarData(item.fimAplicacao) }}
         </p>
       </div>
     </article>
