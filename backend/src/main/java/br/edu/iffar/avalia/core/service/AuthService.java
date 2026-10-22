@@ -74,4 +74,7 @@ public class AuthService {
                 jwt.getClaim("email"), new ArrayList<>(jwt.getGroups()));
     }
 
+    public String getCpf() {
+        return jwt.getClaim("preferred_username");
+    }
 }

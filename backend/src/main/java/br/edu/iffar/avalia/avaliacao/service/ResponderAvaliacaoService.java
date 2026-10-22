@@ -1,5 +1,6 @@
 package br.edu.iffar.avalia.avaliacao.service;
 
+import br.edu.iffar.avalia.academico.dao.PessoaDao;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.InstrumentoAvaliativoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcaoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.RespostaAvaliacaoDTO.*;
@@ -14,6 +15,7 @@ import br.edu.iffar.avalia.avaliacao.model.RespostaQuestao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
 import br.edu.iffar.avalia.core.exception.ValidacaoException;
+import br.edu.iffar.avalia.core.service.AuthService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -25,13 +27,18 @@ import java.time.LocalDate;
 @Transactional
 public class ResponderAvaliacaoService {
     @Inject
-    private AvaliacaoDao dao;
+    private AvaliacaoDao avaliacaoDao;
 
     @Inject
     private AvaliacaoService instrumentos;
 
     @Inject
     private ResponderAvaliacaoDao respostaDao;
+
+    @Inject
+    private AuthService authService;
+    @Inject
+    private PessoaDao pessoaDao;
 
     private List<String> codigosRespondente(UsuarioDTO usuario) {
         if (!usuario.getPermissoes().contains("AVALIACAO_RESPONDER"))
@@ -44,39 +51,15 @@ public class ResponderAvaliacaoService {
         return List.copyOf(codigos);
     }
 
-    public List<Disponivel> listar(UsuarioDTO usuario) {
-        List<String> codigos = codigosRespondente(usuario);
-        Map<String, Disponivel> disponiveis = new LinkedHashMap<>();
-        for (String codigo : codigos) {
-            for (Object[] linha : respostaDao.listarGerais(codigo, usuario.getCpf())) {
-                Disponivel d = new Disponivel();
-                d.instrumentoId = (String) linha[0];
-                d.titulo = (String) linha[1];
-                d.descricao = (String) linha[2];
-                d.alvoId = (String) linha[3];
-                d.alvoNome = (String) linha[4];
-                d.alvoTipoCodigo = (String) linha[5];
-                d.respondido = (Boolean) linha[8];
-                d.tipoRespondenteCodigo = codigo;
-                adicionarDisponivel(disponiveis, d);
-            }
-            for (Disponivel d : listarAlvosDeTurma(usuario, codigo)) adicionarDisponivel(disponiveis, d);
+    public List<InstrumentoAvaliativoDTO> listar() {
+        UsuarioDTO usuario = new UsuarioDTO();
+        List<InstrumentoAvaliativo> listIA = this.avaliacaoDao.listAllForUser(pessoaDao.buscarPorCpf(this.authService.getCpf()));
+
+        List<InstrumentoAvaliativoDTO> avaliativoDTOList = new ArrayList<>();
+        for (InstrumentoAvaliativo ia :listIA) {
+            avaliativoDTOList.add(new InstrumentoAvaliativoDTO().createResumo(ia));
         }
-        for (Object[] linha : respostaDao.listarInstitucionais(usuario.getCpf())) {
-            Disponivel d = new Disponivel();
-            d.instrumentoId = (String) linha[0];
-            d.titulo = (String) linha[1];
-            d.descricao = (String) linha[2];
-            d.alvoId = (String) linha[3];
-            d.alvoNome = (String) linha[4];
-            d.alvoTipoCodigo = (String) linha[5];
-            d.respondido = (Boolean) linha[8];
-            d.tipoRespondenteCodigo = (String) linha[9];
-            adicionarDisponivel(disponiveis, d);
-        }
-        if (codigos.contains("ALUNO"))
-            for (Disponivel d : listarDocentesDaTurma(usuario)) adicionarDisponivel(disponiveis, d);
-        return new ArrayList<>(disponiveis.values());
+        return avaliativoDTOList;
     }
 
     private void adicionarDisponivel(Map<String, Disponivel> disponiveis, Disponivel d) {
@@ -128,17 +111,17 @@ public class ResponderAvaliacaoService {
         return out;
     }
 
-    private Disponivel elegivel(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
-        UUID.fromString(instrumentoId);
-        UUID.fromString(alvoId);
-        return listar(usuario).stream()
-                .filter(d -> d.instrumentoId.equals(instrumentoId) && d.alvoId.equals(alvoId)
-                        && Objects.equals(d.contextoId, contextoId))
-                .findFirst().orElseThrow(() -> new SecurityException("Avaliação indisponível para este perfil."));
-    }
+//    private Disponivel elegivel(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
+//        UUID.fromString(instrumentoId);
+//        UUID.fromString(alvoId);
+//        return listar().stream()
+//                .filter(d -> d.instrumentoId.equals(instrumentoId) && d.alvoId.equals(alvoId)
+//                        && Objects.equals(d.contextoId, contextoId))
+//                .findFirst().orElseThrow(() -> new SecurityException("Avaliação indisponível para este perfil."));
+//    }
 
     public InstrumentoAvaliativoDTO buscar(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
-        elegivel(usuario, instrumentoId, alvoId, contextoId);
+//        elegivel(usuario, instrumentoId, alvoId, contextoId);
         InstrumentoAvaliativoDTO instrumento = instrumentos.buscarInstrumento(instrumentoId);
         instrumento.sessoes.forEach(s -> s.questoes.forEach(q ->
                 q.opcoes.forEach(o -> o.correta = false)));
@@ -146,7 +129,7 @@ public class ResponderAvaliacaoService {
     }
 
     public List<ConjuntoOpcaoDTO> listarConjuntos(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
-        InstrumentoAvaliativoDTO instrumento = buscar(usuario, instrumentoId, alvoId, contextoId);
+        InstrumentoAvaliativoDTO instrumento = null;//buscar(usuario, instrumentoId, alvoId, contextoId);
         Set<String> ids = new HashSet<>();
         instrumento.sessoes.forEach(s -> s.questoes.forEach(q -> {
             if (q.conjuntoOpcaoId != null) ids.add(q.conjuntoOpcaoId);
@@ -160,8 +143,8 @@ public class ResponderAvaliacaoService {
     @SuppressWarnings("unchecked")
     public void enviar(UsuarioDTO usuario, String instrumentoId, Envio envio) {
         if (envio == null || envio.alvoId == null) throw new ValidacaoException("Selecione a avaliação.");
-        Disponivel disponivel = elegivel(usuario, instrumentoId, envio.alvoId, envio.contextoId);
-        if (disponivel.respondido) throw new ValidacaoException("Você já respondeu esta avaliação.");
+//        Disponivel disponivel = elegivel(usuario, instrumentoId, envio.alvoId, envio.contextoId);
+//        if (disponivel.respondido) throw new ValidacaoException("Você já respondeu esta avaliação.");
         if (envio.respostas == null) throw new ValidacaoException("Respostas não informadas.");
 
         Map<String, Item> respostas = new HashMap<>();
@@ -169,7 +152,7 @@ public class ResponderAvaliacaoService {
             if (item == null || item.sessaoQuestaoId == null || respostas.putIfAbsent(item.sessaoQuestaoId, item) != null)
                 throw new ValidacaoException("Questão repetida ou inválida.");
         }
-        List<Object[]> questoes = dao.questoesParaResposta(UUID.fromString(instrumentoId));
+        List<Object[]> questoes = avaliacaoDao.questoesParaResposta(UUID.fromString(instrumentoId));
         if (questoes.isEmpty()) throw new ValidacaoException("Instrumento sem questões.");
         Set<String> idsValidos = new HashSet<>();
         for (Object[] questao : questoes) {
@@ -192,7 +175,7 @@ public class ResponderAvaliacaoService {
                         || new HashSet<>(opcoes).size() != opcoes.size())
                     throw new ValidacaoException("Opções de resposta inválidas.");
                 for (String opcao : opcoes) {
-                    OpcaoQuestao entidadeOpcao = dao.buscar(OpcaoQuestao.class, UUID.fromString(opcao));
+                    OpcaoQuestao entidadeOpcao = avaliacaoDao.buscar(OpcaoQuestao.class, UUID.fromString(opcao));
                     if (entidadeOpcao == null || !entidadeOpcao.getConjunto().getId().toString().equals(questao[2]))
                         throw new ValidacaoException("Opção fora do instrumento.");
                 }
@@ -201,22 +184,22 @@ public class ResponderAvaliacaoService {
         if (!idsValidos.containsAll(respostas.keySet()))
             throw new ValidacaoException("Questão fora do instrumento.");
 
-        String tipoCodigo = disponivel.tipoRespondenteCodigo != null
-                ? disponivel.tipoRespondenteCodigo : codigosRespondente(usuario).stream().findFirst()
-                    .orElseThrow(() -> new SecurityException("Perfil sem tipo de respondente autorizado."));
-        UUID respondenteId = dao.buscarOuCriarRespondente(usuario.getCpf(), usuario.getNome(), tipoCodigo);
-        InstrumentoAvaliativo instrumento = dao.buscarInstrumento(UUID.fromString(instrumentoId));
-        Entidade alvo = dao.referencia(Entidade.class, UUID.fromString(envio.alvoId));
-        Entidade respondente = dao.referencia(Entidade.class, respondenteId);
-        Entidade contexto = envio.contextoId == null ? null : dao.referencia(Entidade.class, UUID.fromString(envio.contextoId));
+//        String tipoCodigo = disponivel.tipoRespondenteCodigo != null
+//                ? disponivel.tipoRespondenteCodigo : codigosRespondente(usuario).stream().findFirst()
+//                    .orElseThrow(() -> new SecurityException("Perfil sem tipo de respondente autorizado."));
+//        UUID respondenteId = avaliacaoDao.buscarOuCriarRespondente(usuario.getCpf(), usuario.getNome(), tipoCodigo);
+        InstrumentoAvaliativo instrumento = avaliacaoDao.buscarInstrumento(UUID.fromString(instrumentoId));
+        Entidade alvo = avaliacaoDao.referencia(Entidade.class, UUID.fromString(envio.alvoId));
+//        Entidade respondente = avaliacaoDao.referencia(Entidade.class, respondenteId);
+        Entidade contexto = envio.contextoId == null ? null : avaliacaoDao.referencia(Entidade.class, UUID.fromString(envio.contextoId));
 
         RespostaInstrumento resposta = new RespostaInstrumento();
         resposta.setInstrumento(instrumento);
         resposta.setAvaliada(alvo);
-        resposta.setRespondente(respondente);
+//        resposta.setRespondente(respondente);
         resposta.setContexto(contexto);
-        dao.persistir(resposta);
-        dao.flush();
+        avaliacaoDao.persistir(resposta);
+        avaliacaoDao.flush();
         for (Object[] questao : questoes) {
             Item item = respostas.get((String) questao[0]);
             if (item == null) continue;
@@ -231,23 +214,23 @@ public class ResponderAvaliacaoService {
         Participacao participacao = new Participacao();
         participacao.setInstrumento(instrumento);
         participacao.setAvaliada(alvo);
-        participacao.setRespondente(respondente);
+//        participacao.setRespondente(respondente);
         participacao.setContexto(contexto);
-        dao.persistir(participacao);
-        dao.flush();
+        avaliacaoDao.persistir(participacao);
+        avaliacaoDao.flush();
 
-        resposta.setRespondente(instrumento.isAnonimo() ? null : respondente);
+//        resposta.setRespondente(instrumento.isAnonimo() ? null : respondente);
         resposta.setDataEnvio(LocalDate.now());
         resposta.setStatus("ENVIADA");
-        dao.flush();
+        avaliacaoDao.flush();
     }
 
     private void inserirResposta(RespostaInstrumento resposta, String questaoId, String opcaoId, String texto) {
         RespostaQuestao item = new RespostaQuestao();
         item.setResposta(resposta);
-        item.setQuestao(dao.referencia(SessaoQuestao.class, UUID.fromString(questaoId)));
-        item.setOpcao(opcaoId == null ? null : dao.referencia(OpcaoQuestao.class, UUID.fromString(opcaoId)));
+        item.setQuestao(avaliacaoDao.referencia(SessaoQuestao.class, UUID.fromString(questaoId)));
+        item.setOpcao(opcaoId == null ? null : avaliacaoDao.referencia(OpcaoQuestao.class, UUID.fromString(opcaoId)));
         item.setTexto(texto);
-        dao.persistir(item);
+        avaliacaoDao.persistir(item);
     }
 }

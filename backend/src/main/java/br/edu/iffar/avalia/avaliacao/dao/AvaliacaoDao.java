@@ -1,5 +1,6 @@
 package br.edu.iffar.avalia.avaliacao.dao;
 
+import br.edu.iffar.avalia.academico.model.Pessoa;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
 import br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -139,5 +140,24 @@ public class AvaliacaoDao {
 
     public int exec(String sql, Object... params) {
         return query(sql, params).executeUpdate();
+    }
+
+
+    public List<InstrumentoAvaliativo> listAllForUser(Pessoa pessoa){
+        return em.createQuery("""
+                    select i from InstrumentoAvaliativo i
+                    left join fetch i.tipoEntidadeAvaliada tea 
+                    where i.status = 'PUBLICADO' 
+                    and CURRENT_TIMESTAMP between i.inicioAplicacao and i.fimAplicacao 
+                    and i.tipoEntidadeAvaliada in (
+                        select avalia from Pessoa p 
+                        left join p.tipoEntidades t 
+                        left join TipoEntidadePermissao permissao on permissao.respondente.tipoEntidadeId = t.id
+                        left join TipoEntidade avalia on avalia.tipoEntidadeId = permissao.avaliado.tipoEntidadeId
+                        where p.idPessoa = 155099
+                    )                        
+                """, InstrumentoAvaliativo.class)
+//                .setParameter("id", pessoa.getMMId())
+                .getResultList();
     }
 }

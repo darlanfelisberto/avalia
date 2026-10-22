@@ -22,7 +22,7 @@ public class ResponderAvaliacaoResource {
 
     @GET
     public Response listar() {
-        return executar(() -> Response.ok(service.listar(usuario())).build());
+        return executar(() -> Response.ok(service.listar()).build());
     }
 
     @GET
@@ -46,7 +46,7 @@ public class ResponderAvaliacaoResource {
     @Path("/{instrumentoId}/envios")
     public Response enviar(@PathParam("instrumentoId") String instrumentoId, Envio envio) {
         return executar(() -> {
-            service.enviar(usuario(), instrumentoId, envio);
+//            service.enviar(usuario(), instrumentoId, envio);
             return Response.noContent().build();
         });
     }
@@ -64,6 +64,11 @@ public class ResponderAvaliacaoResource {
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).type(MediaType.TEXT_PLAIN)
                     .entity(e.getMessage()).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().type(MediaType.TEXT_PLAIN)
+                    .entity(e.getMessage()).build();
         }
+
     }
 }

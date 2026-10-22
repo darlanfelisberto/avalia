@@ -1,5 +1,6 @@
 package br.edu.iffar.avalia.academico.model;
 
+import br.com.feliva.sharedClass.db.Model;
 import br.edu.iffar.avalia.avaliacao.model.TipoEntidade;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,7 +16,7 @@ import java.util.List;
 /** Pessoa importada do SIGAA, consultada sem alterar o espelho acadêmico. */
 @Entity
 @Table(name = "pessoa", schema = "academico")
-public class Pessoa {
+public class Pessoa extends Model<Integer> {
     @Id
     @Column(name = "id_pessoa")
     private Integer idPessoa;
@@ -44,4 +45,9 @@ public class Pessoa {
     public String getEmail() { return email; }
     public String getCpfCnpj() { return cpfCnpj; }
     public List<TipoEntidade> getTipoEntidades() { return tipoEntidades; }
+
+    @Override
+    public Integer getMMId() {
+        return idPessoa;
+    }
 }

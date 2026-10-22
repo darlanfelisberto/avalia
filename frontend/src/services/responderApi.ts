@@ -1,17 +1,5 @@
 import type { ConjuntoOpcaoDTO, InstrumentoAvaliativoDTO } from '../types/instrumentoAvaliacao';
 
-export interface AvaliacaoDisponivel {
-  instrumentoId: string;
-  titulo: string;
-  descricao?: string | null;
-  alvoId: string;
-  alvoNome: string;
-  alvoTipoCodigo?: string;
-  contextoId?: string | null;
-  contextoNome?: string | null;
-  respondido: boolean;
-}
-
 export interface RespostaEnvio {
   alvoId: string;
   contextoId?: string | null;
@@ -31,7 +19,7 @@ async function chamar<T>(caminho: string, init?: RequestInit): Promise<T> {
 }
 
 export const responderApi = {
-  listar: () => chamar<AvaliacaoDisponivel[]>(''),
+  listar: () => chamar<InstrumentoAvaliativoDTO[]>(''),
   buscar: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>
     chamar<InstrumentoAvaliativoDTO>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
   conjuntos: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>

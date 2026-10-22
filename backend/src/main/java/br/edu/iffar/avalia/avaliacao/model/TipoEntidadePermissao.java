@@ -30,13 +30,29 @@ public class TipoEntidadePermissao extends Model<UUID> {
     @JoinColumn(name = "tipo_avaliado_id", nullable = false)
     private TipoEntidade avaliado;
 
-    public UUID getId() { return tipoEntidadePermissaoId; }
-    public UUID getTipoEntidadePermissaoId() { return tipoEntidadePermissaoId; }
-    public void setTipoEntidadePermissaoId(UUID tipoEntidadePermissaoId) { this.tipoEntidadePermissaoId = tipoEntidadePermissaoId; }
-    public TipoEntidade getRespondente() { return respondente; }
-    public void setRespondente(TipoEntidade respondente) { this.respondente = respondente; }
-    public TipoEntidade getAvaliado() { return avaliado; }
-    public void setAvaliado(TipoEntidade avaliado) { this.avaliado = avaliado; }
+    public UUID getTipoEntidadePermissaoId() {
+        return tipoEntidadePermissaoId;
+    }
+
+    public void setTipoEntidadePermissaoId(UUID tipoEntidadePermissaoId) {
+        this.tipoEntidadePermissaoId = tipoEntidadePermissaoId;
+    }
+
+    public TipoEntidade getRespondente() {
+        return respondente;
+    }
+
+    public void setRespondente(TipoEntidade respondente) {
+        this.respondente = respondente;
+    }
+
+    public TipoEntidade getAvaliado() {
+        return avaliado;
+    }
+
+    public void setAvaliado(TipoEntidade avaliado) {
+        this.avaliado = avaliado;
+    }
 
     @Override
     public UUID getMMId() {
