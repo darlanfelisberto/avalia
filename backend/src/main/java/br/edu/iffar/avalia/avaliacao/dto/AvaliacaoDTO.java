@@ -4,6 +4,11 @@ import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
 import br.edu.iffar.avalia.avaliacao.model.TipoSessao;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +24,8 @@ public final class AvaliacaoDTO {
 
     public static class OpcaoQuestaoDTO {
         public String id;
+        @NotBlank(message = "Toda opção precisa de um texto.")
+        @Size(max = 300, message = "O texto da opção deve ter até 300 caracteres.")
         public String texto;
         public Double valor;
         public boolean correta;
@@ -37,9 +44,14 @@ public final class AvaliacaoDTO {
 
     public static class ConjuntoOpcaoDTO {
         public String id;
+        @NotBlank(message = "Informe o nome do conjunto de opções.")
+        @Size(max = 100, message = "O nome do conjunto deve ter até 100 caracteres.")
         public String nome;
         public boolean reutilizavel;
-        public List<OpcaoQuestaoDTO> opcoes = new ArrayList<>();
+        @NotNull(message = "Informe as opções do conjunto.")
+        @Size(min = 2, message = "Um conjunto precisa de ao menos duas opções.")
+        @Valid
+        public List<@NotNull(message = "Opção inválida.") OpcaoQuestaoDTO> opcoes = new ArrayList<>();
 
         public static ConjuntoOpcaoDTO create(br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao entidade) {
             ConjuntoOpcaoDTO dto = new ConjuntoOpcaoDTO();
@@ -52,6 +64,7 @@ public final class AvaliacaoDTO {
     }
 
     public static class InstrumentoTipoRespondenteDTO {
+        @NotBlank(message = "Respondente sem tipo definido.")
         public String tipoEntidadeId;
         public String tipoVinculo;
 
@@ -65,14 +78,19 @@ public final class AvaliacaoDTO {
     public static class SessaoQuestaoDTO {
         public String questaoId;
         public String sessaoQuestaoId;
+        @NotBlank(message = "Toda questão precisa de um enunciado.")
         public String enunciado;
         /**
          * ESCOLHA_UNICA, MULTIPLA_ESCOLHA, ESCALA ou DESCRITIVA
          */
+        @NotBlank(message = "Informe o tipo da questão.")
+        @Pattern(regexp = "ESCOLHA_UNICA|MULTIPLA_ESCOLHA|ESCALA|DESCRITIVA", message = "Tipo de questão inválido.")
         public String tipo;
+        @Size(max = 100, message = "O assunto deve ter até 100 caracteres.")
         public String assunto;
         public String conjuntoOpcaoId;
-        public List<OpcaoQuestaoDTO> opcoes = new ArrayList<>();
+        @Valid
+        public List<@NotNull(message = "Opção inválida.") OpcaoQuestaoDTO> opcoes = new ArrayList<>();
         public boolean obrigatoria;
         public Double peso;
         public int ordem;
@@ -101,10 +119,13 @@ public final class AvaliacaoDTO {
 
     public static class InstrumentoSessaoDTO {
         public String id;
+        @NotBlank(message = "Toda sessão ou página precisa de um título.")
+        @Size(max = 200, message = "O título da sessão ou página deve ter até 200 caracteres.")
         public String titulo;
         public String descricao;
         public int ordem;
-        public List<SessaoQuestaoDTO> questoes = new ArrayList<>();
+        @Valid
+        public List<@NotNull(message = "Questão inválida.") SessaoQuestaoDTO> questoes = new ArrayList<>();
 
         public static InstrumentoSessaoDTO create(InstrumentoSessao entidade) {
             InstrumentoSessaoDTO dto = new InstrumentoSessaoDTO();
@@ -119,6 +140,8 @@ public final class AvaliacaoDTO {
 
     public static class InstrumentoSessaoPaginaDTO {
         public String id;
+        @NotBlank(message = "Toda sessão ou página precisa de um título.")
+        @Size(max = 200, message = "O título da sessão ou página deve ter até 200 caracteres.")
         public String titulo;
         public String descricao;
         public int ordem;
@@ -135,12 +158,19 @@ public final class AvaliacaoDTO {
 
     public static class InstrumentoAvaliativoDTO {
         public String id;
-        public String tipoEntidadeAvaliadaId;
-        public String tipoEntidadeAvaliadaNome;
+        @NotNull(message = "Informe o que será avaliado.")
+        @Valid
+        public TipoEntidadeAvaliadaDTO tipoEntidadeAvaliada;
+        @NotBlank(message = "Informe o título do instrumento.")
+        @Size(max = 200, message = "O título do instrumento deve ter até 200 caracteres.")
         public String titulo;
         public String descricao;
+        @NotBlank(message = "Informe o ciclo de referência.")
+        @Size(max = 20, message = "O ciclo de referência deve ter até 20 caracteres.")
         public String cicloReferencia;
+        @NotBlank(message = "Informe o início da aplicação.")
         public String inicioAplicacao;
+        @NotBlank(message = "Informe o término da aplicação.")
         public String fimAplicacao;
         public boolean anonimo;
         public boolean permiteEdicao = true;
@@ -151,9 +181,12 @@ public final class AvaliacaoDTO {
         public String criadoPor;
         public String atualizadoEm;
         public int totalQuestoes;
-        public List<InstrumentoTipoRespondenteDTO> respondentes = new ArrayList<>();
-        public List<InstrumentoSessaoPaginaDTO> paginas = new ArrayList<>();
-        public List<InstrumentoSessaoDTO> sessoes = new ArrayList<>();
+        @Valid
+        public List<@NotNull(message = "Público respondente inválido.") InstrumentoTipoRespondenteDTO> respondentes = new ArrayList<>();
+        @Valid
+        public List<@NotNull(message = "Página inválida.") InstrumentoSessaoPaginaDTO> paginas = new ArrayList<>();
+        @Valid
+        public List<@NotNull(message = "Sessão inválida.") InstrumentoSessaoDTO> sessoes = new ArrayList<>();
 
         public InstrumentoAvaliativoDTO createResumo(InstrumentoAvaliativo ia) {
             return comDadosBasicos(ia);
@@ -169,8 +202,7 @@ public final class AvaliacaoDTO {
         public InstrumentoAvaliativoDTO comDadosBasicos(InstrumentoAvaliativo ia) {
             var tipoAvaliado = ia.getTipoEntidadeAvaliada();
             id = ia.getId().toString();
-            tipoEntidadeAvaliadaId = tipoAvaliado.getId().toString();
-            tipoEntidadeAvaliadaNome = tipoAvaliado.getNome();
+            tipoEntidadeAvaliada = TipoEntidadeAvaliadaDTO.create(tipoAvaliado);
             titulo = ia.getTitulo();
             descricao = ia.getDescricao();
             cicloReferencia = ia.getCicloReferencia();
@@ -213,6 +245,25 @@ public final class AvaliacaoDTO {
                 }
             }
             return this;
+        }
+    }
+
+    public static class TipoEntidadeAvaliadaDTO {
+        @NotBlank(message = "Informe o que será avaliado.")
+        public String tipoEntidadeAvaliadaId;
+        public String codigo;
+        public String nome;
+        public boolean podeSerAvaliada;
+        public boolean podeResponder;
+
+        public static TipoEntidadeAvaliadaDTO create(br.edu.iffar.avalia.avaliacao.model.TipoEntidade entidade) {
+            TipoEntidadeAvaliadaDTO dto = new TipoEntidadeAvaliadaDTO();
+            dto.tipoEntidadeAvaliadaId = entidade.getId().toString();
+            dto.codigo = entidade.getCodigo();
+            dto.nome = entidade.getNome();
+            dto.podeSerAvaliada = entidade.isPodeSerAvaliada();
+            dto.podeResponder = entidade.isPodeResponder();
+            return dto;
         }
     }
 }

@@ -31,7 +31,7 @@ const podeEditar = temPermissao(usuario, 'INSTRUMENTO_EDITAR');
 const idRota = computed(() => typeof route.params.id === 'string' ? route.params.id : undefined);
 const tiposAvaliaveis = computed(() => tipos.value.filter(t => t.podeSerAvaliada));
 const tiposRespondentes = computed(() => {
-  const tipoAvaliadoId = form.tipoEntidadeAvaliadaId;
+  const tipoAvaliadoId = form.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId;
   if (!tipoAvaliadoId) return [];
   return tipos.value.filter(tipo => tipo.podeResponder
     && permissoesTipos.value.some(permissao =>
@@ -50,7 +50,7 @@ function novoInstrumento(): InstrumentoAvaliativoDTO {
   const hoje = new Date();
   const fim = new Date(Date.now() + 30 * 86400000);
   return {
-    tipoEntidadeAvaliadaId: '',
+    tipoEntidadeAvaliada: { tipoEntidadeAvaliadaId: '', codigo: '', nome: '', podeSerAvaliada: false, podeResponder: false },
     titulo: '',
     descricao: '',
     cicloReferencia: `${hoje.getFullYear()}/${hoje.getMonth() < 6 ? 1 : 2}`,
@@ -142,7 +142,7 @@ function alternarRespondente(tipoId: string) {
 }
 
 function vinculosParaRespondente(tipoId: string) {
-  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliadaId)?.codigo;
+  const contexto = tipos.value.find(t => t.id === form.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId)?.codigo;
   const respondente = tipos.value.find(t => t.id === tipoId)?.codigo;
   if (contexto === 'DOCENTE') return [{ valor: '', rotulo: 'Aluno matriculado em uma turma do docente' }];
   if (contexto === 'TURMA') {
@@ -260,7 +260,7 @@ function voltarDaPrevia() {
             <input v-model="form.fimAplicacao" :disabled="semPermissaoDeEdicao" type="datetime-local" required :class="input" />
           </label>
           <label class="form-label form-grid__wide"><span class="form-label__caption">O que será avaliado <span class="required-mark" aria-hidden="true">*</span></span>
-            <select v-model="form.tipoEntidadeAvaliadaId" :disabled="somenteLeitura" required :class="input" @change="contextoAlterado">
+            <select v-model="form.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId" :disabled="somenteLeitura" required :class="input" @change="contextoAlterado">
               <option value="" disabled>Selecione…</option>
               <option v-for="t in tiposAvaliaveis" :key="t.id" :value="t.id">{{ t.nome }}</option>
             </select>
@@ -289,11 +289,11 @@ function voltarDaPrevia() {
               <input type="checkbox" class="respondent-card__checkbox" :checked="!!respondenteDe(t.id)" :disabled="somenteLeitura" @change="alternarRespondente(t.id)" />
               {{ t.nome }}
             </label>
-            <p v-if="respondenteDe(t.id) && tipos.find(item => item.id === form.tipoEntidadeAvaliadaId)?.codigo === 'DOCENTE'"
+            <p v-if="respondenteDe(t.id) && tipos.find(item => item.id === form.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId)?.codigo === 'DOCENTE'"
               class="respondent-card__hint">Apenas alunos matriculados em uma turma do docente poderão responder.</p>
           </div>
         </div>
-        <p v-if="!form.tipoEntidadeAvaliadaId" class="form-panel__help">Selecione o que será avaliado para ver quem pode responder.</p>
+        <p v-if="!form.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId" class="form-panel__help">Selecione o que será avaliado para ver quem pode responder.</p>
         <p v-else-if="!tiposRespondentes.length" class="form-panel__help">Nenhum público está autorizado na matriz de permissões para os tipos selecionados.</p>
       </div>
 

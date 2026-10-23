@@ -9,6 +9,10 @@ export interface TipoEntidadeDTO {
   podeResponder: boolean;
 }
 
+export interface TipoEntidadeAvaliadaDTO extends Omit<TipoEntidadeDTO, 'id'> {
+  tipoEntidadeAvaliadaId: string;
+}
+
 export interface PermissaoTipoEntidadeDTO {
   tipoRespondenteId: string;
   tipoAvaliadoId: string;
@@ -62,8 +66,7 @@ export interface InstrumentoSessaoPaginaDTO {
 
 export interface InstrumentoAvaliativoDTO {
   id?: string;
-  tipoEntidadeAvaliadaId: string;
-  tipoEntidadeAvaliadaNome?: string;
+  tipoEntidadeAvaliada: TipoEntidadeAvaliadaDTO;
   titulo: string;
   descricao?: string | null;
   cicloReferencia: string;

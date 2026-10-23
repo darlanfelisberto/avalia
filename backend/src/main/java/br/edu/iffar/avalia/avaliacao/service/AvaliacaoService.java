@@ -64,6 +64,7 @@ public class AvaliacaoService {
 
     public ConjuntoOpcaoDTO salvarConjunto(ConjuntoOpcaoDTO dto) {
         if (dto == null) throw new ValidacaoException("Dados do conjunto não informados.");
+        validarBean(dto);
 //        if (instrumentoAvaliativoDAO.existeConjunto(dto.nome.trim())) {
 //            throw new ValidacaoException("Já existe um conjunto de opções com este nome.");
 //        }
@@ -105,6 +106,7 @@ public class AvaliacaoService {
     public InstrumentoAvaliativoDTO salvarInstrumento(InstrumentoAvaliativoDTO dto) {
         if (dto == null)
             throw new ValidacaoException("Dados do instrumento não informados.");
+        validarBean(dto);
 
         InstrumentoAvaliativo entidade = blank(dto.id) ? null : instrumentoAvaliativoDAO.findInstrumentosById(UUID.fromString(dto.id));
 
@@ -114,7 +116,7 @@ public class AvaliacaoService {
         boolean rascunho = entidade == null || entidade.getStatus() == StatusInstrumentoAvaliativo.RASCUNHO;
         validar(dto, rascunho);
 //        if (instrumentoAvaliativoDAO.existeInstrumento(dto.titulo.trim(), dto.cicloReferencia.trim(),
-//                UUID.fromString(dto.tipoEntidadeAvaliadaId), entidade == null ? null : entidade.getId())) {
+//                UUID.fromString(dto.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId), entidade == null ? null : entidade.getId())) {
 //            throw new ValidacaoException("Já existe um instrumento para este tipo avaliado, ciclo e título.");
 //        }
         boolean novo = entidade == null;
@@ -122,7 +124,7 @@ public class AvaliacaoService {
             entidade = new InstrumentoAvaliativo();
             entidade.setCriadoPor(auth.getCpf());
         }
-        if (rascunho) entidade.setTipoEntidadeAvaliada(tiposEntidadeDao.referencia(UUID.fromString(dto.tipoEntidadeAvaliadaId)));
+        if (rascunho) entidade.setTipoEntidadeAvaliada(tiposEntidadeDao.referencia(UUID.fromString(dto.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId)));
         entidade.setTitulo(trimOrNull(dto.titulo));
         entidade.setDescricao(dto.descricao);
         entidade.setCicloReferencia(trimOrNull(dto.cicloReferencia));
@@ -193,7 +195,7 @@ public class AvaliacaoService {
     private void substituirTiposAlvo(String id, InstrumentoAvaliativoDTO dto) {
         UUID instrumentoId = UUID.fromString(id);
 //        instrumentoAvaliativoDAO.removerTiposAlvo(instrumentoId);
-        instrumentoAvaliativoDAO.persistir(new InstrumentoTipoAlvo(instrumentoId, UUID.fromString(dto.tipoEntidadeAvaliadaId)));
+        instrumentoAvaliativoDAO.persistir(new InstrumentoTipoAlvo(instrumentoId, UUID.fromString(dto.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId)));
         instrumentoAvaliativoDAO.flush();
     }
 
@@ -307,8 +309,7 @@ public class AvaliacaoService {
 
     private void validar(InstrumentoAvaliativoDTO d, boolean validarRespondentes) {
 
-        if (blank(d.tipoEntidadeAvaliadaId)) throw new ValidacaoException("Informe o que será avaliado.");
-        TipoEntidade tipoAvaliado = tiposEntidadeDao.buscar(UUID.fromString(d.tipoEntidadeAvaliadaId));
+        TipoEntidade tipoAvaliado = tiposEntidadeDao.buscar(UUID.fromString(d.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId));
         if (tipoAvaliado == null || !tipoAvaliado.isPodeSerAvaliada())
             throw new ValidacaoException("Tipo avaliado inválido.");
         if (d.respondentes == null) d.respondentes = new ArrayList<>();
@@ -316,17 +317,15 @@ public class AvaliacaoService {
         if (d.sessoes == null) d.sessoes = new ArrayList<>();
 
         Set<String> vistos = new HashSet<>();
-        String contextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(d.tipoEntidadeAvaliadaId));
+        String contextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(d.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId));
         if (validarRespondentes) for (AvaliacaoDTO.InstrumentoTipoRespondenteDTO r : d.respondentes) {
-            if (r == null) throw new ValidacaoException("Público respondente inválido.");
-            if (blank(r.tipoEntidadeId)) throw new ValidacaoException("Respondente sem tipo definido.");
             if (!vistos.add(r.tipoEntidadeId)) throw new ValidacaoException("Público respondente repetido.");
             TipoEntidade tipoRespondente = tiposEntidadeDao.buscar(UUID.fromString(r.tipoEntidadeId));
             if (tipoRespondente == null || !tipoRespondente.isPodeResponder())
                 throw new ValidacaoException("Público respondente inválido.");
             String vinculo = blank(r.tipoVinculo) ? null : r.tipoVinculo.trim();
             String codigo = tipoRespondente.getCodigo();
-            if (!tiposEntidadeDao.podeAvaliar(UUID.fromString(r.tipoEntidadeId), UUID.fromString(d.tipoEntidadeAvaliadaId))) {
+            if (!tiposEntidadeDao.podeAvaliar(UUID.fromString(r.tipoEntidadeId), UUID.fromString(d.tipoEntidadeAvaliada.tipoEntidadeAvaliadaId))) {
                 throw new ValidacaoException("O tipo " + tipoRespondente.getNome()
                         + " não está autorizado a avaliar o tipo selecionado.");
             }
@@ -343,18 +342,15 @@ public class AvaliacaoService {
         InstrumentoAvaliativo instrumentoValidacao = new InstrumentoAvaliativo();
         int ordemSessao = 0;
         for (AvaliacaoDTO.InstrumentoSessaoPaginaDTO p : d.paginas) {
-            if (p == null) throw new ValidacaoException("Página inválida.");
-            validarModelo(criarSessaoValidacao(p.titulo, TipoSessao.PAGINA, instrumentoValidacao, ordemSessao++));
+            validarBean(criarSessaoValidacao(p.titulo, TipoSessao.PAGINA, instrumentoValidacao, ordemSessao++));
         }
         for (AvaliacaoDTO.InstrumentoSessaoDTO s : d.sessoes) {
-            if (s == null) throw new ValidacaoException("Sessão inválida.");
             InstrumentoSessao sessaoValidacao = criarSessaoValidacao(
                     s.titulo, TipoSessao.SESSAO, instrumentoValidacao, ordemSessao++);
-            validarModelo(sessaoValidacao);
+            validarBean(sessaoValidacao);
             if (s.questoes == null) s.questoes = new ArrayList<>();
             int ordemQuestao = 0;
             for (AvaliacaoDTO.SessaoQuestaoDTO q : s.questoes) {
-                if (q == null) throw new ValidacaoException("Questão inválida.");
                 int ordemAtual = ordemQuestao++;
                 Questao questao = new Questao();
                 questao.setEnunciado(q.enunciado);
@@ -368,7 +364,7 @@ public class AvaliacaoService {
                 posicaoValidacao.setOrdem(ordemAtual);
                 posicaoValidacao.setObrigatoria(q.obrigatoria);
                 posicaoValidacao.setPeso(q.peso == null ? null : BigDecimal.valueOf(q.peso));
-                validarModelo(posicaoValidacao);
+                validarBean(posicaoValidacao);
 
                 boolean temConjunto = !blank(q.conjuntoOpcaoId);
                 boolean temOpcoesExclusivas = q.opcoes != null && !q.opcoes.isEmpty();
@@ -380,7 +376,6 @@ public class AvaliacaoService {
                     conjuntoValidacao.setExclusivo(true);
                     int ordemOpcao = 0;
                     for (AvaliacaoDTO.OpcaoQuestaoDTO o : q.opcoes) {
-                        if (o == null) throw new ValidacaoException("Opção inválida.");
                         OpcaoQuestao opcaoValidacao = new OpcaoQuestao();
                         opcaoValidacao.setConjunto(conjuntoValidacao);
                         opcaoValidacao.setTexto(o.texto);
@@ -389,7 +384,7 @@ public class AvaliacaoService {
                         conjuntoValidacao.getOpcoes().add(opcaoValidacao);
                     }
                     questao.setConjuntoOpcao(conjuntoValidacao);
-                    validarModelo(conjuntoValidacao);
+                    validarBean(conjuntoValidacao);
                 } else if (temConjunto) {
                     ConjuntoOpcao conjunto = instrumentoAvaliativoDAO.buscar(
                             ConjuntoOpcao.class, UUID.fromString(q.conjuntoOpcaoId));
@@ -397,7 +392,7 @@ public class AvaliacaoService {
                         throw new ValidacaoException("Conjunto de opções inválido para esta questão.");
                     questao.setConjuntoOpcao(conjunto);
                 }
-                validarModelo(questao);
+                validarBean(questao);
             }
         }
     }
@@ -412,8 +407,8 @@ public class AvaliacaoService {
         return sessao;
     }
 
-    private <T> void validarModelo(T entidade) {
-        var violacoes = validator.validate(entidade);
+    private <T> void validarBean(T objeto) {
+        var violacoes = validator.validate(objeto);
         if (!violacoes.isEmpty()) {
             String mensagens = violacoes.stream()
                     .map(violacao -> violacao.getMessage())

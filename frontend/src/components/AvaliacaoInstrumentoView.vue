@@ -62,7 +62,7 @@ const corStatus: Record<string, string> = {
 const colunasInstrumentos = [
   { key: 'titulo', label: 'Título', class: 'instrument-table__title' },
   { key: 'cicloReferencia', label: 'Ciclo', class: 'instrument-table__secondary' },
-  { key: 'tipoEntidadeAvaliadaNome', label: 'Avalia', class: 'instrument-table__secondary' },
+  { key: 'tipoEntidadeAvaliada', label: 'Avalia', class: 'instrument-table__secondary' },
   { key: 'periodo', label: 'Período', class: 'instrument-table__secondary' },
   { key: 'status', label: 'Status' },
   { key: 'acoes', label: '', class: 'text-right whitespace-nowrap' }
@@ -91,6 +91,9 @@ const colunasInstrumentos = [
       <PaginatedTable v-else :rows="instrumentos" :columns="colunasInstrumentos" :page-size="tamanhoPagina"
                       :page="paginaAtual" :has-next="temProximaPagina" @page-change="carregarLista">
         <template #cell="{ row, column }">
+          <template v-if="column === 'tipoEntidadeAvaliada'">
+            {{ row.tipoEntidadeAvaliada?.nome || 'Institucional' }}
+          </template>
           <template v-if="column === 'periodo'">
             {{ fmtData(row.inicioAplicacao) }} – {{ fmtData(row.fimAplicacao) }}
           </template>

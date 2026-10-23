@@ -23,7 +23,7 @@ function formatarData(data?: string | null) {
       <h3 class="survey-card__title">{{ item.titulo }}</h3>
       <p v-if="item.descricao" class="survey-card__description">{{ item.descricao }}</p>
       <p class="survey-card__hint">
-        Avaliação: {{ item.tipoEntidadeAvaliadaNome || 'Institucional' }}
+        Avaliação: {{ item.tipoEntidadeAvaliada?.nome || 'Institucional' }}
         <span v-if="item.cicloReferencia"> · Ciclo: {{ item.cicloReferencia }}</span>
       </p>
       <p v-if="item.inicioAplicacao || item.fimAplicacao" class="survey-card__hint">
