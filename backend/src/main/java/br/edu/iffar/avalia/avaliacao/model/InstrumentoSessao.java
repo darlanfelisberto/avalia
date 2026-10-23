@@ -2,6 +2,10 @@ package br.edu.iffar.avalia.avaliacao.model;
 
 import br.com.feliva.sharedClass.db.Model;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -16,15 +20,19 @@ public class InstrumentoSessao extends Model<UUID> {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instrumento_avaliativo_id", nullable = false)
+    @NotNull(message = "A sessão precisa estar vinculada a um instrumento.")
     private InstrumentoAvaliativo instrumentoAvaliativo;
 
     @OneToMany(mappedBy = "instrumentoSessao")
     @OrderBy("ordem ASC")
     private List<SessaoQuestao> sessaoQuestoesList = new ArrayList<>();
 
+    @NotNull(message = "Informe o tipo da sessão.")
     @Enumerated(EnumType.STRING)
     private TipoSessao tipoSessao;
 
+    @NotBlank(message = "Toda sessão ou página precisa de um título.")
+    @Size(max = 200, message = "O título da sessão ou página deve ter até 200 caracteres.")
     @Column(nullable = false, length = 200)
     private String titulo;
 
@@ -32,6 +40,7 @@ public class InstrumentoSessao extends Model<UUID> {
     private String descricao;
 
     @Column(nullable = false)
+    @Min(value = 0, message = "A ordem da sessão não pode ser negativa.")
     private int ordem;
 
     public UUID getId() { return instrumentoSessaoId; }

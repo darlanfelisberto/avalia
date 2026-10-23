@@ -27,6 +27,10 @@ public class InstrumentoAvaliativoDAO  extends InjectEntityManagerDAO<Instrument
         return em.getReference(tipo, id);
     }
 
+    public <T> T buscar(Class<T> tipo, UUID id) {
+        return em.find(tipo, id);
+    }
+
     public void persistir(Object entidade) {
         em.persist(entidade);
     }

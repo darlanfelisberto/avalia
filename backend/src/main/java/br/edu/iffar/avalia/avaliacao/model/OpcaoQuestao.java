@@ -2,6 +2,11 @@ package br.edu.iffar.avalia.avaliacao.model;
 
 import br.com.feliva.sharedClass.db.Model;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -15,11 +20,15 @@ public class OpcaoQuestao extends Model<UUID> {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "conjunto_opcao_id", nullable = false)
+    @NotNull(message = "A opção precisa estar vinculada a um conjunto.")
     private ConjuntoOpcao conjunto;
 
+    @NotBlank(message = "Toda opção precisa de um texto.")
+    @Size(max = 300, message = "O texto da opção deve ter até 300 caracteres.")
     @Column(nullable = false, length = 300)
     private String texto;
 
+    @Digits(integer = 4, fraction = 2, message = "O valor da opção deve ter até 4 dígitos inteiros e 2 decimais.")
     @Column(precision = 6, scale = 2)
     private BigDecimal valor;
 
@@ -27,6 +36,7 @@ public class OpcaoQuestao extends Model<UUID> {
     private boolean correta;
 
     @Column(nullable = false)
+    @Min(value = 0, message = "A ordem da opção não pode ser negativa.")
     private int ordem;
 
     public UUID getId() { return opcaoQuestaoId; }

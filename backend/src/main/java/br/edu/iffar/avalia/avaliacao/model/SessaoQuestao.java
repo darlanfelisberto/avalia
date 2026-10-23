@@ -2,6 +2,9 @@ package br.edu.iffar.avalia.avaliacao.model;
 
 import br.com.feliva.sharedClass.db.Model;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -15,19 +18,23 @@ public class SessaoQuestao extends Model<UUID> {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instrumento_sessao_id", nullable = false)
+    @NotNull(message = "A questão precisa estar vinculada a uma sessão.")
     private InstrumentoSessao instrumentoSessao;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "questao_id", nullable = false)
+    @NotNull(message = "A sessão precisa estar vinculada a uma questão.")
     private Questao questao;
 
     @Column(nullable = false)
+    @Min(value = 0, message = "A ordem da questão não pode ser negativa.")
     private int ordem;
 
     @Column(nullable = false)
     private boolean obrigatoria;
 
     @Column(precision = 6, scale = 2)
+    @Digits(integer = 4, fraction = 2, message = "O peso da questão deve ter até 4 dígitos inteiros e 2 decimais.")
     private BigDecimal peso;
 
     public UUID getId() { return sessaoQuestaoId; }

@@ -15,11 +15,13 @@ import br.edu.iffar.avalia.avaliacao.model.OpcaoQuestao;
 import br.edu.iffar.avalia.avaliacao.model.Questao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
 import br.edu.iffar.avalia.avaliacao.model.StatusInstrumentoAvaliativo;
+import br.edu.iffar.avalia.avaliacao.model.TipoSessao;
 import br.edu.iffar.avalia.core.exception.ValidacaoException;
 import br.edu.iffar.avalia.core.service.AuthService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Validator;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -29,8 +31,6 @@ import java.util.*;
 @ApplicationScoped
 @Transactional
 public class AvaliacaoService {
-
-    private static final Set<String> TIPOS_QUESTAO = Set.of("ESCOLHA_UNICA", "MULTIPLA_ESCOLHA", "ESCALA", "DESCRITIVA");
 
     @Inject
     private InstrumentoAvaliativoDAO instrumentoAvaliativoDAO;
@@ -43,6 +43,9 @@ public class AvaliacaoService {
 
     @Inject
     private AuthService auth;
+
+    @Inject
+    private Validator validator;
 
     // ------------------------------------------------------------------ catálogos
 
@@ -61,26 +64,23 @@ public class AvaliacaoService {
 
     public ConjuntoOpcaoDTO salvarConjunto(ConjuntoOpcaoDTO dto) {
         if (dto == null) throw new ValidacaoException("Dados do conjunto não informados.");
-        if (blank(dto.nome)) throw new ValidacaoException("Informe o nome do conjunto de opções.");
-        if (dto.opcoes == null || dto.opcoes.size() < 2) throw new ValidacaoException("Um conjunto precisa de ao menos 2 opções.");
 //        if (instrumentoAvaliativoDAO.existeConjunto(dto.nome.trim())) {
 //            throw new ValidacaoException("Já existe um conjunto de opções com este nome.");
 //        }
         br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao conjunto = new br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao();
-        conjunto.setNome(dto.nome.trim());
-        instrumentoAvaliativoDAO.persistir(conjunto);
+        conjunto.setNome(dto.nome == null ? null : dto.nome.trim());
         int ordem = 1;
-        for (AvaliacaoDTO.OpcaoQuestaoDTO o : dto.opcoes) {
-            if (blank(o.texto)) throw new ValidacaoException("Toda opção precisa de um texto.");
+        for (AvaliacaoDTO.OpcaoQuestaoDTO o : dto.opcoes == null ? List.<AvaliacaoDTO.OpcaoQuestaoDTO>of() : dto.opcoes) {
+            if (o == null) throw new ValidacaoException("Opção inválida.");
             OpcaoQuestao opcao = new OpcaoQuestao();
             opcao.setConjunto(conjunto);
-            opcao.setTexto(o.texto.trim());
+            opcao.setTexto(o.texto == null ? null : o.texto.trim());
             opcao.setValor(o.valor == null ? null : BigDecimal.valueOf(o.valor));
             opcao.setCorreta(o.correta);
             opcao.setOrdem(ordem++);
             conjunto.getOpcoes().add(opcao);
-            instrumentoAvaliativoDAO.persistir(opcao);
         }
+        instrumentoAvaliativoDAO.persistir(conjunto);
         instrumentoAvaliativoDAO.flush();
         return ConjuntoOpcaoDTO.create(conjunto);
     }
@@ -120,14 +120,14 @@ public class AvaliacaoService {
         boolean novo = entidade == null;
         if (novo) {
             entidade = new InstrumentoAvaliativo();
-            entidade.setCriadoPor(usuario);
+            entidade.setCriadoPor(auth.getCpf());
         }
         if (rascunho) entidade.setTipoEntidadeAvaliada(tiposEntidadeDao.referencia(UUID.fromString(dto.tipoEntidadeAvaliadaId)));
-        entidade.setTitulo(dto.titulo.trim());
+        entidade.setTitulo(trimOrNull(dto.titulo));
         entidade.setDescricao(dto.descricao);
-        entidade.setCicloReferencia(dto.cicloReferencia.trim());
-        entidade.setInicioAplicacao(OffsetDateTime.parse(dto.inicioAplicacao));
-        entidade.setFimAplicacao(OffsetDateTime.parse(dto.fimAplicacao));
+        entidade.setCicloReferencia(trimOrNull(dto.cicloReferencia));
+        entidade.setInicioAplicacao(parseData(dto.inicioAplicacao, "início da aplicação"));
+        entidade.setFimAplicacao(parseData(dto.fimAplicacao, "término da aplicação"));
         entidade.setAnonimo(dto.anonimo);
         entidade.setPermiteEdicao(dto.permiteEdicao);
         entidade.setAtualizadoEm(OffsetDateTime.now());
@@ -306,17 +306,11 @@ public class AvaliacaoService {
 //    }
 
     private void validar(InstrumentoAvaliativoDTO d, boolean validarRespondentes) {
-        if (d == null) throw new ValidacaoException("Dados do instrumento não informados.");
-        if (blank(d.titulo)) throw new ValidacaoException("Informe o título do instrumento.");
-        if (blank(d.cicloReferencia)) throw new ValidacaoException("Informe o ciclo de referência (ex.: 2026/1).");
+
         if (blank(d.tipoEntidadeAvaliadaId)) throw new ValidacaoException("Informe o que será avaliado.");
         TipoEntidade tipoAvaliado = tiposEntidadeDao.buscar(UUID.fromString(d.tipoEntidadeAvaliadaId));
         if (tipoAvaliado == null || !tipoAvaliado.isPodeSerAvaliada())
             throw new ValidacaoException("Tipo avaliado inválido.");
-        if (blank(d.inicioAplicacao) || blank(d.fimAplicacao)) throw new ValidacaoException("Informe o período de aplicação.");
-        if (!OffsetDateTime.parse(d.fimAplicacao).isAfter(OffsetDateTime.parse(d.inicioAplicacao))) {
-            throw new ValidacaoException("O término da aplicação deve ser posterior ao início.");
-        }
         if (d.respondentes == null) d.respondentes = new ArrayList<>();
         if (d.paginas == null) d.paginas = new ArrayList<>();
         if (d.sessoes == null) d.sessoes = new ArrayList<>();
@@ -324,6 +318,7 @@ public class AvaliacaoService {
         Set<String> vistos = new HashSet<>();
         String contextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(d.tipoEntidadeAvaliadaId));
         if (validarRespondentes) for (AvaliacaoDTO.InstrumentoTipoRespondenteDTO r : d.respondentes) {
+            if (r == null) throw new ValidacaoException("Público respondente inválido.");
             if (blank(r.tipoEntidadeId)) throw new ValidacaoException("Respondente sem tipo definido.");
             if (!vistos.add(r.tipoEntidadeId)) throw new ValidacaoException("Público respondente repetido.");
             TipoEntidade tipoRespondente = tiposEntidadeDao.buscar(UUID.fromString(r.tipoEntidadeId));
@@ -345,32 +340,101 @@ public class AvaliacaoService {
             };
             if (!vinculoValido) throw new ValidacaoException("Vínculo incompatível com o público e o contexto avaliados.");
         }
+        InstrumentoAvaliativo instrumentoValidacao = new InstrumentoAvaliativo();
+        int ordemSessao = 0;
         for (AvaliacaoDTO.InstrumentoSessaoPaginaDTO p : d.paginas) {
-            if (blank(p.titulo)) throw new ValidacaoException("Toda página precisa de um título.");
+            if (p == null) throw new ValidacaoException("Página inválida.");
+            validarModelo(criarSessaoValidacao(p.titulo, TipoSessao.PAGINA, instrumentoValidacao, ordemSessao++));
         }
         for (AvaliacaoDTO.InstrumentoSessaoDTO s : d.sessoes) {
-            if (blank(s.titulo)) throw new ValidacaoException("Toda sessão precisa de um título.");
+            if (s == null) throw new ValidacaoException("Sessão inválida.");
+            InstrumentoSessao sessaoValidacao = criarSessaoValidacao(
+                    s.titulo, TipoSessao.SESSAO, instrumentoValidacao, ordemSessao++);
+            validarModelo(sessaoValidacao);
             if (s.questoes == null) s.questoes = new ArrayList<>();
+            int ordemQuestao = 0;
             for (AvaliacaoDTO.SessaoQuestaoDTO q : s.questoes) {
-                if (blank(q.enunciado)) throw new ValidacaoException("Toda questão precisa de um enunciado (sessão \"" + s.titulo + "\").");
-                if (q.tipo == null || !TIPOS_QUESTAO.contains(q.tipo)) throw new ValidacaoException("Tipo de questão inválido.");
+                if (q == null) throw new ValidacaoException("Questão inválida.");
+                int ordemAtual = ordemQuestao++;
+                Questao questao = new Questao();
+                questao.setEnunciado(q.enunciado);
+                questao.setTipo(q.tipo);
+                questao.setAssunto(q.assunto);
+                questao.setCriadoPor(auth.getCpf());
+
+                SessaoQuestao posicaoValidacao = new SessaoQuestao();
+                posicaoValidacao.setInstrumentoSessao(sessaoValidacao);
+                posicaoValidacao.setQuestao(questao);
+                posicaoValidacao.setOrdem(ordemAtual);
+                posicaoValidacao.setObrigatoria(q.obrigatoria);
+                posicaoValidacao.setPeso(q.peso == null ? null : BigDecimal.valueOf(q.peso));
+                validarModelo(posicaoValidacao);
+
                 boolean temConjunto = !blank(q.conjuntoOpcaoId);
                 boolean temOpcoesExclusivas = q.opcoes != null && !q.opcoes.isEmpty();
-                if ("DESCRITIVA".equals(q.tipo) && (temConjunto || temOpcoesExclusivas)) {
-                    throw new ValidacaoException("Questão descritiva não pode ter opções.");
-                }
-                if (!"DESCRITIVA".equals(q.tipo) && temConjunto == temOpcoesExclusivas) {
-                    throw new ValidacaoException("A questão \"" + q.enunciado + "\" precisa de um conjunto ou de opções exclusivas.");
-                }
+                if (temConjunto && temOpcoesExclusivas)
+                    throw new ValidacaoException("Informe um conjunto reutilizável ou opções exclusivas, não ambos.");
                 if (temOpcoesExclusivas) {
-                    if (q.opcoes.size() < 2) throw new ValidacaoException("Cadastre ao menos duas opções para a questão \"" + q.enunciado + "\".");
+                    ConjuntoOpcao conjuntoValidacao = new ConjuntoOpcao();
+                    conjuntoValidacao.setNome("Opções da questão");
+                    conjuntoValidacao.setExclusivo(true);
+                    int ordemOpcao = 0;
                     for (AvaliacaoDTO.OpcaoQuestaoDTO o : q.opcoes) {
-                        if (o == null || blank(o.texto) || o.texto.trim().length() > 300)
-                            throw new ValidacaoException("Toda opção exclusiva precisa de um texto de até 300 caracteres.");
+                        if (o == null) throw new ValidacaoException("Opção inválida.");
+                        OpcaoQuestao opcaoValidacao = new OpcaoQuestao();
+                        opcaoValidacao.setConjunto(conjuntoValidacao);
+                        opcaoValidacao.setTexto(o.texto);
+                        opcaoValidacao.setValor(o.valor == null ? null : BigDecimal.valueOf(o.valor));
+                        opcaoValidacao.setOrdem(ordemOpcao++);
+                        conjuntoValidacao.getOpcoes().add(opcaoValidacao);
                     }
+                    questao.setConjuntoOpcao(conjuntoValidacao);
+                    validarModelo(conjuntoValidacao);
+                } else if (temConjunto) {
+                    ConjuntoOpcao conjunto = instrumentoAvaliativoDAO.buscar(
+                            ConjuntoOpcao.class, UUID.fromString(q.conjuntoOpcaoId));
+                    if (conjunto == null || conjunto.isExclusivo())
+                        throw new ValidacaoException("Conjunto de opções inválido para esta questão.");
+                    questao.setConjuntoOpcao(conjunto);
                 }
+                validarModelo(questao);
             }
         }
+    }
+
+    private InstrumentoSessao criarSessaoValidacao(String titulo, TipoSessao tipo,
+                                                    InstrumentoAvaliativo instrumento, int ordem) {
+        InstrumentoSessao sessao = new InstrumentoSessao();
+        sessao.setInstrumentoAvaliativo(instrumento);
+        sessao.setTipoSessao(tipo);
+        sessao.setTitulo(titulo);
+        sessao.setOrdem(ordem);
+        return sessao;
+    }
+
+    private <T> void validarModelo(T entidade) {
+        var violacoes = validator.validate(entidade);
+        if (!violacoes.isEmpty()) {
+            String mensagens = violacoes.stream()
+                    .map(violacao -> violacao.getMessage())
+                    .distinct()
+                    .sorted()
+                    .collect(java.util.stream.Collectors.joining(" "));
+            throw new ValidacaoException(mensagens);
+        }
+    }
+
+    private OffsetDateTime parseData(String valor, String campo) {
+        if (blank(valor)) return null;
+        try {
+            return OffsetDateTime.parse(valor);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new ValidacaoException("Formato inválido para " + campo + ". Use uma data ISO-8601.", e);
+        }
+    }
+
+    private static String trimOrNull(String valor) {
+        return valor == null ? null : valor.trim();
     }
 
     private static boolean blank(String s) {

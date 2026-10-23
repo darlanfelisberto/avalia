@@ -8,6 +8,7 @@ import br.edu.iffar.avalia.core.dto.UsuarioDTO;
 import jakarta.inject.Inject;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.persistence.NoResultException;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -86,6 +87,19 @@ public class AvaliacaoResource {
             return Response.status(Response.Status.FORBIDDEN).type(MediaType.TEXT_PLAIN).entity(e.getMessage()).build();
         } catch (RuntimeException e) {
             Throwable causa = e;
+            while (causa != null) {
+                if (causa instanceof ConstraintViolationException violacao) {
+                    String mensagens = violacao.getConstraintViolations().stream()
+                            .map(item -> item.getMessage())
+                            .distinct()
+                            .sorted()
+                            .collect(java.util.stream.Collectors.joining(" "));
+                    return Response.status(Response.Status.BAD_REQUEST).type(MediaType.TEXT_PLAIN)
+                            .entity(mensagens).build();
+                }
+                causa = causa.getCause();
+            }
+            causa = e;
             while (causa.getCause() != null) causa = causa.getCause();
             return Response.serverError().type(MediaType.TEXT_PLAIN).entity(causa.getMessage()).build();
         }
