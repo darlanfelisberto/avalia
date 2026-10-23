@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import InstrumentoAvaliativoList from './components/InstrumentoAvaliativoList.vue';
-import InstrumentoFormularioView from './components/InstrumentoFormularioView.vue';
 import InstrumentoEstruturaView from './components/InstrumentoEstruturaView.vue';
 import PermissoesTiposEntidadeView from './components/PermissoesTiposEntidadeView.vue';
 import ResponderAvaliacoesView from './components/ResponderAvaliacoesView.vue';
@@ -9,6 +8,7 @@ import SincronizacaoView from './components/SincronizacaoView.vue';
 import AcessoNegadoView from './components/AcessoNegadoView.vue';
 import { carregarUsuarioAtivo, temPermissao } from './services/storage';
 import type { UsuarioContexto } from './types/avaliacao';
+import InstrumentoAvaliativoForm from "./components/InstrumentoAvaliativoForm.vue";
 
 type RotaAutenticada = {
   exigeGerenciaInstrumentos?: boolean;
@@ -34,8 +34,8 @@ const router = createRouter({
     { path: '/responder', name: 'responder', component: ResponderAvaliacoesView },
     { path: '/responder/:instrumentoId', name: 'responder-formulario', component: FormularioResponderAvaliacao },
     { path: '/instrumentos', name: 'instrumentos', component: InstrumentoAvaliativoList, meta: { exigeGerenciaInstrumentos: true } },
-    { path: '/instrumentos/novo', name: 'instrumento-novo', component: InstrumentoFormularioView, meta: { exigeGerenciaInstrumentos: true, permissao: 'INSTRUMENTO_CRIAR' } },
-    { path: '/instrumentos/:id', name: 'instrumento-editar', component: InstrumentoFormularioView, meta: { exigeGerenciaInstrumentos: true } },
+    { path: '/instrumentos/novo', name: 'instrumento-novo', component: InstrumentoAvaliativoForm, meta: { exigeGerenciaInstrumentos: true, permissao: 'INSTRUMENTO_CRIAR' } },
+    { path: '/instrumentos/:id', name: 'instrumento-editar', component: InstrumentoAvaliativoForm, meta: { exigeGerenciaInstrumentos: true } },
     { path: '/instrumentos/:id/estrutura', name: 'instrumento-estrutura', component: InstrumentoEstruturaView, meta: { exigeGerenciaInstrumentos: true } },
     { path: '/permissoes', name: 'permissoes', component: PermissoesTiposEntidadeView, meta: { exigeGerenciaInstrumentos: true } },
     { path: '/sincronizacao', name: 'sincronizacao', component: SincronizacaoView, meta: { permissao: 'SIGAA_SINCRONIZAR' } },
