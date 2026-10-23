@@ -114,8 +114,6 @@ button, input, select, textarea { font: inherit; }
 .instrument-form__mode-badge { padding: .125rem .5rem; border-radius: 999px; background: #d1fae5; color: #065f46; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
 .instrument-form__title { margin-top: .25rem; color: #0f172a; font-size: 1.25rem; font-weight: 700; }
 .instrument-form__save { width: auto; padding: .625rem 1.25rem; font-size: .75rem; }
-.button--publish { padding: .625rem 1rem; background: #0f172a; color: white; font-size: .75rem; }
-.button--publish:hover:not(:disabled) { background: #020617; }
 .form-panel { display: grid; gap: 1.25rem; padding: 1.25rem; }
 .form-panel__heading { padding-bottom: .75rem; border-bottom: 1px solid #f1f5f9; }
 .form-panel__title { color: #0f172a; font-size: .875rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }

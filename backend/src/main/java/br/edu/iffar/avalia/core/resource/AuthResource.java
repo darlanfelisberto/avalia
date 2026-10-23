@@ -50,6 +50,7 @@ public class AuthResource {
             int maxAge = (int) Math.max(1, Math.min(12 * 60 * 60,
                     Duration.between(Instant.now(), tokens.identidade().expiraEm()).getSeconds()));
             return Response.ok(resposta).cookie(accessCookie(tokens.accessToken(), maxAge))
+                    .header("Set-Cookie", legacyAccessCookie().toString())
                     .header("Cache-Control", "no-store").build();
         } catch (SecurityException e) {
             return Response.status(Response.Status.UNAUTHORIZED)
@@ -64,6 +65,7 @@ public class AuthResource {
     @Path("/logout")
     public Response logout() {
         return Response.noContent().cookie(accessCookie("", 0), cookie("avalia_session", "", 0))
+                .header("Set-Cookie", legacyAccessCookie().toString())
                 .header("Cache-Control", "no-store").build();
     }
 
@@ -79,12 +81,20 @@ public class AuthResource {
     }
 
     private NewCookie accessCookie(String value, int maxAge) {
-        return cookie("avalia_access", value, maxAge);
+        return cookie("avalia_access", value, maxAge, "/");
+    }
+
+    private NewCookie legacyAccessCookie() {
+        return cookie("avalia_access", "", 0, "/api");
     }
 
     private NewCookie cookie(String name, String value, int maxAge) {
+        return cookie(name, value, maxAge, "/api");
+    }
+
+    private NewCookie cookie(String name, String value, int maxAge, String path) {
         return new NewCookie.Builder(name)
-                .value(value).path("/api").maxAge(maxAge).httpOnly(true)
+                .value(value).path(path).maxAge(maxAge).httpOnly(true)
                 .secure(oidcClient.cookieSecure()).sameSite(NewCookie.SameSite.STRICT).build();
     }
 

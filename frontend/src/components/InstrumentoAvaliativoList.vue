@@ -49,14 +49,6 @@ const corStatus: Record<string, string> = {
   ENCERRADO: 'status-badge--closed',
   CONSOLIDADO: 'status-badge--consolidated'
 };
-const colunasInstrumentos = [
-  { key: 'titulo', label: 'Título', class: 'instrument-table__title' },
-  { key: 'cicloReferencia', label: 'Ciclo', class: 'instrument-table__secondary' },
-  { key: 'tipoEntidadeAvaliada', label: 'Avalia', class: 'instrument-table__secondary' },
-  { key: 'periodo', label: 'Período', class: 'instrument-table__secondary' },
-  { key: 'status', label: 'Status' },
-  { key: 'acoes', label: '', class: 'text-right whitespace-nowrap' }
-];
 </script>
 
 <template>
@@ -78,21 +70,30 @@ const colunasInstrumentos = [
 
       <p v-if="carregando" class="instrument-list__empty instrument-list__empty--loading">Carregando…</p>
       <p v-else-if="instrumentos.length === 0" class="instrument-list__empty">Nenhum instrumento cadastrado.</p>
-      <PaginatedTable v-else :rows="instrumentos" :columns="colunasInstrumentos" :page-size="tamanhoPagina"
-                      :page="paginaAtual" :has-next="temProximaPagina" @page-change="carregarLista">
-        <template #cell="{ row, column }">
-          <template v-if="column === 'tipoEntidadeAvaliada'">
-            {{ row.tipoEntidadeAvaliada?.nome || 'Institucional' }}
-          </template>
-          <template v-if="column === 'periodo'">
-            {{ fmtData(row.inicioAplicacao) }} – {{ fmtData(row.fimAplicacao) }}
-          </template>
-          <span v-else-if="column === 'status'" :class="['status-badge', corStatus[row.status || 'RASCUNHO']]">{{ row.status }}</span>
-          <div v-else-if="column === 'acoes'">
-            <RouterLink :to="{ name: 'instrumento-editar', params: { id: row.id } }" class="text-action text-action--primary instrument-table__open">{{ row.status === 'RASCUNHO' ? 'Editar cadastro' : 'Abrir cadastro' }}</RouterLink>
-            <RouterLink :to="{ name: 'instrumento-estrutura', params: { id: row.id } }" class="text-action text-action--primary">{{ row.status === 'RASCUNHO' ? 'Editar estrutura' : 'Ver estrutura' }}</RouterLink>
-            <button v-if="podeExcluir && row.status === 'RASCUNHO'" type="button" class="text-action text-action--danger" @click="excluir(row.id!, row.titulo)">Excluir</button>
-          </div>
+      <PaginatedTable v-else :rows="instrumentos" :page-size="tamanhoPagina" :page="paginaAtual" :has-next="temProximaPagina" @page-change="carregarLista">
+        <template #header>
+          <tr>
+            <th class="data-table__heading">Título</th>
+            <th class="data-table__heading">Ciclo</th>
+            <th class="data-table__heading">Avalia</th>
+            <th class="data-table__heading">Período</th>
+            <th class="data-table__heading">Status</th>
+            <th class="data-table__heading text-right">Ações</th>
+          </tr>
+        </template>
+        <template #body="{ row }">
+          <tr class="data-table__row">
+            <td class="data-table__cell instrument-table__title">{{ row.titulo }}</td>
+            <td class="data-table__cell instrument-table__secondary">{{ row.cicloReferencia }}</td>
+            <td class="data-table__cell instrument-table__secondary">{{ row.tipoEntidadeAvaliada?.nome || 'Institucional' }}</td>
+            <td class="data-table__cell instrument-table__secondary">{{ fmtData(row.inicioAplicacao) }} – {{ fmtData(row.fimAplicacao) }}</td>
+            <td class="data-table__cell"><span :class="['status-badge', corStatus[row.status || 'RASCUNHO']]">{{ row.status }}</span></td>
+            <td class="data-table__cell text-right whitespace-nowrap">
+              <RouterLink :to="{ name: 'instrumento-editar', params: { id: row.id } }" class="text-action text-action--primary instrument-table__open">{{ row.status === 'RASCUNHO' ? 'Editar cadastro' : 'Abrir cadastro' }}</RouterLink>
+              <RouterLink :to="{ name: 'instrumento-estrutura', params: { id: row.id } }" class="text-action text-action--primary">{{ row.status === 'RASCUNHO' ? 'Editar estrutura' : 'Ver estrutura' }}</RouterLink>
+              <button v-if="podeExcluir && row.status === 'RASCUNHO'" type="button" class="text-action text-action--danger" @click="excluir(row.id!, row.titulo)">Excluir</button>
+            </td>
+          </tr>
         </template>
       </PaginatedTable>
     </div>

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import AvaliacaoInstrumentoView from './components/AvaliacaoInstrumentoView.vue';
+import InstrumentoAvaliativoList from './components/InstrumentoAvaliativoList.vue';
 import InstrumentoFormularioView from './components/InstrumentoFormularioView.vue';
 import InstrumentoEstruturaView from './components/InstrumentoEstruturaView.vue';
 import PermissoesTiposEntidadeView from './components/PermissoesTiposEntidadeView.vue';
@@ -33,7 +33,7 @@ const router = createRouter({
     { path: '/', redirect: () => rotaInicial(carregarUsuarioAtivo()) },
     { path: '/responder', name: 'responder', component: ResponderAvaliacoesView },
     { path: '/responder/:instrumentoId', name: 'responder-formulario', component: FormularioResponderAvaliacao },
-    { path: '/instrumentos', name: 'instrumentos', component: AvaliacaoInstrumentoView, meta: { exigeGerenciaInstrumentos: true } },
+    { path: '/instrumentos', name: 'instrumentos', component: InstrumentoAvaliativoList, meta: { exigeGerenciaInstrumentos: true } },
     { path: '/instrumentos/novo', name: 'instrumento-novo', component: InstrumentoFormularioView, meta: { exigeGerenciaInstrumentos: true, permissao: 'INSTRUMENTO_CRIAR' } },
     { path: '/instrumentos/:id', name: 'instrumento-editar', component: InstrumentoFormularioView, meta: { exigeGerenciaInstrumentos: true } },
     { path: '/instrumentos/:id/estrutura', name: 'instrumento-estrutura', component: InstrumentoEstruturaView, meta: { exigeGerenciaInstrumentos: true } },

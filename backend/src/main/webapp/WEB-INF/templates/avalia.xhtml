@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets" lang="pt-BR">
+<f:metadata><ui:insert name="metadata" /></f:metadata>
+<h:head>
+    <title><ui:insert name="title">AVALIA</ui:insert></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <h:outputStylesheet library="css" name="avalia-jsf.css" />
+</h:head>
+<h:body>
+    <input id="menu-toggle" class="menu-toggle" type="checkbox" aria-label="Abrir menu lateral" />
+    <div class="app-shell">
+        <label for="menu-toggle" class="sidebar-backdrop" aria-hidden="true"></label>
+        <aside class="sidebar" aria-label="Menu principal">
+            <div class="sidebar__brand-row">
+                <div class="sidebar__brand">
+                    <div class="sidebar__brand-mark">A</div>
+                    <div>
+                        <div class="sidebar__brand-name">AVALIA</div>
+                        <p class="sidebar__brand-caption">Avaliações Institucionais</p>
+                    </div>
+                </div>
+                <label for="menu-toggle" class="sidebar__close" aria-label="Fechar menu">✕</label>
+            </div>
+            <nav class="sidebar__navigation" aria-label="Navegação">
+                <div class="sidebar__group-title">Instrumentos</div>
+                <div class="sidebar__group-links">
+                    <h:outputLink value="#{avaliaLayout.frontendOrigin}/instrumentos" styleClass="sidebar__link">
+                        <span class="sidebar__link-icon">🧾</span>
+                        <span class="sidebar__link-copy">Cadastro de Instrumentos<span class="sidebar__link-description">Instrumentos, páginas, sessões e questões</span></span>
+                    </h:outputLink>
+                    <h:link outcome="/jsf/instrumento.xhtml" styleClass="sidebar__link sidebar__link--active">
+                        <span class="sidebar__link-icon">✎</span>
+                        <span class="sidebar__link-copy">Cadastro em JSF<span class="sidebar__link-description">Comparar com a versão Vue</span></span>
+                    </h:link>
+                    <h:outputLink value="#{avaliaLayout.frontendOrigin}/permissoes" styleClass="sidebar__link">
+                        <span class="sidebar__link-icon">🔀</span>
+                        <span class="sidebar__link-copy">Permissões entre Entidades<span class="sidebar__link-description">Quem pode avaliar cada tipo</span></span>
+                    </h:outputLink>
+                </div>
+                <div class="sidebar__group-title">Aplicação e Respostas</div>
+                <div class="sidebar__group-links">
+                    <h:outputLink value="#{avaliaLayout.frontendOrigin}/responder" styleClass="sidebar__link">
+                        <span class="sidebar__link-icon">🎓</span>
+                        <span class="sidebar__link-copy">Avaliações disponíveis<span class="sidebar__link-description">Avaliações que você pode responder</span></span>
+                    </h:outputLink>
+                </div>
+                <div class="sidebar__group-title">Integração Acadêmica</div>
+                <div class="sidebar__group-links">
+                    <h:outputLink value="#{avaliaLayout.frontendOrigin}/sincronizacao" styleClass="sidebar__link">
+                        <span class="sidebar__link-icon">🔄</span>
+                        <span class="sidebar__link-copy">Sincronização SIGAA<span class="sidebar__link-description">Carga Acadêmica &amp; RH</span></span>
+                    </h:outputLink>
+                </div>
+            </nav>
+            <div class="sidebar__footer">
+                <div class="sidebar__user-card">
+                    <div class="sidebar__user-avatar"><h:outputText value="#{avaliaLayout.inicialUsuario}" /></div>
+                    <div class="sidebar__user-copy">
+                        <div class="sidebar__user-name"><h:outputText value="#{avaliaLayout.nomeUsuario}" /></div>
+                        <div class="sidebar__user-meta"><h:outputText value="#{avaliaLayout.identificacaoUsuario}" /> · <span class="sidebar__user-role"><h:outputText value="#{avaliaLayout.papelUsuario}" /></span></div>
+                    </div>
+                </div>
+                <p class="sidebar__signature">PPGTER / UFSM · <span>IFFar AVALIA</span></p>
+            </div>
+        </aside>
+
+        <div class="app-workspace">
+            <header class="app-header">
+                <div class="app-header__bar">
+                    <div class="app-header__context">
+                        <label for="menu-toggle" class="app-header__menu-button" aria-label="Abrir menu">☰</label>
+                        <div>
+                            <div class="app-header__labels"><span class="app-header__category">Instrumentos</span><span class="app-header__code">Schema avaliacao · JSF</span></div>
+                            <div class="app-header__title">Cadastro de Instrumentos</div>
+                        </div>
+                    </div>
+                    <div class="app-header__user-card"><span class="app-header__avatar"><h:outputText value="#{avaliaLayout.inicialUsuario}" /></span><span class="app-header__user-name"><h:outputText value="#{avaliaLayout.nomeUsuario}" /></span></div>
+                </div>
+            </header>
+            <main class="app-main-content" id="conteudo">
+                <ui:insert name="content" />
+            </main>
+            <footer class="app-footer">
+                <div class="app-footer__content">
+                    <div><p class="app-footer__title">Sistema Informatizado para o Fechamento do Ciclo Avaliativo (AVALIA)</p><p class="app-footer__subtitle">Dissertação de Mestrado Profissional em Tecnologias Educacionais em Rede (PPGTER / UFSM)</p></div>
+                    <p class="app-footer__researcher">Pesquisador: Darlan E. F. da Silva · IFFar (2026/2027)</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+</h:body>
+</html>

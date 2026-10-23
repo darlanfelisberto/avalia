@@ -62,6 +62,26 @@ public class AvaliacaoService {
         return resultado;
     }
 
+    public ConjuntoOpcaoDTO salvarConjunto(ConjuntoOpcaoDTO dto) {
+        if (dto == null) throw new ValidacaoException("Dados do conjunto não informados.");
+        validarBean(dto);
+        ConjuntoOpcao conjunto = new ConjuntoOpcao();
+        conjunto.setNome(dto.nome.trim());
+        int ordem = 0;
+        for (OpcaoQuestaoDTO item : dto.opcoes) {
+            OpcaoQuestao opcao = new OpcaoQuestao();
+            opcao.setConjunto(conjunto);
+            opcao.setTexto(item.texto.trim());
+            opcao.setValor(item.valor == null ? null : BigDecimal.valueOf(item.valor));
+            opcao.setCorreta(item.correta);
+            opcao.setOrdem(ordem++);
+            conjunto.getOpcoes().add(opcao);
+        }
+        instrumentoAvaliativoDAO.persistir(conjunto);
+        instrumentoAvaliativoDAO.flush();
+        return ConjuntoOpcaoDTO.create(conjunto);
+    }
+
 
     public List<InstrumentoAvaliativoDTO> listarInstrumentos(int paginaSolicitada, int tamanhoSolicitado) {
         if (tamanhoSolicitado < 1 || tamanhoSolicitado > 100)
@@ -127,7 +147,7 @@ public class AvaliacaoService {
         return buscarCadastro(id);
     }
 
-    public InstrumentoAvaliativoDTO salvaInstumentoAvaliativo(EstruturaInstrumentoDTO estrutura) {
+    public InstrumentoAvaliativoDTO salvarEstrutura(String id, EstruturaInstrumentoDTO estrutura) {
         if (estrutura == null) throw new ValidacaoException("Estrutura não informada.");
         validarBean(estrutura);
         InstrumentoAvaliativo instrumento = instrumentoAvaliativoDAO.findInstrumentosById(UUID.fromString(id));

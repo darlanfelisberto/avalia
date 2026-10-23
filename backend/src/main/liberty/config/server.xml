@@ -2,6 +2,7 @@
 
     <featureManager>
         <feature>servlet-6.1</feature>
+        <feature>faces-4.1</feature>
         <feature>restfulWS-4.0</feature>
         <feature>cdi-4.1</feature>
         <feature>jsonb-3.0</feature>
@@ -23,6 +24,8 @@
     <variable name="AVALIA_OIDC_CLIENT_ID" defaultValue="avalia"/>
     <variable name="AVALIA_OIDC_ISSUER" defaultValue="urn:avalia:oidc-issuer-nao-configurado"/>
     <variable name="AVALIA_OIDC_JWKS_URI" defaultValue="http://localhost:9036/web/auth/realms/feliva/certs"/>
+    <variable name="AVALIA_HTTP_PORT" defaultValue="9081"/>
+    <variable name="AVALIA_HTTPS_PORT" defaultValue="9443"/>
 
     <variable name="AVALIA_DB_SIG_IP" defaultValue=""/>
     <variable name="AVALIA_DB_SIG_PORT" defaultValue="5432"/>
@@ -31,8 +34,8 @@
     <variable name="AVALIA_DB_SIG_PASSWORD" defaultValue=""/>
 
     <httpEndpoint id="defaultHttpEndpoint"
-                  httpPort="9081"
-                  httpsPort="9443"/>
+                  httpPort="${AVALIA_HTTP_PORT}"
+                  httpsPort="${AVALIA_HTTPS_PORT}"/>
 
     <mpJwt id="avaliaJwt" issuer="${AVALIA_OIDC_ISSUER}"
            jwksUri="${AVALIA_OIDC_JWKS_URI}" audiences="${AVALIA_OIDC_CLIENT_ID}"

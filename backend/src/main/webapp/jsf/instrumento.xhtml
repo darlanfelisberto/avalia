@@ -1,0 +1,83 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:pt="jakarta.faces.passthrough"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/templates/avalia.xhtml">
+    <ui:define name="metadata">
+        <f:viewParam name="id" value="#{instrumentoCadastro.id}" />
+        <f:viewAction action="#{instrumentoCadastro.carregar}" onPostback="false" />
+    </ui:define>
+    <ui:define name="title">Cadastro de instrumento | AVALIA JSF</ui:define>
+    <ui:define name="content">
+    <div class="instrument-form">
+        <h:messages globalOnly="true" layout="list" styleClass="messages" errorClass="error" />
+        <h:form id="cadastro">
+            <h:inputHidden id="id" value="#{instrumentoCadastro.id}" />
+            <h:inputHidden id="status" value="#{instrumentoCadastro.cadastro.status}" />
+            <div class="instrument-form__heading">
+                <div>
+                    <div class="instrument-form__breadcrumb">Instrumentos <span class="instrument-form__badge">#{empty instrumentoCadastro.cadastro.id ? 'Novo instrumento' : 'Edição'}</span></div>
+                    <h1 class="instrument-form__title">Cadastro de Instrumento</h1>
+                    <p class="instrument-form__description">Dados gerais e públicos respondentes</p>
+                </div>
+                <h:commandButton value="Salvar" action="#{instrumentoCadastro.salvar}" styleClass="save" disabled="#{instrumentoCadastro.somenteLeitura}" />
+            </div>
+            <section class="form-panel">
+                <div class="form-panel__heading"><h2 class="form-panel__title">1. Dados Gerais</h2></div>
+                <div class="form-grid">
+                    <div class="field form-grid__wide">
+                        <h:outputLabel for="titulo">Título <span class="required" aria-hidden="true">*</span></h:outputLabel>
+                        <h:inputText id="titulo" value="#{instrumentoCadastro.cadastro.titulo}" required="true" requiredMessage="Informe o título." maxlength="200" disabled="#{instrumentoCadastro.somenteLeitura}" />
+                        <h:message for="titulo" styleClass="error" />
+                    </div>
+                    <div class="field form-grid__wide">
+                        <h:outputLabel for="descricao">Descrição</h:outputLabel>
+                        <h:inputTextarea id="descricao" value="#{instrumentoCadastro.cadastro.descricao}" rows="3" disabled="#{instrumentoCadastro.somenteLeitura}" />
+                    </div>
+                    <div class="field">
+                        <h:outputLabel for="ciclo">Ciclo de referência <span class="required" aria-hidden="true">*</span></h:outputLabel>
+                        <h:inputText id="ciclo" value="#{instrumentoCadastro.cadastro.cicloReferencia}" required="true" requiredMessage="Informe o ciclo de referência." maxlength="20" disabled="#{instrumentoCadastro.somenteLeitura}" />
+                        <h:message for="ciclo" styleClass="error" />
+                    </div>
+                    <div class="field">
+                        <h:outputLabel for="tipo">O que será avaliado <span class="required" aria-hidden="true">*</span></h:outputLabel>
+                        <h:selectOneMenu id="tipo" value="#{instrumentoCadastro.cadastro.tipoAvaliadoId}" required="true" requiredMessage="Selecione o tipo avaliado." disabled="#{instrumentoCadastro.somenteLeitura}">
+                            <f:selectItem itemLabel="Selecione…" itemValue="" noSelectionOption="true" />
+                            <f:selectItems value="#{instrumentoCadastro.tiposAvaliados}" />
+                            <f:ajax listener="#{instrumentoCadastro.aoAlterarTipoAvaliado}" execute="@this" render="respondentes" />
+                        </h:selectOneMenu>
+                        <h:message for="tipo" styleClass="error" />
+                    </div>
+                    <div class="field">
+                        <h:outputLabel for="inicio">Início da aplicação <span class="required" aria-hidden="true">*</span></h:outputLabel>
+                        <h:inputText id="inicio" value="#{instrumentoCadastro.cadastro.inicioAplicacao}" required="true" requiredMessage="Informe o início da aplicação." pt:type="datetime-local" disabled="#{instrumentoCadastro.somenteLeitura}" />
+                        <h:message for="inicio" styleClass="error" />
+                    </div>
+                    <div class="field">
+                        <h:outputLabel for="fim">Término da aplicação <span class="required" aria-hidden="true">*</span></h:outputLabel>
+                        <h:inputText id="fim" value="#{instrumentoCadastro.cadastro.fimAplicacao}" required="true" requiredMessage="Informe o término da aplicação." pt:type="datetime-local" disabled="#{instrumentoCadastro.somenteLeitura}" />
+                        <h:message for="fim" styleClass="error" />
+                    </div>
+                </div>
+                <div class="form-checkboxes">
+                    <div class="check"><h:selectBooleanCheckbox id="anonimo" value="#{instrumentoCadastro.cadastro.anonimo}" disabled="#{instrumentoCadastro.somenteLeitura}" /><h:outputLabel for="anonimo">Respostas anônimas</h:outputLabel></div>
+                    <div class="check"><h:selectBooleanCheckbox id="edicao" value="#{instrumentoCadastro.cadastro.permiteEdicao}" disabled="#{instrumentoCadastro.somenteLeitura}" /><h:outputLabel for="edicao">Permitir editar resposta até o término</h:outputLabel></div>
+                </div>
+            </section>
+            <section class="form-panel">
+                <div class="form-panel__heading"><h2 class="form-panel__title">2. Quem Responde</h2><p class="form-panel__description">Marque os públicos autorizados a responder ao instrumento.</p></div>
+                <h:panelGroup id="respondentes" layout="block">
+                    <h:selectManyCheckbox id="publicos" value="#{instrumentoCadastro.cadastro.respondentesIds}" layout="pageDirection" styleClass="choices" disabled="#{instrumentoCadastro.somenteLeitura}">
+                        <f:selectItems value="#{instrumentoCadastro.respondentesDisponiveis}" />
+                    </h:selectManyCheckbox>
+                </h:panelGroup>
+            </section>
+            <div class="actions">
+                <h:outputText value="Rascunho salvo: #{instrumentoCadastro.cadastro.id}" rendered="#{not empty instrumentoCadastro.cadastro.id}" />
+            </div>
+            <p class="hint">Você pode visualizar o formulário sem entrar. Para salvar, entre no AVALIA com permissão de cadastro.</p>
+        </h:form>
+    </div>
+    </ui:define>
+</ui:composition>
