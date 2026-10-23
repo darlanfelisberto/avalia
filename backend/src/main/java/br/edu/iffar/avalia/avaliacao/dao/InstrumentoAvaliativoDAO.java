@@ -5,6 +5,10 @@ import br.edu.iffar.avalia.academico.model.Pessoa;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
 import br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoSessao;
+import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
+import br.edu.iffar.avalia.avaliacao.model.Questao;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoRespondente;
+import br.edu.iffar.avalia.avaliacao.model.InstrumentoTipoAlvo;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -12,7 +16,9 @@ import jakarta.persistence.Query;
 import jakarta.transaction.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /** Acesso ao schema avaliacao. SQL nativo fica reservado a consultas de projeção e cargas em lote. */
@@ -41,6 +47,73 @@ public class InstrumentoAvaliativoDAO  extends InjectEntityManagerDAO<Instrument
 
     public void flush() {
         em.flush();
+    }
+
+    public void removerEstrutura(InstrumentoAvaliativo instrumento) {
+        List<InstrumentoSessao> sessoes = em.createQuery("""
+                select s from InstrumentoSessao s
+                where s.instrumentoAvaliativo = :instrumento
+                """, InstrumentoSessao.class)
+                .setParameter("instrumento", instrumento).getResultList();
+        Set<Questao> candidatas = new HashSet<>();
+        for (InstrumentoSessao sessao : sessoes) {
+            List<SessaoQuestao> posicoes = em.createQuery("""
+                    select sq from SessaoQuestao sq where sq.instrumentoSessao = :sessao
+                    """, SessaoQuestao.class)
+                    .setParameter("sessao", sessao).getResultList();
+            for (SessaoQuestao posicao : posicoes) {
+                candidatas.add(posicao.getQuestao());
+                em.remove(posicao);
+            }
+        }
+        em.flush();
+        for (InstrumentoSessao sessao : sessoes) em.remove(sessao);
+        em.flush();
+        for (Questao questao : candidatas) {
+            Long usos = em.createQuery("select count(sq) from SessaoQuestao sq where sq.questao = :questao", Long.class)
+                    .setParameter("questao", questao).getSingleResult();
+            if (usos == 0) {
+                ConjuntoOpcao conjunto = questao.getConjuntoOpcao();
+                em.remove(questao);
+                em.flush();
+                if (conjunto != null && conjunto.isExclusivo()) {
+                    Long usosConjunto = em.createQuery("select count(q) from Questao q where q.conjuntoOpcao = :conjunto", Long.class)
+                            .setParameter("conjunto", conjunto).getSingleResult();
+                    if (usosConjunto == 0) em.remove(conjunto);
+                }
+            }
+        }
+        em.flush();
+        instrumento.getInstrumentoSessoesList().clear();
+    }
+
+    public void removerRespondentes(InstrumentoAvaliativo instrumento) {
+        List<InstrumentoTipoRespondente> atuais = em.createQuery("""
+                select r from InstrumentoTipoRespondente r where r.instrumentoAvaliativo = :instrumento
+                """, InstrumentoTipoRespondente.class)
+                .setParameter("instrumento", instrumento).getResultList();
+        for (InstrumentoTipoRespondente atual : atuais) em.remove(atual);
+        em.flush();
+        instrumento.getInstrumentoTipoRespondenteList().clear();
+    }
+
+    public void substituirTipoAlvo(InstrumentoAvaliativo instrumento, UUID tipoAlvoId) {
+        List<InstrumentoTipoAlvo> atuais = em.createQuery("""
+                select a from InstrumentoTipoAlvo a where a.instrumentoId = :id
+                """, InstrumentoTipoAlvo.class)
+                .setParameter("id", instrumento.getId()).getResultList();
+        if (atuais.size() == 1 && atuais.get(0).getTipoAlvoId().equals(tipoAlvoId)) return;
+        for (InstrumentoTipoAlvo atual : atuais) em.remove(atual);
+        em.flush();
+        em.persist(new InstrumentoTipoAlvo(instrumento.getId(), tipoAlvoId));
+    }
+
+    public List<ConjuntoOpcao> listarConjuntos() {
+        return em.createQuery("""
+                select distinct c from ConjuntoOpcao c left join fetch c.opcoes
+                where c.exclusivo = false or c.exclusivo is null
+                order by c.nome
+                """, ConjuntoOpcao.class).getResultList();
     }
 
     public Query nativeQuery(String sql){
