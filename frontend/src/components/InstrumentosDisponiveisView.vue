@@ -6,10 +6,6 @@ defineProps<{
   carregando?: boolean;
 }>();
 
-defineEmits<{
-  selecionar: [instrumento: InstrumentoAvaliativoDTO];
-}>();
-
 function formatarData(data?: string | null) {
   if (!data) return '—';
   const valor = new Date(data);
@@ -34,9 +30,7 @@ function formatarData(data?: string | null) {
         Período: {{ formatarData(item.inicioAplicacao) }} a {{ formatarData(item.fimAplicacao) }}
       </p>
     </div>
-    <button type="button" class="button button--primary survey-response__button"
-      :disabled="carregando || !item.id" @click="$emit('selecionar', item)">
-      Selecionar instrumento
-    </button>
+    <RouterLink v-if="item.id" :to="{ name: 'responder-formulario', params: { instrumentoId: item.id } }"
+      class="button button--primary survey-response__button">Responder avaliação</RouterLink>
   </article>
 </template>

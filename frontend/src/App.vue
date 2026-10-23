@@ -35,7 +35,7 @@ onMounted(async () => {
     } else {
       const usuario = await validarSessaoAtual();
       if (usuario) {
-        aoLoginSucesso({ ...usuario, papel: usuario.papelAtivo || usuario.papel }, !usuarioLogado.value);
+        aoLoginSucesso({ ...usuario, papel: usuario.papelAtivo || usuario.papel }, !usuarioLogado.value && route.path === '/');
       } else {
         usuarioLogado.value = null;
         limparUsuarioAtivo();

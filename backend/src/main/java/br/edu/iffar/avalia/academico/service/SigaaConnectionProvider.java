@@ -1,7 +1,8 @@
 package br.edu.iffar.avalia.academico.service;
 
-import jakarta.annotation.Resource;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import br.edu.iffar.avalia.core.datasource.SigaaDataSource;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,7 +18,8 @@ public class SigaaConnectionProvider {
 
     private static final Logger LOGGER = Logger.getLogger(SigaaConnectionProvider.class.getName());
 
-    @Resource(lookup = "jdbc/sigaaDS")
+    @Inject
+    @SigaaDataSource
     private DataSource sigaaDataSource;
 
     /**

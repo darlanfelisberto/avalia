@@ -22,42 +22,32 @@ import java.util.function.Supplier;
 public class AvaliacaoResource {
 
     @Inject
-    AvaliacaoService service;
-
-    @Inject
-    AuthService auth;
-
-    private UsuarioDTO exigirPermissao(String permissao) {
-        UsuarioDTO usuario = auth.validarJwt();
-        if (!usuario.getPermissoes().contains(permissao))
-            throw new SecurityException("Permissão insuficiente para esta operação.");
-        return usuario;
-    }
+    AvaliacaoService avaliacaoService;
 
     @GET
     @Path("/conjuntos-opcao")
     public Response conjuntos() {
-        return executar(() -> {  return Response.ok(service.listarConjuntos()).build(); });
+        return executar(() -> {  return Response.ok(avaliacaoService.listarConjuntos()).build(); });
     }
 
     @POST
     @Path("/conjuntos-opcao")
     public Response salvarConjunto(ConjuntoOpcaoDTO dto) {
-        return executar(() -> {  return Response.ok(service.salvarConjunto(dto)).build(); });
+        return executar(() -> {  return Response.ok(avaliacaoService.salvarConjunto(dto)).build(); });
     }
 
     @GET
     @Path("/instrumentos")
-    public Response listar(@QueryParam("pagina") @DefaultValue("1") int pagina,
+    public Response listar(@QueryParam("pagina") @DefaultValue("0") int pagina,
                            @QueryParam("tamanho") @DefaultValue("100") int tamanho) {
-        return executar(() -> { return Response.ok(service.listarInstrumentos(pagina, tamanho)).build(); });
+        return executar(() -> { return Response.ok(avaliacaoService.listarInstrumentos(pagina, tamanho)).build(); });
     }
 
     @GET
     @Path("/instrumentos/{id}")
     public Response buscar(@PathParam("id") String id) {
         return executar(() -> {
-            InstrumentoAvaliativoDTO i = service.buscarInstrumento(id);
+            InstrumentoAvaliativoDTO i = avaliacaoService.buscarInstrumento(id);
             return i == null ? Response.status(Response.Status.NOT_FOUND).build() : Response.ok(i).build();
         });
     }
@@ -66,22 +56,20 @@ public class AvaliacaoResource {
     @Path("/instrumentos")
     public Response salvar(InstrumentoAvaliativoDTO dto) {
         return executar(() -> {
-            UsuarioDTO usuario = exigirPermissao(dto == null || dto.id == null || dto.id.isBlank()
-                    ? "INSTRUMENTO_CRIAR" : "INSTRUMENTO_EDITAR");
-            return Response.ok(service.salvarInstrumento(dto, usuario.getCpf())).build();
+            return Response.ok(avaliacaoService.salvarInstrumento(dto)).build();
         });
     }
 
     @POST
     @Path("/instrumentos/{id}/publicar")
     public Response publicar(@PathParam("id") String id) {
-        return executar(() -> { return Response.ok(service.publicar(id)).build(); });
+        return executar(() -> { return Response.ok(avaliacaoService.publicar(id)).build(); });
     }
 
     @DELETE
     @Path("/instrumentos/{id}")
     public Response excluir(@PathParam("id") String id) {
-        return executar(() -> { exigirPermissao("INSTRUMENTO_EXCLUIR"); return service.excluir(id)
+        return executar(() -> { return avaliacaoService.excluir(id)
                 ? Response.noContent().build()
                 : Response.status(Response.Status.NOT_FOUND).build(); });
     }

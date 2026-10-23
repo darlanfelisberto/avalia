@@ -1,9 +1,10 @@
 package br.edu.iffar.avalia.core.service;
 
-import jakarta.annotation.Resource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import br.edu.iffar.avalia.core.datasource.AvaliaDataSource;
 import org.flywaydb.core.Flyway;
 
 import javax.sql.DataSource;
@@ -15,7 +16,8 @@ public class FlywayMigrationService {
 
     private static final Logger LOGGER = Logger.getLogger(FlywayMigrationService.class.getName());
 
-    @Resource(lookup = "jdbc/avaliaDS")
+    @Inject
+    @AvaliaDataSource
     private DataSource dataSource;
 
     public void init(@Observes @Initialized(ApplicationScoped.class) Object init) {

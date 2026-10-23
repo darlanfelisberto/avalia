@@ -8,7 +8,7 @@ import jakarta.transaction.Transactional;
 @ApplicationScoped
 public class EntidadeAcademicaDao {
     @Inject
-    private AvaliacaoDao dao;
+    private InstrumentoAvaliativoDAO dao;
 
     @Transactional
     public void sincronizar() {

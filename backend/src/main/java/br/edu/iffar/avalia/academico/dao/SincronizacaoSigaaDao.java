@@ -1,7 +1,7 @@
 package br.edu.iffar.avalia.academico.dao;
 
 import br.edu.iffar.avalia.academico.service.SigaaConnectionProvider;
-import jakarta.annotation.Resource;
+import br.edu.iffar.avalia.core.datasource.AvaliaDataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import javax.sql.DataSource;
@@ -15,7 +15,8 @@ import java.util.logging.Logger;
 public class SincronizacaoSigaaDao {
     private static final Logger LOGGER = Logger.getLogger(SincronizacaoSigaaDao.class.getName());
 
-    @Resource(lookup = "jdbc/avaliaDS")
+    @Inject
+    @AvaliaDataSource
     private DataSource localDataSource;
 
     @Inject

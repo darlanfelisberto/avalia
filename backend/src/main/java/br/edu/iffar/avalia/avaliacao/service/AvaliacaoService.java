@@ -1,10 +1,9 @@
 package br.edu.iffar.avalia.avaliacao.service;
 
+import br.edu.iffar.avalia.avaliacao.dao.InstrumentoAvaliativoDAO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.*;
-import br.edu.iffar.avalia.avaliacao.dao.AvaliacaoDao;
 import br.edu.iffar.avalia.avaliacao.dao.EntidadeAcademicaDao;
-import br.edu.iffar.avalia.avaliacao.dao.InstrumentoAvaliativoDAO;
 import br.edu.iffar.avalia.avaliacao.dao.TipoEntidadeDao;
 import br.edu.iffar.avalia.avaliacao.model.TipoEntidade;
 import br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao;
@@ -17,6 +16,7 @@ import br.edu.iffar.avalia.avaliacao.model.Questao;
 import br.edu.iffar.avalia.avaliacao.model.SessaoQuestao;
 import br.edu.iffar.avalia.avaliacao.model.StatusInstrumentoAvaliativo;
 import br.edu.iffar.avalia.core.exception.ValidacaoException;
+import br.edu.iffar.avalia.core.service.AuthService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -33,16 +33,16 @@ public class AvaliacaoService {
     private static final Set<String> TIPOS_QUESTAO = Set.of("ESCOLHA_UNICA", "MULTIPLA_ESCOLHA", "ESCALA", "DESCRITIVA");
 
     @Inject
-    private AvaliacaoDao dao;
+    private InstrumentoAvaliativoDAO instrumentoAvaliativoDAO;
 
     @Inject
     private EntidadeAcademicaDao entidadeAcademicaDao;
 
     @Inject
-    private InstrumentoAvaliativoDAO instrumentoDao;
+    private TipoEntidadeDao tiposEntidadeDao;
 
     @Inject
-    private TipoEntidadeDao tiposEntidadeDao;
+    private AuthService auth;
 
     // ------------------------------------------------------------------ catálogos
 
@@ -53,9 +53,9 @@ public class AvaliacaoService {
 
     public List<ConjuntoOpcaoDTO> listarConjuntos() {
         List<ConjuntoOpcaoDTO> resultado = new ArrayList<>();
-        for (br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao entidade : dao.listarConjuntos()) {
-            resultado.add(ConjuntoOpcaoDTO.create(entidade));
-        }
+//        for (br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao entidade : instrumentoAvaliativoDAO.listarConjuntos()) {
+//            resultado.add(ConjuntoOpcaoDTO.create(entidade));
+//        }
         return resultado;
     }
 
@@ -63,12 +63,12 @@ public class AvaliacaoService {
         if (dto == null) throw new ValidacaoException("Dados do conjunto não informados.");
         if (blank(dto.nome)) throw new ValidacaoException("Informe o nome do conjunto de opções.");
         if (dto.opcoes == null || dto.opcoes.size() < 2) throw new ValidacaoException("Um conjunto precisa de ao menos 2 opções.");
-        if (dao.existeConjunto(dto.nome.trim())) {
-            throw new ValidacaoException("Já existe um conjunto de opções com este nome.");
-        }
+//        if (instrumentoAvaliativoDAO.existeConjunto(dto.nome.trim())) {
+//            throw new ValidacaoException("Já existe um conjunto de opções com este nome.");
+//        }
         br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao conjunto = new br.edu.iffar.avalia.avaliacao.model.ConjuntoOpcao();
         conjunto.setNome(dto.nome.trim());
-        dao.persistir(conjunto);
+        instrumentoAvaliativoDAO.persistir(conjunto);
         int ordem = 1;
         for (AvaliacaoDTO.OpcaoQuestaoDTO o : dto.opcoes) {
             if (blank(o.texto)) throw new ValidacaoException("Toda opção precisa de um texto.");
@@ -79,9 +79,9 @@ public class AvaliacaoService {
             opcao.setCorreta(o.correta);
             opcao.setOrdem(ordem++);
             conjunto.getOpcoes().add(opcao);
-            dao.persistir(opcao);
+            instrumentoAvaliativoDAO.persistir(opcao);
         }
-        dao.flush();
+        instrumentoAvaliativoDAO.flush();
         return ConjuntoOpcaoDTO.create(conjunto);
     }
 
@@ -90,7 +90,7 @@ public class AvaliacaoService {
             throw new ValidacaoException("O tamanho da página deve estar entre 1 e 100.");
 
         List<InstrumentoAvaliativoDTO> resultado = new ArrayList<>();
-        for (var instrimento : instrumentoDao.listInstrumentos(paginaSolicitada, tamanhoSolicitado)) {
+        for (var instrimento : instrumentoAvaliativoDAO.listInstrumentos(paginaSolicitada, tamanhoSolicitado)) {
             resultado.add(new InstrumentoAvaliativoDTO()
                     .createResumo(instrimento));
         }
@@ -98,20 +98,25 @@ public class AvaliacaoService {
     }
 
     public InstrumentoAvaliativoDTO buscarInstrumento(String id) {
-        InstrumentoAvaliativo inst = instrumentoDao.findInstrumentosById(UUID.fromString(id));
+        InstrumentoAvaliativo inst = instrumentoAvaliativoDAO.findInstrumentosById(UUID.fromString(id));
         return new InstrumentoAvaliativoDTO().createDetalhe(inst);
     }
 
-    public InstrumentoAvaliativoDTO salvarInstrumento(InstrumentoAvaliativoDTO dto, String usuario) {
-        if (dto == null) throw new ValidacaoException("Dados do instrumento não informados.");
-        InstrumentoAvaliativo entidade = blank(dto.id) ? null : dao.buscarInstrumento(UUID.fromString(dto.id));
-        if (!blank(dto.id) && entidade == null) throw new ValidacaoException("Instrumento não encontrado.");
+    public InstrumentoAvaliativoDTO salvarInstrumento(InstrumentoAvaliativoDTO dto) {
+        if (dto == null)
+            throw new ValidacaoException("Dados do instrumento não informados.");
+
+        InstrumentoAvaliativo entidade = blank(dto.id) ? null : instrumentoAvaliativoDAO.findInstrumentosById(UUID.fromString(dto.id));
+
+        if (!blank(dto.id) && entidade == null)
+            throw new ValidacaoException("Instrumento não encontrado.");
+
         boolean rascunho = entidade == null || entidade.getStatus() == StatusInstrumentoAvaliativo.RASCUNHO;
         validar(dto, rascunho);
-        if (dao.existeInstrumento(dto.titulo.trim(), dto.cicloReferencia.trim(),
-                UUID.fromString(dto.tipoEntidadeAvaliadaId), entidade == null ? null : entidade.getId())) {
-            throw new ValidacaoException("Já existe um instrumento para este tipo avaliado, ciclo e título.");
-        }
+//        if (instrumentoAvaliativoDAO.existeInstrumento(dto.titulo.trim(), dto.cicloReferencia.trim(),
+//                UUID.fromString(dto.tipoEntidadeAvaliadaId), entidade == null ? null : entidade.getId())) {
+//            throw new ValidacaoException("Já existe um instrumento para este tipo avaliado, ciclo e título.");
+//        }
         boolean novo = entidade == null;
         if (novo) {
             entidade = new InstrumentoAvaliativo();
@@ -126,22 +131,22 @@ public class AvaliacaoService {
         entidade.setAnonimo(dto.anonimo);
         entidade.setPermiteEdicao(dto.permiteEdicao);
         entidade.setAtualizadoEm(OffsetDateTime.now());
-        if (novo) dao.persistir(entidade);
-        dao.flush();
+        if (novo) instrumentoAvaliativoDAO.persistir(entidade);
+        instrumentoAvaliativoDAO.flush();
         String id = entidade.getId().toString();
         if (rascunho) substituirTiposAlvo(id, dto);
 
         // Respondentes e estrutura só podem mudar enquanto o instrumento é rascunho
         if (rascunho) {
             substituirRespondentes(entidade, dto.respondentes);
-            substituirEstrutura(entidade, dto.paginas, dto.sessoes, usuario);
+//            substituirEstrutura(entidade, dto.paginas, dto.sessoes, usuario);
         }
         return buscarInstrumento(id);
     }
 
     @Transactional
     public InstrumentoAvaliativoDTO publicar(String id) {
-        InstrumentoAvaliativo entidade = dao.buscarInstrumento(UUID.fromString(id));
+        InstrumentoAvaliativo entidade = instrumentoAvaliativoDAO.findInstrumentosById(UUID.fromString(id));
         if (entidade == null) throw new ValidacaoException("Instrumento não encontrado.");
         if (entidade.getStatus() != StatusInstrumentoAvaliativo.RASCUNHO) throw new ValidacaoException("Apenas rascunhos podem ser publicados.");
         if (entidade.contarQuestoes() == 0) throw new ValidacaoException("Inclua ao menos uma questão antes de publicar.");
@@ -149,7 +154,7 @@ public class AvaliacaoService {
 
         entidade.setStatus(StatusInstrumentoAvaliativo.PUBLICADO);
         entidade.setAtualizadoEm(OffsetDateTime.now());
-        dao.flush();
+        instrumentoAvaliativoDAO.flush();
 //        String tipoContextoCodigo = tiposEntidadeDao.codigo(UUID.fromString(i.tipoEntidadeAvaliadaId));
 //        if ("INSTITUICAO".equals(tipoContextoCodigo)) {
 //            instrumentoDao.criarEntidadeInstitucional(i.tipoEntidadeAvaliadaId, "instrumento:" + id, i.titulo);
@@ -163,10 +168,10 @@ public class AvaliacaoService {
         InstrumentoAvaliativoDTO i = buscarInstrumento(id);
         if (i == null) return false;
         if (!StatusInstrumentoAvaliativo.RASCUNHO.name().equals(i.status)) throw new ValidacaoException("Só é possível excluir instrumentos em rascunho.");
-        List<String> questoes = idsQuestoes(id);
-        dao.remover(dao.buscarInstrumento(UUID.fromString(id)));
-        dao.flush();
-        removerQuestoesOrfas(questoes);
+//        List<String> questoes = idsQuestoes(id);
+        instrumentoAvaliativoDAO.remover(instrumentoAvaliativoDAO.findInstrumentosById(UUID.fromString(id)));
+        instrumentoAvaliativoDAO.flush();
+//        removerQuestoesOrfas(questoes);
         return true;
     }
 
@@ -175,130 +180,130 @@ public class AvaliacaoService {
     private void substituirRespondentes(InstrumentoAvaliativo instrumento,
                                         List<AvaliacaoDTO.InstrumentoTipoRespondenteDTO> respondentes) {
         UUID instrumentoId = instrumento.getId();
-        dao.removerRespondentes(instrumentoId);
+//        instrumentoAvaliativoDAO.removerRespondentes(instrumentoId);
         for (AvaliacaoDTO.InstrumentoTipoRespondenteDTO r : respondentes) {
             InstrumentoTipoRespondente entidade = new InstrumentoTipoRespondente();
             entidade.setInstrumentoAvaliativo(instrumento);
             entidade.setTipoEntidade(tiposEntidadeDao.referencia(UUID.fromString(r.tipoEntidadeId)));
-            dao.persistir(entidade);
+            instrumentoAvaliativoDAO.persistir(entidade);
         }
-        dao.flush();
+        instrumentoAvaliativoDAO.flush();
     }
 
     private void substituirTiposAlvo(String id, InstrumentoAvaliativoDTO dto) {
         UUID instrumentoId = UUID.fromString(id);
-        dao.removerTiposAlvo(instrumentoId);
-        dao.persistir(new InstrumentoTipoAlvo(instrumentoId, UUID.fromString(dto.tipoEntidadeAvaliadaId)));
-        dao.flush();
+//        instrumentoAvaliativoDAO.removerTiposAlvo(instrumentoId);
+        instrumentoAvaliativoDAO.persistir(new InstrumentoTipoAlvo(instrumentoId, UUID.fromString(dto.tipoEntidadeAvaliadaId)));
+        instrumentoAvaliativoDAO.flush();
     }
 
-    private void substituirEstrutura(InstrumentoAvaliativo instrumento,
-                                     List<AvaliacaoDTO.InstrumentoSessaoPaginaDTO> paginas,
-                                     List<AvaliacaoDTO.InstrumentoSessaoDTO> sessoes, String usuario) {
-        String id = instrumento.getId().toString();
-        List<String> anteriores = idsQuestoes(id);
-        dao.removerSessoes(instrumento.getId());
+//    private void substituirEstrutura(InstrumentoAvaliativo instrumento,
+//                                     List<AvaliacaoDTO.InstrumentoSessaoPaginaDTO> paginas,
+//                                     List<AvaliacaoDTO.InstrumentoSessaoDTO> sessoes, String usuario) {
+//        String id = instrumento.getId().toString();
+//        List<String> anteriores = idsQuestoes(id);
+//        instrumentoAvaliativoDAO.removerSessoes(instrumento.getId());
+//
+//        int ordemPagina = 1;
+//        for (AvaliacaoDTO.InstrumentoSessaoPaginaDTO p : paginas) {
+//            InstrumentoSessao pagina = new InstrumentoSessao();
+//            pagina.setInstrumentoAvaliativo(instrumento);
+//            pagina.setTipoSessao("PAGINA");
+//            pagina.setTitulo(p.titulo.trim());
+//            pagina.setDescricao(p.descricao);
+//            pagina.setOrdem(ordemPagina++);
+//            instrumentoAvaliativoDAO.persistir(pagina);
+//        }
+//        int ordemSessao = 1;
+//        for (AvaliacaoDTO.InstrumentoSessaoDTO s : sessoes) {
+//            InstrumentoSessao sessao = new InstrumentoSessao();
+//            sessao.setInstrumentoAvaliativo(instrumento);
+//            sessao.setTipoSessao("SESSAO");
+//            sessao.setTitulo(s.titulo.trim());
+//            sessao.setDescricao(s.descricao);
+//            sessao.setOrdem(ordemSessao++);
+//            instrumentoAvaliativoDAO.persistir(sessao);
+//            int ordemQuestao = 1;
+//            for (AvaliacaoDTO.SessaoQuestaoDTO q : s.questoes) {
+//                String questaoId = upsertQuestao(q, usuario);
+//                SessaoQuestao posicao = new SessaoQuestao();
+//                posicao.setInstrumentoSessao(sessao);
+//                posicao.setQuestao(instrumentoAvaliativoDAO.referencia(Questao.class,
+//                        UUID.fromString(questaoId)));
+//                posicao.setOrdem(ordemQuestao++);
+//                posicao.setObrigatoria(q.obrigatoria);
+//                posicao.setPeso(q.peso == null ? null : BigDecimal.valueOf(q.peso));
+//                instrumentoAvaliativoDAO.persistir(posicao);
+//            }
+//        }
+//        instrumentoAvaliativoDAO.flush();
+//        removerQuestoesOrfas(anteriores);
+//    }
 
-        int ordemPagina = 1;
-        for (AvaliacaoDTO.InstrumentoSessaoPaginaDTO p : paginas) {
-            InstrumentoSessao pagina = new InstrumentoSessao();
-            pagina.setInstrumentoAvaliativo(instrumento);
-            pagina.setTipoSessao("PAGINA");
-            pagina.setTitulo(p.titulo.trim());
-            pagina.setDescricao(p.descricao);
-            pagina.setOrdem(ordemPagina++);
-            dao.persistir(pagina);
-        }
-        int ordemSessao = 1;
-        for (AvaliacaoDTO.InstrumentoSessaoDTO s : sessoes) {
-            InstrumentoSessao sessao = new InstrumentoSessao();
-            sessao.setInstrumentoAvaliativo(instrumento);
-            sessao.setTipoSessao("SESSAO");
-            sessao.setTitulo(s.titulo.trim());
-            sessao.setDescricao(s.descricao);
-            sessao.setOrdem(ordemSessao++);
-            dao.persistir(sessao);
-            int ordemQuestao = 1;
-            for (AvaliacaoDTO.SessaoQuestaoDTO q : s.questoes) {
-                String questaoId = upsertQuestao(q, usuario);
-                SessaoQuestao posicao = new SessaoQuestao();
-                posicao.setInstrumentoSessao(sessao);
-                posicao.setQuestao(dao.referencia(Questao.class,
-                        UUID.fromString(questaoId)));
-                posicao.setOrdem(ordemQuestao++);
-                posicao.setObrigatoria(q.obrigatoria);
-                posicao.setPeso(q.peso == null ? null : BigDecimal.valueOf(q.peso));
-                dao.persistir(posicao);
-            }
-        }
-        dao.flush();
-        removerQuestoesOrfas(anteriores);
-    }
+//    private String upsertQuestao(AvaliacaoDTO.SessaoQuestaoDTO q, String usuario) {
+//        Questao entidade = blank(q.questaoId) ? null :
+//                instrumentoAvaliativoDAO.buscar(Questao.class, UUID.fromString(q.questaoId));
+//        boolean nova = entidade == null;
+//        if (nova) {
+//            entidade = new Questao();
+//            entidade.setCriadoPor(usuario);
+//        }
+//        ConjuntoOpcao anterior = entidade.getConjuntoOpcao();
+//        entidade.setEnunciado(q.enunciado.trim());
+//        entidade.setTipo(q.tipo);
+//        entidade.setAssunto(q.assunto);
+//        if (nova) instrumentoAvaliativoDAO.persistir(entidade);
+//        instrumentoAvaliativoDAO.flush();
+//
+//        ConjuntoOpcao conjunto = null;
+//        if (!"DESCRITIVA".equals(q.tipo)) {
+//            if (q.opcoes != null && !q.opcoes.isEmpty()) {
+//                conjunto = anterior != null && anterior.isExclusivo() ? anterior : new ConjuntoOpcao();
+//                if (conjunto.getId() == null) {
+//                    conjunto.setNome("Questão " + entidade.getId());
+//                    conjunto.setExclusivo(true);
+//                    instrumentoAvaliativoDAO.persistir(conjunto);
+//                } else {
+//                    conjunto.getOpcoes().clear();
+//                    instrumentoAvaliativoDAO.flush();
+//                }
+//                int ordem = 1;
+//                for (AvaliacaoDTO.OpcaoQuestaoDTO o : q.opcoes) {
+//                    OpcaoQuestao opcao = new OpcaoQuestao();
+//                    opcao.setConjunto(conjunto);
+//                    opcao.setTexto(o.texto.trim());
+//                    opcao.setValor(o.valor == null ? null : BigDecimal.valueOf(o.valor));
+//                    opcao.setCorreta(o.correta);
+//                    opcao.setOrdem(ordem++);
+//                    conjunto.getOpcoes().add(opcao);
+//                    instrumentoAvaliativoDAO.persistir(opcao);
+//                }
+//            } else {
+//                conjunto = instrumentoAvaliativoDAO.buscar(ConjuntoOpcao.class, UUID.fromString(q.conjuntoOpcaoId));
+//                if (conjunto == null || conjunto.isExclusivo())
+//                    throw new ValidacaoException("Conjunto de opções inválido para esta questão.");
+//            }
+//        }
+//        entidade.setConjuntoOpcao(conjunto);
+//        instrumentoAvaliativoDAO.flush();
+//        if (anterior != null && anterior.isExclusivo() && anterior != conjunto) instrumentoAvaliativoDAO.remover(anterior);
+//        return entidade.getId().toString();
+//    }
 
-    private String upsertQuestao(AvaliacaoDTO.SessaoQuestaoDTO q, String usuario) {
-        Questao entidade = blank(q.questaoId) ? null :
-                dao.buscar(Questao.class, UUID.fromString(q.questaoId));
-        boolean nova = entidade == null;
-        if (nova) {
-            entidade = new Questao();
-            entidade.setCriadoPor(usuario);
-        }
-        ConjuntoOpcao anterior = entidade.getConjuntoOpcao();
-        entidade.setEnunciado(q.enunciado.trim());
-        entidade.setTipo(q.tipo);
-        entidade.setAssunto(q.assunto);
-        if (nova) dao.persistir(entidade);
-        dao.flush();
-
-        ConjuntoOpcao conjunto = null;
-        if (!"DESCRITIVA".equals(q.tipo)) {
-            if (q.opcoes != null && !q.opcoes.isEmpty()) {
-                conjunto = anterior != null && anterior.isExclusivo() ? anterior : new ConjuntoOpcao();
-                if (conjunto.getId() == null) {
-                    conjunto.setNome("Questão " + entidade.getId());
-                    conjunto.setExclusivo(true);
-                    dao.persistir(conjunto);
-                } else {
-                    conjunto.getOpcoes().clear();
-                    dao.flush();
-                }
-                int ordem = 1;
-                for (AvaliacaoDTO.OpcaoQuestaoDTO o : q.opcoes) {
-                    OpcaoQuestao opcao = new OpcaoQuestao();
-                    opcao.setConjunto(conjunto);
-                    opcao.setTexto(o.texto.trim());
-                    opcao.setValor(o.valor == null ? null : BigDecimal.valueOf(o.valor));
-                    opcao.setCorreta(o.correta);
-                    opcao.setOrdem(ordem++);
-                    conjunto.getOpcoes().add(opcao);
-                    dao.persistir(opcao);
-                }
-            } else {
-                conjunto = dao.buscar(ConjuntoOpcao.class, UUID.fromString(q.conjuntoOpcaoId));
-                if (conjunto == null || conjunto.isExclusivo())
-                    throw new ValidacaoException("Conjunto de opções inválido para esta questão.");
-            }
-        }
-        entidade.setConjuntoOpcao(conjunto);
-        dao.flush();
-        if (anterior != null && anterior.isExclusivo() && anterior != conjunto) dao.remover(anterior);
-        return entidade.getId().toString();
-    }
-
-    private List<String> idsQuestoes(String instrumentoId) {
-        List<String> ids = new ArrayList<>();
-        for (Object[] r : instrumentoDao.listarIdsQuestoes(instrumentoId)) {
-            ids.add((String) r[0]);
-        }
-        return ids;
-    }
-
-    /** Remove questões que deixaram de ser usadas por qualquer instrumento. */
-    private void removerQuestoesOrfas(List<String> candidatas) {
-        for (String qid : candidatas) {
-            instrumentoDao.removerQuestaoOrfa(qid);
-        }
-    }
+//    private List<String> idsQuestoes(String instrumentoId) {
+//        List<String> ids = new ArrayList<>();
+////        for (Object[] r : instrumentoAvaliativoDAO.listarIdsQuestoes(instrumentoId)) {
+////            ids.add((String) r[0]);
+////        }
+//        return ids;
+//    }
+//
+//    /** Remove questões que deixaram de ser usadas por qualquer instrumento. */
+//    private void removerQuestoesOrfas(List<String> candidatas) {
+//        for (String qid : candidatas) {
+////            instrumentoAvaliativoDAO.removerQuestaoOrfa(qid);
+//        }
+//    }
 
     private void validar(InstrumentoAvaliativoDTO d, boolean validarRespondentes) {
         if (d == null) throw new ValidacaoException("Dados do instrumento não informados.");

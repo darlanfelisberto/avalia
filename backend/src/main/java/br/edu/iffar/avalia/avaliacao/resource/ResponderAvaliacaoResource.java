@@ -17,18 +17,24 @@ import java.util.function.Supplier;
 @Consumes(MediaType.APPLICATION_JSON)
 @RolesAllowed("user")
 public class ResponderAvaliacaoResource {
-    @Inject AuthService auth;
-    @Inject ResponderAvaliacaoService service;
+    @Inject AuthService authService;
+    @Inject ResponderAvaliacaoService responderService;
 
     @GET
     public Response listar() {
-        return executar(() -> Response.ok(service.listar()).build());
+        return executar(() -> Response.ok(responderService.listar()).build());
     }
 
     @GET
-    @Path("/{instrumentoId}/formulario")
+    @Path("/{instrumentoId}")
     public Response formulario(@PathParam("instrumentoId") String instrumentoId) {
-        return executar(() -> Response.ok(service.buscar(usuario(), instrumentoId, null, null)).build());
+        return executar(() -> Response.ok(responderService.buscar(usuario(), instrumentoId)).build());
+    }
+
+    @GET
+    @Path("/{instrumentoId}/formulario/conjuntos-opcao")
+    public Response conjuntosFormulario(@PathParam("instrumentoId") String instrumentoId) {
+        return executar(() -> Response.ok(responderService.listarConjuntos(usuario(), instrumentoId)).build());
     }
 
     @GET
@@ -36,7 +42,7 @@ public class ResponderAvaliacaoResource {
     public Response buscar(@PathParam("instrumentoId") String instrumentoId,
                            @PathParam("alvoId") String alvoId,
                            @QueryParam("contextoId") String contextoId) {
-        return executar(() -> Response.ok(service.buscar(usuario(), instrumentoId, alvoId, contextoId)).build());
+        return executar(() -> Response.ok(responderService.buscar(usuario(), instrumentoId)).build());
     }
 
     @GET
@@ -44,8 +50,8 @@ public class ResponderAvaliacaoResource {
     public Response conjuntos(@PathParam("instrumentoId") String instrumentoId,
                              @PathParam("alvoId") String alvoId,
                              @QueryParam("contextoId") String contextoId) {
-        return executar(() -> Response.ok(service.listarConjuntos(usuario(),
-                instrumentoId, alvoId, contextoId)).build());
+        return executar(() -> Response.ok(responderService.listarConjuntos(usuario(),
+                instrumentoId)).build());
     }
 
     @POST
@@ -58,7 +64,7 @@ public class ResponderAvaliacaoResource {
     }
 
     private UsuarioDTO usuario() {
-        return auth.validarJwt();
+        return authService.validarJwt();
     }
 
     private Response executar(Supplier<Response> acao) {

@@ -87,11 +87,10 @@ public final class AvaliacaoDTO {
             dto.assunto = questao.getAssunto();
             var conjunto = questao.getConjuntoOpcao();
             if (conjunto != null) {
-                if (conjunto.isExclusivo()) {
-                    for (var opcao : conjunto.getOpcoes()) dto.opcoes.add(OpcaoQuestaoDTO.create(opcao));
-                } else {
+                if (!conjunto.isExclusivo()) {
                     dto.conjuntoOpcaoId = conjunto.getId().toString();
                 }
+                for (var opcao : conjunto.getOpcoes()) dto.opcoes.add(OpcaoQuestaoDTO.create(opcao));
             }
             dto.obrigatoria = entidade.isObrigatoria();
             dto.peso = entidade.getPeso() == null ? null : entidade.getPeso().doubleValue();

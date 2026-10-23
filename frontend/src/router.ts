@@ -3,6 +3,7 @@ import AvaliacaoInstrumentoView from './components/AvaliacaoInstrumentoView.vue'
 import InstrumentoFormularioView from './components/InstrumentoFormularioView.vue';
 import PermissoesTiposEntidadeView from './components/PermissoesTiposEntidadeView.vue';
 import ResponderAvaliacoesView from './components/ResponderAvaliacoesView.vue';
+import FormularioResponderAvaliacao from './components/FormularioResponderAvaliacao.vue';
 import SincronizacaoView from './components/SincronizacaoView.vue';
 import AcessoNegadoView from './components/AcessoNegadoView.vue';
 import { carregarUsuarioAtivo, temPermissao } from './services/storage';
@@ -30,6 +31,7 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: () => rotaInicial(carregarUsuarioAtivo()) },
     { path: '/responder', name: 'responder', component: ResponderAvaliacoesView },
+    { path: '/responder/:instrumentoId', name: 'responder-formulario', component: FormularioResponderAvaliacao },
     { path: '/instrumentos', name: 'instrumentos', component: AvaliacaoInstrumentoView, meta: { exigeGerenciaInstrumentos: true } },
     { path: '/instrumentos/novo', name: 'instrumento-novo', component: InstrumentoFormularioView, meta: { exigeGerenciaInstrumentos: true, permissao: 'INSTRUMENTO_CRIAR' } },
     { path: '/instrumentos/:id', name: 'instrumento-editar', component: InstrumentoFormularioView, meta: { exigeGerenciaInstrumentos: true } },

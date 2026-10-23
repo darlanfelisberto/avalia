@@ -9,6 +9,7 @@ export interface RespostaEnvio {
 async function chamar<T>(caminho: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/avaliacao/responder${caminho}`, {
     ...init,
+    cache: init?.cache ?? 'no-store',
     headers: {
       'Content-Type': 'application/json',
       ...init?.headers
@@ -21,7 +22,9 @@ async function chamar<T>(caminho: string, init?: RequestInit): Promise<T> {
 export const responderApi = {
   listar: () => chamar<InstrumentoAvaliativoDTO[]>(''),
   formulario: (instrumentoId: string) =>
-    chamar<InstrumentoAvaliativoDTO>(`/${encodeURIComponent(instrumentoId)}/formulario`),
+    chamar<InstrumentoAvaliativoDTO>(`/${encodeURIComponent(instrumentoId)}`),
+  conjuntosFormulario: (instrumentoId: string) =>
+    chamar<ConjuntoOpcaoDTO[]>(`/${encodeURIComponent(instrumentoId)}/formulario/conjuntos-opcao`),
   buscar: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>
     chamar<InstrumentoAvaliativoDTO>(`/${encodeURIComponent(instrumentoId)}/${encodeURIComponent(alvoId)}${contextoId ? `?contextoId=${encodeURIComponent(contextoId)}` : ''}`),
   conjuntos: (instrumentoId: string, alvoId: string, contextoId?: string | null) =>

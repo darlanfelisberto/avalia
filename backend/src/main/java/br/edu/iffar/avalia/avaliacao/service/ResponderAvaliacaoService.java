@@ -1,10 +1,10 @@
 package br.edu.iffar.avalia.avaliacao.service;
 
 import br.edu.iffar.avalia.academico.dao.PessoaDao;
+import br.edu.iffar.avalia.avaliacao.dao.InstrumentoAvaliativoDAO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.InstrumentoAvaliativoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcaoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.RespostaAvaliacaoDTO.*;
-import br.edu.iffar.avalia.avaliacao.dao.AvaliacaoDao;
 import br.edu.iffar.avalia.avaliacao.dao.ResponderAvaliacaoDao;
 import br.edu.iffar.avalia.avaliacao.model.Entidade;
 import br.edu.iffar.avalia.avaliacao.model.InstrumentoAvaliativo;
@@ -27,7 +27,7 @@ import java.time.LocalDate;
 @Transactional
 public class ResponderAvaliacaoService {
     @Inject
-    private AvaliacaoDao avaliacaoDao;
+    private InstrumentoAvaliativoDAO instrumentoAvaliativoDAO;
 
     @Inject
     private AvaliacaoService instrumentos;
@@ -53,7 +53,7 @@ public class ResponderAvaliacaoService {
 
     public List<InstrumentoAvaliativoDTO> listar() {
         UsuarioDTO usuario = new UsuarioDTO();
-        List<InstrumentoAvaliativo> listIA = this.avaliacaoDao.listAllForUser(pessoaDao.buscarPorCpf(this.authService.getCpf()));
+        List<InstrumentoAvaliativo> listIA = this.instrumentoAvaliativoDAO.listAllForUser(pessoaDao.buscarPorCpf(this.authService.getCpf()));
 
         List<InstrumentoAvaliativoDTO> avaliativoDTOList = new ArrayList<>();
         for (InstrumentoAvaliativo ia :listIA) {
@@ -111,25 +111,13 @@ public class ResponderAvaliacaoService {
         return out;
     }
 
-//    private Disponivel elegivel(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
-//        UUID.fromString(instrumentoId);
-//        UUID.fromString(alvoId);
-//        return listar().stream()
-//                .filter(d -> d.instrumentoId.equals(instrumentoId) && d.alvoId.equals(alvoId)
-//                        && Objects.equals(d.contextoId, contextoId))
-//                .findFirst().orElseThrow(() -> new SecurityException("Avaliação indisponível para este perfil."));
-//    }
-
-    public InstrumentoAvaliativoDTO buscar(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
-//        elegivel(usuario, instrumentoId, alvoId, contextoId);
-        InstrumentoAvaliativoDTO instrumento = instrumentos.buscarInstrumento(instrumentoId);
-        instrumento.sessoes.forEach(s -> s.questoes.forEach(q ->
-                q.opcoes.forEach(o -> o.correta = false)));
-        return instrumento;
+    public InstrumentoAvaliativoDTO buscar(UsuarioDTO usuario, String instrumentoId) {
+            InstrumentoAvaliativo inst = this.instrumentoAvaliativoDAO.findInstrumentosById(UUID.fromString(instrumentoId));
+            return new InstrumentoAvaliativoDTO().createDetalhe(inst);
     }
 
-    public List<ConjuntoOpcaoDTO> listarConjuntos(UsuarioDTO usuario, String instrumentoId, String alvoId, String contextoId) {
-        InstrumentoAvaliativoDTO instrumento = null;//buscar(usuario, instrumentoId, alvoId, contextoId);
+    public List<ConjuntoOpcaoDTO> listarConjuntos(UsuarioDTO usuario, String instrumentoId) {
+        InstrumentoAvaliativoDTO instrumento = buscar(usuario, instrumentoId);
         Set<String> ids = new HashSet<>();
         instrumento.sessoes.forEach(s -> s.questoes.forEach(q -> {
             if (q.conjuntoOpcaoId != null) ids.add(q.conjuntoOpcaoId);
@@ -152,85 +140,77 @@ public class ResponderAvaliacaoService {
             if (item == null || item.sessaoQuestaoId == null || respostas.putIfAbsent(item.sessaoQuestaoId, item) != null)
                 throw new ValidacaoException("Questão repetida ou inválida.");
         }
-        List<Object[]> questoes = avaliacaoDao.questoesParaResposta(UUID.fromString(instrumentoId));
-        if (questoes.isEmpty()) throw new ValidacaoException("Instrumento sem questões.");
-        Set<String> idsValidos = new HashSet<>();
-        for (Object[] questao : questoes) {
-            String id = (String) questao[0];
-            String tipo = (String) questao[1];
-            idsValidos.add(id);
-            Item item = respostas.get(id);
-            List<String> opcoes = item == null || item.opcaoIds == null ? List.of() : item.opcaoIds;
-            String texto = item == null ? null : item.texto;
-            boolean preenchida = !opcoes.isEmpty() || (texto != null && !texto.isBlank());
-            if ((Boolean) questao[3] && !preenchida)
-                throw new ValidacaoException("Responda todas as questões obrigatórias.");
-            if (!preenchida) continue;
-            if ("DESCRITIVA".equals(tipo)) {
-                if (!opcoes.isEmpty() || texto == null || texto.isBlank())
-                    throw new ValidacaoException("Resposta descritiva inválida.");
-            } else {
-                if (texto != null && !texto.isBlank() || opcoes.isEmpty()
-                        || (!"MULTIPLA_ESCOLHA".equals(tipo) && opcoes.size() != 1)
-                        || new HashSet<>(opcoes).size() != opcoes.size())
-                    throw new ValidacaoException("Opções de resposta inválidas.");
-                for (String opcao : opcoes) {
-                    OpcaoQuestao entidadeOpcao = avaliacaoDao.buscar(OpcaoQuestao.class, UUID.fromString(opcao));
-                    if (entidadeOpcao == null || !entidadeOpcao.getConjunto().getId().toString().equals(questao[2]))
-                        throw new ValidacaoException("Opção fora do instrumento.");
-                }
-            }
-        }
-        if (!idsValidos.containsAll(respostas.keySet()))
-            throw new ValidacaoException("Questão fora do instrumento.");
-
-//        String tipoCodigo = disponivel.tipoRespondenteCodigo != null
-//                ? disponivel.tipoRespondenteCodigo : codigosRespondente(usuario).stream().findFirst()
-//                    .orElseThrow(() -> new SecurityException("Perfil sem tipo de respondente autorizado."));
-//        UUID respondenteId = avaliacaoDao.buscarOuCriarRespondente(usuario.getCpf(), usuario.getNome(), tipoCodigo);
-        InstrumentoAvaliativo instrumento = avaliacaoDao.buscarInstrumento(UUID.fromString(instrumentoId));
-        Entidade alvo = avaliacaoDao.referencia(Entidade.class, UUID.fromString(envio.alvoId));
-//        Entidade respondente = avaliacaoDao.referencia(Entidade.class, respondenteId);
-        Entidade contexto = envio.contextoId == null ? null : avaliacaoDao.referencia(Entidade.class, UUID.fromString(envio.contextoId));
-
-        RespostaInstrumento resposta = new RespostaInstrumento();
-        resposta.setInstrumento(instrumento);
-        resposta.setAvaliada(alvo);
-//        resposta.setRespondente(respondente);
-        resposta.setContexto(contexto);
-        avaliacaoDao.persistir(resposta);
-        avaliacaoDao.flush();
-        for (Object[] questao : questoes) {
-            Item item = respostas.get((String) questao[0]);
-            if (item == null) continue;
-            if ("DESCRITIVA".equals(questao[1])) {
-                if (item.texto == null || item.texto.isBlank()) continue;
-                inserirResposta(resposta, (String) questao[0], null, item.texto.trim());
-            } else if (item.opcaoIds != null) {
-                for (String opcao : item.opcaoIds)
-                    inserirResposta(resposta, (String) questao[0], opcao, null);
-            }
-        }
-        Participacao participacao = new Participacao();
-        participacao.setInstrumento(instrumento);
-        participacao.setAvaliada(alvo);
-//        participacao.setRespondente(respondente);
-        participacao.setContexto(contexto);
-        avaliacaoDao.persistir(participacao);
-        avaliacaoDao.flush();
-
-//        resposta.setRespondente(instrumento.isAnonimo() ? null : respondente);
-        resposta.setDataEnvio(LocalDate.now());
-        resposta.setStatus("ENVIADA");
-        avaliacaoDao.flush();
+//        List<Object[]> questoes = instrumentoAvaliativoDAO.questoesParaResposta(UUID.fromString(instrumentoId));
+//        if (questoes.isEmpty()) throw new ValidacaoException("Instrumento sem questões.");
+//        Set<String> idsValidos = new HashSet<>();
+//        for (Object[] questao : questoes) {
+//            String id = (String) questao[0];
+//            String tipo = (String) questao[1];
+//            idsValidos.add(id);
+//            Item item = respostas.get(id);
+//            List<String> opcoes = item == null || item.opcaoIds == null ? List.of() : item.opcaoIds;
+//            String texto = item == null ? null : item.texto;
+//            boolean preenchida = !opcoes.isEmpty() || (texto != null && !texto.isBlank());
+//            if ((Boolean) questao[3] && !preenchida)
+//                throw new ValidacaoException("Responda todas as questões obrigatórias.");
+//            if (!preenchida) continue;
+//            if ("DESCRITIVA".equals(tipo)) {
+//                if (!opcoes.isEmpty() || texto == null || texto.isBlank())
+//                    throw new ValidacaoException("Resposta descritiva inválida.");
+//            } else {
+//                if (texto != null && !texto.isBlank() || opcoes.isEmpty()
+//                        || (!"MULTIPLA_ESCOLHA".equals(tipo) && opcoes.size() != 1)
+//                        || new HashSet<>(opcoes).size() != opcoes.size())
+//                    throw new ValidacaoException("Opções de resposta inválidas.");
+//                for (String opcao : opcoes) {
+////                    OpcaoQuestao entidadeOpcao = instrumentoAvaliativoDAO.buscar(OpcaoQuestao.class, UUID.fromString(opcao));
+////                    if (entidadeOpcao == null || !entidadeOpcao.getConjunto().getId().toString().equals(questao[2]))
+//                        throw new ValidacaoException("Opção fora do instrumento.");
+//                }
+//            }
+//    }
+//        if (!idsValidos.containsAll(respostas.keySet()))
+//            throw new ValidacaoException("Questão fora do instrumento.");
+//
+////        String tipoCodigo = disponivel.tipoRespondenteCodigo != null
+////                ? disponivel.tipoRespondenteCodigo : codigosRespondente(usuario).stream().findFirst()
+////                    .orElseThrow(() -> new SecurityException("Perfil sem tipo de respondente autorizado."));
+////        UUID respondenteId = avaliacaoDao.buscarOuCriarRespondente(usuario.getCpf(), usuario.getNome(), tipoCodigo);
+//        InstrumentoAvaliativo instrumento = instrumentoAvaliativoDAO.findInstrumentosById(UUID.fromString(instrumentoId));
+//        Entidade alvo = instrumentoAvaliativoDAO.referencia(Entidade.class, UUID.fromString(envio.alvoId));
+////        Entidade respondente = avaliacaoDao.referencia(Entidade.class, respondenteId);
+//        Entidade contexto = envio.contextoId == null ? null : instrumentoAvaliativoDAO.referencia(Entidade.class, UUID.fromString(envio.contextoId));
+//
+//        RespostaInstrumento resposta = new RespostaInstrumento();
+//        resposta.setInstrumento(instrumento);
+//        resposta.setAvaliada(alvo);
+////        resposta.setRespondente(respondente);
+//        resposta.setContexto(contexto);
+//        instrumentoAvaliativoDAO.persistir(resposta);
+//        instrumentoAvaliativoDAO.flush();
+//        for (Object[] questao : questoes) {
+//            Item item = respostas.get((String) questao[0]);
+//            if (item == null) continue;
+//            if ("DESCRITIVA".equals(questao[1])) {
+//                if (item.texto == null || item.texto.isBlank()) continue;
+//                inserirResposta(resposta, (String) questao[0], null, item.texto.trim());
+//            } else if (item.opcaoIds != null) {
+//                for (String opcao : item.opcaoIds)
+//                    inserirResposta(resposta, (String) questao[0], opcao, null);
+//            }
+//        }
+//        Participacao participacao = new Participacao();
+//        participacao.setInstrumento(instrumento);
+//        participacao.setAvaliada(alvo);
+////        participacao.setRespondente(respondente);
+//        participacao.setContexto(contexto);
+//        instrumentoAvaliativoDAO.persistir(participacao);
+//        instrumentoAvaliativoDAO.flush();
+//
+////        resposta.setRespondente(instrumento.isAnonimo() ? null : respondente);
+//        resposta.setDataEnvio(LocalDate.now());
+//        resposta.setStatus("ENVIADA");
+//        instrumentoAvaliativoDAO.flush();
     }
 
-    private void inserirResposta(RespostaInstrumento resposta, String questaoId, String opcaoId, String texto) {
-        RespostaQuestao item = new RespostaQuestao();
-        item.setResposta(resposta);
-        item.setQuestao(avaliacaoDao.referencia(SessaoQuestao.class, UUID.fromString(questaoId)));
-        item.setOpcao(opcaoId == null ? null : avaliacaoDao.referencia(OpcaoQuestao.class, UUID.fromString(opcaoId)));
-        item.setTexto(texto);
-        avaliacaoDao.persistir(item);
-    }
 }
