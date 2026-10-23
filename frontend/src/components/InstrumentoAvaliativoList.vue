@@ -52,12 +52,12 @@ const corStatus: Record<string, string> = {
 </script>
 
 <template>
-  <div class="instrument-list">
+  <div class="page-stack">
     <p v-if="erro" class="alert alert--error instrument-list__error">
       <span>⚠️ {{ erro }}</span><button type="button" @click="erro = null">✕</button>
     </p>
 
-    <div class="surface-card instrument-list__card">
+    <div class="panel overflow-hidden">
       <div class="instrument-list__header">
         <div>
           <h2 class="instrument-list__title">Instrumentos de Avaliação</h2>
@@ -68,7 +68,7 @@ const corStatus: Record<string, string> = {
         </RouterLink>
       </div>
 
-      <p v-if="carregando" class="instrument-list__empty instrument-list__empty--loading">Carregando…</p>
+      <p v-if="carregando" class="instrument-list__empty animate-pulse">Carregando…</p>
       <p v-else-if="instrumentos.length === 0" class="instrument-list__empty">Nenhum instrumento cadastrado.</p>
       <PaginatedTable v-else :rows="instrumentos" :page-size="tamanhoPagina" :page="paginaAtual" :has-next="temProximaPagina" @page-change="carregarLista">
         <template #header>

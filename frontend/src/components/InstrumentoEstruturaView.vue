@@ -81,14 +81,14 @@ function aoSalvarConjunto(conjunto: ConjuntoOpcaoDTO) {
 </script>
 
 <template>
-  <div class="instrument-form">
+  <div class="page-stack">
     <p v-if="erro" class="alert alert--error instrument-form__alert">{{ erro }}</p>
     <p v-if="sucesso" class="alert alert--success instrument-form__alert">{{ sucesso }}</p>
     <p v-if="carregando">Carregando instrumento…</p>
     <template v-else-if="instrumento.id">
       <InstrumentoPreview v-if="previsualizando" :instrumento="instrumento" :conjuntos="conjuntos" @voltar="previsualizando = false" />
       <template v-else>
-        <div class="instrument-form__heading">
+        <div class="panel panel--padded instrument-form__heading">
           <div>
             <RouterLink :to="{ name: 'instrumentos' }" class="text-action text-action--primary">← Voltar à lista</RouterLink>
             <h2 class="instrument-form__title">Estrutura: {{ instrumento.titulo }}</h2>

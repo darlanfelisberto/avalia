@@ -15,10 +15,10 @@ function formatarData(data?: string | null) {
 </script>
 
 <template>
-  <p v-if="!carregando && instrumentos.length === 0" class="empty-state">
+  <p v-if="!carregando && instrumentos.length === 0" class="panel empty-state">
     Nenhuma avaliação disponível para seu perfil neste período.
   </p>
-  <article v-for="item in instrumentos" :key="item.id" class="surface-card survey-card survey-card--summary">
+  <article v-for="item in instrumentos" :key="item.id" class="panel panel--padded survey-card--summary">
     <div>
       <h3 class="survey-card__title">{{ item.titulo }}</h3>
       <p v-if="item.descricao" class="survey-card__description">{{ item.descricao }}</p>

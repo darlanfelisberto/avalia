@@ -156,7 +156,7 @@ async function salvar(navegarAposCriar = true): Promise<boolean> {
 </script>
 
 <template>
-  <div class="instrument-form">
+  <div class="">
       <p v-if="erro" class="alert alert--error instrument-form__alert">
         <span>⚠️ {{ erro }}</span><button type="button" @click="erro = null">✕</button>
       </p>
@@ -164,7 +164,7 @@ async function salvar(navegarAposCriar = true): Promise<boolean> {
         <span>✓ {{ sucesso }}</span><button type="button" @click="sucesso = null">✕</button>
       </p>
 
-      <div class="instrument-form__heading">
+      <div class="panel panel--padded instrument-form__heading">
         <div>
           <div class="instrument-form__breadcrumb">
             <RouterLink :to="{ name: 'instrumentos' }" class="text-action text-action--primary instrument-form__back">← Voltar à lista</RouterLink>
@@ -182,7 +182,7 @@ async function salvar(navegarAposCriar = true): Promise<boolean> {
       </div>
 
       <!-- 1. Dados gerais -->
-      <div class="surface-card form-panel">
+      <div class="panel panel--padded form-panel">
         <div class="form-panel__heading">
           <h3 class="form-panel__title">1. Dados Gerais</h3>
         </div>
@@ -220,7 +220,7 @@ async function salvar(navegarAposCriar = true): Promise<boolean> {
       </div>
 
       <!-- 2. Respondentes -->
-      <div class="surface-card form-panel form-panel--respondents">
+      <div class="panel panel--padded form-panel">
         <div class="form-panel__heading">
           <h3 class="form-panel__title">2. Quem Responde <span class="required-mark" aria-hidden="true">*</span></h3>
           <p class="form-panel__description">Marque os públicos autorizados a responder ao instrumento.</p>

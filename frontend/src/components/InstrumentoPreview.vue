@@ -45,8 +45,8 @@ function finalizar() {
 </script>
 
 <template>
-  <div class="survey-preview">
-    <div class="surface-card survey-preview__intro">
+  <div class="page-stack page-stack--compact">
+    <div class="panel panel--padded">
       <button type="button" @click="emit('voltar')" class="text-action text-action--primary">
         ← Voltar à edição
       </button>
@@ -63,14 +63,14 @@ function finalizar() {
     <p v-if="erro" role="alert" class="alert alert--error">{{ erro }}</p>
 
     <section v-for="(pagina, pi) in instrumento.paginas || []" :key="pagina.id || pi"
-      class="surface-card surface-card--subtle survey-page">
+      class="panel panel--subtle panel--padded">
       <p class="survey-page__number">Página {{ pi + 1 }}</p>
       <h3 class="survey-page__title">{{ pagina.titulo }}</h3>
       <p v-if="pagina.descricao" class="survey-page__description">{{ pagina.descricao }}</p>
     </section>
 
     <section v-for="(sessao, si) in instrumento.sessoes || []" :key="sessao.id || si"
-      class="surface-card survey-session">
+      class="panel panel--padded survey-session">
       <div>
         <h3 class="survey-session__title">{{ sessao.titulo }}</h3>
         <p v-if="sessao.descricao" class="survey-session__description">{{ sessao.descricao }}</p>
@@ -93,7 +93,7 @@ function finalizar() {
       </fieldset>
     </section>
 
-    <p v-if="instrumento.sessoes.length === 0" class="empty-state">
+    <p v-if="instrumento.sessoes.length === 0" class="panel empty-state">
       Adicione sessões e questões para visualizar as respostas.
     </p>
 

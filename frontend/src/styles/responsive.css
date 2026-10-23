@@ -1,0 +1,122 @@
+@media (min-width: 640px) {
+    .question-options__row {
+        grid-template-columns: minmax(0, 1fr) 5rem auto auto;
+    }
+
+    .app-main-content {
+        padding-right: 1.5rem;
+        padding-left: 1.5rem;
+    }
+
+    .app-footer__content {
+        flex-direction: row;
+        justify-content: space-between;
+        padding-right: 1.5rem;
+        padding-left: 1.5rem;
+        text-align: left;
+    }
+
+    .app-header__menu-button {
+        display: none;
+    }
+
+    .app-header__code {
+        display: inline;
+    }
+
+    .app-header__user-id {
+        display: inline;
+    }
+
+    .permissions-matrix__footer {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .sync-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sync-stats-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 768px) {
+    .app-main-content {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    .app-header__title {
+        font-size: 1.125rem;
+    }
+
+    .form-panel {
+        padding: 1.5rem;
+    }
+
+    .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .respondent-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sync-header {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .sync-status-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .sync-form-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .sync-stats-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .question-editor__settings {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .question-editor__type {
+        grid-column: span 4;
+    }
+
+    .question-editor__set {
+        grid-column: span 8;
+    }
+
+    .question-editor__subject {
+        grid-column: span 9;
+    }
+
+    .question-editor__subject--without-set {
+        grid-column: span 5;
+    }
+
+    .question-editor__weight {
+        grid-column: span 3;
+    }
+}
+
+@media (min-width: 1024px) {
+    .app-workspace {
+        padding-left: var(--sidebar-width);
+    }
+
+    .sidebar--open, .sidebar--closed {
+        transform: translateX(0);
+        box-shadow: none;
+    }
+
+    .sidebar__close {
+        display: none;
+    }
+}

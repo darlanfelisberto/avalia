@@ -36,7 +36,7 @@ const input = 'form-field';
 
 <template>
   <div class="dialog-backdrop" @click.self="emit('fechar')">
-    <div class="surface-card dialog-card">
+    <div class="panel panel--spacious dialog-card">
       <div>
         <h3 class="dialog-card__title">Novo conjunto de opções</h3>
         <p class="dialog-card__description">Fica disponível para reutilização em qualquer questão.</p>

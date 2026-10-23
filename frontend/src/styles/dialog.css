@@ -1,0 +1,103 @@
+.dialog-backdrop {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgb(15 23 42 / 50%);
+}
+
+.dialog-card {
+    display: grid;
+    width: 100%;
+    max-width: 32rem;
+    max-height: 90vh;
+    gap: 1rem;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 20%);
+}
+
+.dialog-card__title {
+    color: #0f172a;
+    font-size: .875rem;
+    font-weight: 700;
+}
+
+.dialog-card__description {
+    margin-top: .125rem;
+    color: var(--color-muted);
+    font-size: .75rem;
+}
+
+.dialog-card__error {
+    padding: .625rem .75rem;
+    font-size: .75rem;
+}
+
+.dialog-options {
+    display: grid;
+    gap: .5rem;
+}
+
+.dialog-options__header, .dialog-options__row {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(4rem, 2fr) minmax(4rem, 2fr) auto;
+    align-items: center;
+    gap: .5rem;
+}
+
+.dialog-options__header {
+    padding: 0 .25rem;
+    color: #94a3b8;
+    font-size: .625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.dialog-options__correct {
+    text-align: center;
+}
+
+.dialog-options__checkbox {
+    width: 1rem;
+    height: 1rem;
+    justify-self: center;
+}
+
+.dialog-options__remove {
+    border: 0;
+    background: transparent;
+    color: #f43f5e;
+    font-size: .875rem;
+    cursor: pointer;
+}
+
+.dialog-options__remove:disabled {
+    opacity: .3;
+    cursor: not-allowed;
+}
+
+.dialog-options__add {
+    justify-self: start;
+    border: 0;
+    background: transparent;
+    color: #047857;
+    font-size: .6875rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dialog-card__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    padding-top: .5rem;
+}
+
+.dialog-card__save {
+    width: auto;
+    padding: .5rem 1rem;
+    font-size: .75rem;
+}

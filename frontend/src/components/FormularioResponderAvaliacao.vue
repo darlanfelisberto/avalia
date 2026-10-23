@@ -51,8 +51,8 @@ watch(() => route.params.instrumentoId, async parametro => {
 </script>
 
 <template>
-  <div class="survey-response">
-    <div class="surface-card survey-response__instrument">
+  <div class="page-stack page-stack--compact">
+    <div class="panel panel--padded">
       <RouterLink to="/responder" class="text-action text-action--primary">← Voltar às avaliações</RouterLink>
       <template v-if="instrumento">
         <h2 class="survey-response__instrument-title">{{ instrumento.titulo }}</h2>
@@ -65,13 +65,13 @@ watch(() => route.params.instrumentoId, async parametro => {
 
     <template v-if="instrumento">
       <section v-for="(pagina, pi) in instrumento.paginas || []" :key="pagina.id || pi"
-        class="surface-card surface-card--subtle survey-page">
+        class="panel panel--subtle panel--padded">
         <h3 class="survey-page__title">{{ pagina.titulo }}</h3>
         <p v-if="pagina.descricao" class="survey-page__description">{{ pagina.descricao }}</p>
       </section>
 
       <section v-for="(sessao, si) in instrumento.sessoes || []" :key="sessao.id || si"
-        class="surface-card survey-session">
+        class="panel panel--padded survey-session">
         <h3 class="survey-session__title">{{ sessao.titulo }}</h3>
         <p v-if="sessao.descricao" class="survey-session__description">{{ sessao.descricao }}</p>
         <fieldset v-for="(questao, qi) in sessao.questoes" :key="questao.sessaoQuestaoId || qi" class="survey-question">

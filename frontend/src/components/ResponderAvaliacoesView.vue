@@ -24,8 +24,8 @@ onMounted(carregar);
 </script>
 
 <template>
-  <div class="survey-response">
-    <div class="surface-card survey-response__intro">
+  <div class="page-stack page-stack--compact">
+    <div class="panel panel--padded">
       <h2 class="survey-response__title">Responder avaliações</h2>
       <p class="survey-response__description">Avaliações publicadas disponíveis para seu perfil.</p>
     </div>
