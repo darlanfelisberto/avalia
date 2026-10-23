@@ -133,7 +133,9 @@ public final class AvaliacaoDTO {
             dto.titulo = entidade.getTitulo();
             dto.descricao = entidade.getDescricao();
             dto.ordem = entidade.getOrdem();
-            for (SessaoQuestao questao : entidade.getSessaoQuestoesList()) dto.questoes.add(SessaoQuestaoDTO.create(questao));
+            for (SessaoQuestao questao : entidade.getSessaoQuestoesList()){
+                dto.questoes.add(SessaoQuestaoDTO.create(questao));
+            }
             return dto;
         }
     }
@@ -154,6 +156,13 @@ public final class AvaliacaoDTO {
             dto.ordem = entidade.getOrdem();
             return dto;
         }
+    }
+
+    public static class EstruturaInstrumentoDTO {
+        @Valid
+        public List<@NotNull(message = "Página inválida.") InstrumentoSessaoPaginaDTO> paginas = new ArrayList<>();
+        @Valid
+        public List<@NotNull(message = "Sessão inválida.") InstrumentoSessaoDTO> sessoes = new ArrayList<>();
     }
 
     public static class InstrumentoAvaliativoDTO {

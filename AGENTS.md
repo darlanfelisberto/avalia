@@ -8,3 +8,7 @@
 ## Navegação no frontend
 
 - Para links internos, use `RouterLink` com `:to` apontando para uma rota nomeada e passe os valores dinâmicos em `params`, em vez de montar o caminho manualmente ou usar um link HTML comum.
+
+## Organização do backend
+
+- Cada tipo de dado deve ter seu próprio endpoint, service, DAO, model e DTO. Evite concentrar tipos de dados diferentes nessas mesmas classes.

@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import type { ConjuntoOpcaoDTO, InstrumentoAvaliativoDTO, PermissaoTipoEntidadeDTO, TipoEntidadeDTO } from '../types/instrumentoAvaliacao';
+import type { InstrumentoAvaliativoDTO, PermissaoTipoEntidadeDTO, TipoEntidadeDTO } from '../types/instrumentoAvaliacao';
 import { avaliacaoApi } from '../services/avaliacaoApi';
 import { carregarUsuarioAtivo, temPermissao } from '../services/storage';
-import AvaliacaoEstruturaEditor from './AvaliacaoEstruturaEditor.vue';
-import AvaliacaoConjuntoModal from './AvaliacaoConjuntoModal.vue';
-import InstrumentoPreview from './InstrumentoPreview.vue';
 
 const VINCULOS = [
   { valor: '', rotulo: 'Sem vínculo exigido (qualquer pessoa do público)' },
@@ -17,12 +14,9 @@ const VINCULOS = [
 
 const route = useRoute();
 const router = useRouter();
-const previsualizando = ref(false);
 const tipos = ref<TipoEntidadeDTO[]>([]);
 const permissoesTipos = ref<PermissaoTipoEntidadeDTO[]>([]);
-const conjuntos = ref<ConjuntoOpcaoDTO[]>([]);
 const salvando = ref(false);
-const modalConjunto = ref(false);
 const erro = ref<string | null>(null);
 const sucesso = ref<string | null>(null);
 const usuario = carregarUsuarioAtivo();
@@ -68,22 +62,6 @@ function normalizarRespondentes(respondentes?: InstrumentoAvaliativoDTO['respond
   return (respondentes || []).map(r => ({ ...r, tipoVinculo: r.tipoVinculo ?? '' }));
 }
 
-function normalizarSessoes(sessoes: InstrumentoAvaliativoDTO['sessoes']) {
-  return sessoes.map(sessao => ({
-    ...sessao,
-    questoes: sessao.questoes.map(questao => {
-      if (questao.tipo === 'ESCALA' || questao.tipo === 'DESCRITIVA' || questao.opcoes?.length || !questao.conjuntoOpcaoId) return questao;
-      const conjunto = conjuntos.value.find(item => item.id === questao.conjuntoOpcaoId && item.reutilizavel === true);
-      if (!conjunto) return questao;
-      return {
-        ...questao,
-        conjuntoOpcaoId: null,
-        opcoes: conjunto.opcoes.map(opcao => ({ texto: opcao.texto, valor: opcao.valor ?? null, correta: opcao.correta }))
-      };
-    })
-  }));
-}
-
 const form = reactive<InstrumentoAvaliativoDTO>(novoInstrumento());
 const semPermissaoDeEdicao = computed(() => idRota.value ? (!form.id || !podeEditar) : !podeCriar);
 const somenteLeitura = computed(() => (!!form.status && form.status !== 'RASCUNHO') || semPermissaoDeEdicao.value);
@@ -93,21 +71,17 @@ function aplicar(i: InstrumentoAvaliativoDTO) {
   Object.assign(form, i, {
     inicioAplicacao: isoParaLocal(i.inicioAplicacao),
     fimAplicacao: isoParaLocal(i.fimAplicacao),
-    respondentes: normalizarRespondentes(i.respondentes),
-    sessoes: normalizarSessoes(i.sessoes)
+    respondentes: normalizarRespondentes(i.respondentes)
   });
 }
 
 onMounted(async () => {
-  const [t, c, p] = await Promise.all([
+  const [t, p] = await Promise.all([
     avaliacaoApi.tiposEntidade(),
-    avaliacaoApi.conjuntos(),
     avaliacaoApi.permissoesTiposEntidade()
   ]);
   if (t.ok) tipos.value = t.dados || [];
   else erro.value = t.erro || 'Erro ao carregar os tipos de entidade.';
-  if (c.ok) conjuntos.value = c.dados || [];
-  else erro.value = c.erro || 'Erro ao carregar os conjuntos de opções.';
   if (p.ok) permissoesTipos.value = p.dados || [];
   else erro.value = p.erro || 'Erro ao carregar as permissões entre tipos de entidade.';
 
@@ -117,7 +91,7 @@ onMounted(async () => {
     return;
   }
 
-  const resposta = await avaliacaoApi.buscar(idRota.value);
+  const resposta = await avaliacaoApi.buscarCadastro(idRota.value);
   if (resposta.ok && resposta.dados) aplicar(resposta.dados);
   else erro.value = resposta.erro || 'Instrumento não encontrado.';
 });
@@ -159,6 +133,8 @@ async function salvar(navegarAposCriar = true): Promise<boolean> {
   erro.value = sucesso.value = null;
   salvando.value = true;
   const payload: InstrumentoAvaliativoDTO = JSON.parse(JSON.stringify(form));
+  payload.paginas = [];
+  payload.sessoes = [];
   payload.inicioAplicacao = localParaIso(form.inicioAplicacao);
   payload.fimAplicacao = localParaIso(form.fimAplicacao);
   const u = carregarUsuarioAtivo();
@@ -172,42 +148,15 @@ async function salvar(navegarAposCriar = true): Promise<boolean> {
   aplicar(resposta.dados);
   sucesso.value = 'Instrumento salvo com sucesso.';
   if (eraNovo && navegarAposCriar && resposta.dados.id) {
-    await router.replace(`/instrumentos/${encodeURIComponent(resposta.dados.id)}`);
+    await router.replace({ name: 'instrumento-editar', params: { id: resposta.dados.id } });
   }
   return true;
 }
 
-async function publicar() {
-  if (!(await salvar(false)) || !form.id) return;
-  const resposta = await avaliacaoApi.publicar(form.id);
-  if (resposta.ok && resposta.dados) {
-    aplicar(resposta.dados);
-    sucesso.value = 'Instrumento publicado.';
-    if (!idRota.value) await router.replace(`/instrumentos/${encodeURIComponent(resposta.dados.id || form.id)}`);
-  } else {
-    erro.value = resposta.erro || 'Erro ao publicar.';
-  }
-}
-
-function aoSalvarConjunto(conjunto: ConjuntoOpcaoDTO) {
-  conjuntos.value.push(conjunto);
-  conjuntos.value.sort((a, b) => a.nome.localeCompare(b.nome));
-  modalConjunto.value = false;
-}
-
-function voltarLista() {
-  void router.push('/instrumentos');
-}
-
-function voltarDaPrevia() {
-  previsualizando.value = false;
-}
 </script>
 
 <template>
   <div class="instrument-form">
-    <InstrumentoPreview v-if="previsualizando" :instrumento="form" :conjuntos="conjuntos" @voltar="voltarDaPrevia" />
-    <template v-else>
       <p v-if="erro" class="alert alert--error instrument-form__alert">
         <span>⚠️ {{ erro }}</span><button type="button" @click="erro = null">✕</button>
       </p>
@@ -218,7 +167,7 @@ function voltarDaPrevia() {
       <div class="instrument-form__heading">
         <div>
           <div class="instrument-form__breadcrumb">
-            <button type="button" class="text-action text-action--primary instrument-form__back" @click="voltarLista">← Voltar à lista</button>
+            <RouterLink :to="{ name: 'instrumentos' }" class="text-action text-action--primary instrument-form__back">← Voltar à lista</RouterLink>
             <span class="instrument-form__mode-badge">
               {{ form.id ? `Edição · ${form.status}` : 'Novo instrumento' }}
             </span>
@@ -226,14 +175,8 @@ function voltarDaPrevia() {
           <h2 class="instrument-form__title">{{ form.titulo || 'Cadastro de Instrumento' }}</h2>
         </div>
         <div class="instrument-form__actions">
-          <button type="button" class="button button--secondary" @click="previsualizando = true">
-            👁 Visualizar instrumento
-          </button>
           <button v-if="!semPermissaoDeEdicao" type="button" :disabled="salvando" class="button button--primary instrument-form__save" @click="salvar()">
             💾 {{ salvando ? 'Salvando…' : 'Salvar' }}
-          </button>
-          <button v-if="podeEditar && (!form.status || form.status === 'RASCUNHO') && !somenteLeitura" type="button" :disabled="salvando" class="button button--publish" @click="publicar">
-            🚀 Salvar e publicar
           </button>
         </div>
       </div>
@@ -297,17 +240,5 @@ function voltarDaPrevia() {
         <p v-else-if="!tiposRespondentes.length" class="form-panel__help">Nenhum público está autorizado na matriz de permissões para os tipos selecionados.</p>
       </div>
 
-      <!-- 3. Estrutura -->
-      <AvaliacaoEstruturaEditor
-        v-model:paginas="form.paginas"
-        v-model:sessoes="form.sessoes"
-        :conjuntos="conjuntos"
-        :somente-leitura="somenteLeitura"
-        :pode-criar-conjunto="podeCriar"
-        @novo-conjunto="modalConjunto = true"
-      />
-
-    </template>
-    <AvaliacaoConjuntoModal v-if="modalConjunto" @salvo="aoSalvarConjunto" @fechar="modalConjunto = false" />
   </div>
 </template>

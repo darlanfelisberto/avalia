@@ -79,7 +79,7 @@ const btnIcone = 'icon-button-control';
   <div class="surface-card structure-editor form-panel">
     <div class="structure-editor__heading">
       <div>
-        <h3 class="form-panel__title">3. Estrutura do Questionário</h3>
+        <h3 class="form-panel__title">Estrutura do Questionário</h3>
         <p class="form-panel__description">Páginas e sessões são tipos independentes do instrumento; sessões agrupam as questões.</p>
       </div>
       <div v-if="!somenteLeitura" class="structure-editor__actions">

@@ -2,6 +2,7 @@ package br.edu.iffar.avalia.avaliacao.resource;
 
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.ConjuntoOpcaoDTO;
 import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.InstrumentoAvaliativoDTO;
+import br.edu.iffar.avalia.avaliacao.dto.AvaliacaoDTO.EstruturaInstrumentoDTO;
 import br.edu.iffar.avalia.avaliacao.service.AvaliacaoService;
 import br.edu.iffar.avalia.core.service.AuthService;
 import br.edu.iffar.avalia.core.dto.UsuarioDTO;
@@ -53,12 +54,24 @@ public class AvaliacaoResource {
         });
     }
 
+    @GET
+    @Path("/instrumentos/{id}/cadastro")
+    public Response buscarCadastro(@PathParam("id") String id) {
+        return executar(() -> Response.ok(avaliacaoService.buscarCadastro(id)).build());
+    }
+
     @POST
     @Path("/instrumentos")
     public Response salvar(InstrumentoAvaliativoDTO dto) {
         return executar(() -> {
             return Response.ok(avaliacaoService.salvarInstrumento(dto)).build();
         });
+    }
+
+    @PUT
+    @Path("/instrumentos/{id}/estrutura")
+    public Response salvarEstrutura(@PathParam("id") String id, EstruturaInstrumentoDTO dto) {
+        return executar(() -> Response.ok(avaliacaoService.salvarEstrutura(id, dto)).build());
     }
 
     @POST

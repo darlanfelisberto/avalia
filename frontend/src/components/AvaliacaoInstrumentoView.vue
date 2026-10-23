@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import type { InstrumentoAvaliativoDTO } from '../types/instrumentoAvaliacao';
 import { avaliacaoApi } from '../services/avaliacaoApi';
 import { carregarUsuarioAtivo, temPermissao } from '../services/storage';
 import PaginatedTable from './PaginatedTable.vue';
 
-const router = useRouter();
 const instrumentos = ref<InstrumentoAvaliativoDTO[]>([]);
 const paginaAtual = ref(1);
 const temProximaPagina = ref(false);
@@ -42,14 +40,6 @@ async function excluir(id: string, titulo: string) {
   else erro.value = res.erro || 'Erro ao excluir.';
 }
 
-function abrirNovo() {
-  void router.push('/instrumentos/novo');
-}
-
-function abrirInstrumento(id: string) {
-  void router.push(`/instrumentos/${encodeURIComponent(id)}`);
-}
-
 onMounted(() => carregarLista());
 
 const fmtData = (iso?: string) => (iso ? new Date(iso).toLocaleDateString('pt-BR') : '—');
@@ -81,9 +71,9 @@ const colunasInstrumentos = [
           <h2 class="instrument-list__title">Instrumentos de Avaliação</h2>
           <p class="instrument-list__description">Questionários cadastrados no schema <code>avaliacao</code>.</p>
         </div>
-        <button v-if="podeCriar" type="button" @click="abrirNovo" class="button button--primary instrument-list__create">
+        <RouterLink v-if="podeCriar" :to="{ name: 'instrumento-novo' }" class="button button--primary instrument-list__create">
           + Novo instrumento
-        </button>
+        </RouterLink>
       </div>
 
       <p v-if="carregando" class="instrument-list__empty instrument-list__empty--loading">Carregando…</p>
@@ -99,7 +89,8 @@ const colunasInstrumentos = [
           </template>
           <span v-else-if="column === 'status'" :class="['status-badge', corStatus[row.status || 'RASCUNHO']]">{{ row.status }}</span>
           <div v-else-if="column === 'acoes'">
-            <button type="button" class="text-action text-action--primary instrument-table__open" @click="abrirInstrumento(row.id!)">{{ row.status === 'RASCUNHO' ? 'Editar' : 'Abrir' }}</button>
+            <RouterLink :to="{ name: 'instrumento-editar', params: { id: row.id } }" class="text-action text-action--primary instrument-table__open">{{ row.status === 'RASCUNHO' ? 'Editar cadastro' : 'Abrir cadastro' }}</RouterLink>
+            <RouterLink :to="{ name: 'instrumento-estrutura', params: { id: row.id } }" class="text-action text-action--primary">{{ row.status === 'RASCUNHO' ? 'Editar estrutura' : 'Ver estrutura' }}</RouterLink>
             <button v-if="podeExcluir && row.status === 'RASCUNHO'" type="button" class="text-action text-action--danger" @click="excluir(row.id!, row.titulo)">Excluir</button>
           </div>
         </template>

@@ -35,11 +35,16 @@ export const avaliacaoApi = {
   salvarConjunto: (c: ConjuntoOpcaoDTO) => chamar<ConjuntoOpcaoDTO>(`${BASE}/conjuntos-opcao`, { method: 'POST', body: JSON.stringify(c) }),
   listar: (pagina = 1, tamanho = 10) => chamar<InstrumentoAvaliativoDTO[]>(`${BASE}/instrumentos?pagina=${pagina}&tamanho=${tamanho}`),
   buscar: (id: string) => chamar<InstrumentoAvaliativoDTO>(`${BASE}/instrumentos/${id}`),
+  buscarCadastro: (id: string) => chamar<InstrumentoAvaliativoDTO>(`${BASE}/instrumentos/${encodeURIComponent(id)}/cadastro`),
   salvar: (i: InstrumentoAvaliativoDTO, usuario?: string) =>
     chamar<InstrumentoAvaliativoDTO>(`${BASE}/instrumentos`, {
       method: 'POST',
       body: JSON.stringify(i),
       headers: usuario ? { 'X-Usuario': usuario } : {}
+    }),
+  salvarEstrutura: (id: string, estrutura: Pick<InstrumentoAvaliativoDTO, 'paginas' | 'sessoes'>) =>
+    chamar<InstrumentoAvaliativoDTO>(`${BASE}/instrumentos/${encodeURIComponent(id)}/estrutura`, {
+      method: 'PUT', body: JSON.stringify(estrutura)
     }),
   publicar: (id: string) => chamar<InstrumentoAvaliativoDTO>(`${BASE}/instrumentos/${id}/publicar`, { method: 'POST' }),
   excluir: (id: string) => chamar<void>(`${BASE}/instrumentos/${id}`, { method: 'DELETE' })
